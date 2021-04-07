@@ -1,0 +1,30 @@
+[package]
+name = "raven"
+description = "Process graphic files, merge them into an atlas file and provides data at a sensible format."
+version = "1.0.0"
+authors = ["Lucas Miranda <miranda.a.lucas@gmail.com>"]
+license = "MIT"
+homepage = "https://github.com/lucas-miranda/raven"
+repository = "https://github.com/lucas-miranda/raven"
+readme = "README.md"
+keywords = ["aseprite", "atlas", "packer", "graphics"]
+edition = "2018"
+
+[dependencies]
+serde = { version = "^1.0.92", features = ["derive"] }
+serde_json = "^1.0"
+toml = "^0.5.1"
+regex = "^1"
+directories = "^1.0"
+rand = "^0.7"
+colored = "^2.0.0"
+log = "^0.4"
+simple_logger = "^1.11.0"
+num-traits = "^0.2.14"
+image = "^0.23.14"
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3

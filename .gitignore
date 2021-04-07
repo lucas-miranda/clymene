@@ -1,0 +1,15 @@
+# personal
+TODO
+
+# raven folders
+atlas-cache/
+cache/
+output/
+source/
+tools/
+_old/
+
+# Cargo
+target/
+**/*.rs.bk
+Cargo.lock

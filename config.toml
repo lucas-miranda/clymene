@@ -1,0 +1,41 @@
+[raven]
+# make the entire program show verbose messages, it'll overwrite others if 'true' is set here
+verbose = false
+
+# where cache files will be stored, leave empty to auto get project path's cache
+cache_path = ""
+
+# path where finalized files should be stored
+output_path = "output/"
+
+# make atlas data .json pretty before writing to a file
+prettify_json = false
+
+[aseprite]
+# should messages be more verbose about what is happening at aseprite processor?
+verbose = false
+
+# filepath to 'aseprite.exe'
+path = "C:\\Program Files\\Aseprite\\Aseprite.exe"
+
+# root path to search for aseprite files
+input_path = "source/"
+
+# make json pretty before writing to file (affects 'cache.json' file)
+prettify_json = false
+
+[crunch]
+# should crunch print every action?
+verbose = false
+
+# filepath to 'crunch.exe'
+path = "tools/crunch.exe"
+
+# name of atlas generated .png file
+atlas_name = "atlas"
+
+# accepted values are: 4096, 2048, 1024, 512, 256, 128 or 64
+atlas_size = 1024
+
+# force crunch to recreate atlas, even when none file has been changed
+force = false
