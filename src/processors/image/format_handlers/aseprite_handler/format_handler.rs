@@ -104,7 +104,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                 let mut buffer = [0u8; 2];
                 file.read_exact(&mut buffer).unwrap();
 
-                if &buffer[..] != &ASEPRITE_FILE_MAGIC_NUMBER[..] {
+                if buffer[..] != ASEPRITE_FILE_MAGIC_NUMBER[..] {
                     // magic number doesn't match
                     return Err(Error::WrongFileType);
                 }
@@ -326,13 +326,10 @@ impl FormatHandler {
                     let len = line_input.trim_end_matches(&['\r', '\n'][..]).len();
                     line_input.truncate(len);
 
-                    match self.find_aseprite_bin_path(&line_input) {
-                        Some(pathbuf) => {
-                            ase_filepath = pathbuf;
-                            break 'bin_search;
-                        },
-                        None => ()
-                    };
+                    if let Some(pathbuf) = self.find_aseprite_bin_path(&line_input) {
+                        ase_filepath = pathbuf;
+                        break 'bin_search;
+                    }
 
                     error!("> Aseprite not found at entered path");
                 },
@@ -350,7 +347,7 @@ impl FormatHandler {
         Ok(ConfigStatus::Modified)
     }
 
-    fn find_aseprite_bin_path(&self, input: &String) -> Option<PathBuf> {
+    fn find_aseprite_bin_path(&self, input: &str) -> Option<PathBuf> {
         let pathbuf = PathBuf::from(input);
 
         let metadata = match pathbuf.metadata() {
@@ -389,7 +386,7 @@ impl FormatHandler {
             ) {
                 Ok(entry) => {
                     match entry {
-                        Some(found_entry) => Some(found_entry.path().to_path_buf()),
+                        Some(found_entry) => Some(found_entry.path()),
                         None => None
                     }
                 },
@@ -400,7 +397,7 @@ impl FormatHandler {
         }
     }
 
-    fn find_source_images(&self, output_folder_path: &Path, frames_data: &Vec<FrameData>) -> Result<Vec<SourceImage>, Error> {
+    fn find_source_images(&self, output_folder_path: &Path, frames_data: &[FrameData]) -> Result<Vec<SourceImage>, Error> {
         let mut images = Vec::new();
 
         for dir_entry in fs::read_dir(output_folder_path).map_err(Error::IO)? {
