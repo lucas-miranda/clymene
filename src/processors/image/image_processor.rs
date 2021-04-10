@@ -215,7 +215,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                     },
                     Err(e) => {
                         info!("- {}", location.display().to_string().red());
-                        trace!("[{:?}]:\n{}", e, e);
+                        trace!("{}: {}", "Error".bold().red(), e);
                     }
                 }
             }
