@@ -5,7 +5,8 @@ use std::{
 
 use image::{
     self,
-    GenericImage
+    GenericImage,
+    GenericImageView
 };
 
 use crate::{
@@ -39,6 +40,7 @@ impl Processor for PackerProcessor {
             config_status = ConfigStatus::Modified;
         }
 
+        // TODO  make a better way to select packer
         self.packer = Some(Box::new(CustomPacker::new()));
 
         Ok(config_status)
@@ -87,7 +89,16 @@ impl Processor for PackerProcessor {
 
                 for source_image in source_images {
                     let image = image::open(&source_image.location).unwrap();
-                    image_buffer.copy_from(&image, source_image.atlas_region.x, source_image.atlas_region.y).unwrap();
+                    image_buffer.copy_from(
+                        &image.view(
+                            source_image.source_region.x, 
+                            source_image.source_region.y, 
+                            source_image.source_region.width, 
+                            source_image.source_region.height
+                        ), 
+                        source_image.atlas_region.x, 
+                        source_image.atlas_region.y
+                    ).unwrap();
                 }
 
                 let output_atlas_path = {

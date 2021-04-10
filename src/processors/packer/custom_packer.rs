@@ -5,7 +5,8 @@ use crate::{
     graphics::Image,
     math::{
         Rectangle,
-        Size
+        Size,
+        util
     },
     processors::packer::Packer
 };
@@ -19,55 +20,87 @@ impl Packer for CustomPacker {
             return None;
         }
 
-        let atlas_size = atlas_min_size.clone();
-
-        let mut empty_spaces: Vec<Rectangle<u32>> = vec![ atlas_size.clone().into() ];
+        let atlas_size = atlas_min_size;
+        let mut empty_spaces: Vec<Rectangle<u32>> = vec![ atlas_size.into() ];
 
         // sort by decreasing order of their height
-        source_images.sort_by(|a, b| (*b).source_region.height.cmp(&(*a).source_region.height));
+        source_images.sort_by(|a, b| (*a).source_region.width.cmp(&(*b).source_region.width).reverse());
 
-        for source_image in source_images {
-            let img = source_image;
-            let size = img.source_region.size();
-
-            if empty_spaces.len() == 0 {
+        for image in source_images {
+            if empty_spaces.is_empty() {
                 panic!("Out of empty spaces.");
             }
 
-            let first_empty_space = empty_spaces.remove(0);
+            let empty_space = {
+                let mut selected_space = None;
+                let size = image.source_region.size();
 
-            if !first_empty_space.fit_size(&size) {
-                panic!("Out of space to fit source image.");
-            }
+                for space_index in 0..(empty_spaces.len() + 1) {
+                    if empty_spaces[space_index].fit_size(&size) {
+                        selected_space = Some(empty_spaces.remove(space_index));
+                        break;
+                    }
+                }
 
-            img.atlas_region = Rectangle::new(first_empty_space.x, first_empty_space.y, size.width, size.height);
+                match selected_space {
+                    Some(space) => space,
+                    None => panic!("Can't find a valid location for source image '{}'.", image.location.display())
+                }
+            };
+
+            image.atlas_region = Rectangle::new(empty_space.x, empty_space.y, image.source_region.width, image.source_region.height);
 
             // space to the right
-            if atlas_size.width - (first_empty_space.x + size.width) > 0 {
-                empty_spaces.push(Rectangle::new(
-                    img.atlas_region.right(), 
-                    img.atlas_region.top(), 
-                    atlas_size.width - (first_empty_space.x + size.width),
-                    first_empty_space.height
-                ));
-            }
+            let space_right_side = if empty_space.width - image.source_region.width > 0 {
+                Some(Rectangle::new(
+                    image.atlas_region.right(), 
+                    image.atlas_region.top(), 
+                    empty_space.width - image.source_region.width,
+                    empty_space.height
+                ))
+            } else {
+                None
+            };
 
             // space to the bottom
-            if atlas_size.height - (first_empty_space.y + size.height) > 0 {
-                empty_spaces.push(Rectangle::new(
-                    img.atlas_region.left(), 
-                    img.atlas_region.bottom(), 
-                    first_empty_space.width,
-                    atlas_size.height - (first_empty_space.y + size.height)
-                ));
+            let space_bottom_side = if empty_space.height - image.source_region.height > 0 {
+                match &space_right_side {
+                    Some(right_size) => {
+                        Some(Rectangle::new(
+                            image.atlas_region.left(), 
+                            image.atlas_region.bottom(), 
+                            empty_space.width - right_size.width,
+                            empty_space.height - image.source_region.height
+                        ))
+                    },
+                    None => {
+                        Some(Rectangle::new(
+                            image.atlas_region.left(), 
+                            image.atlas_region.bottom(), 
+                            empty_space.width,
+                            empty_space.height - image.source_region.height
+                        ))
+                    }
+                }
+            } else {
+                None
+            };
+
+            // push spaces
+            if let Some(space) = space_right_side {
+                empty_spaces.push(space);
+            }
+
+            if let Some(space) = space_bottom_side {
+                empty_spaces.push(space);
             }
 
             // sort empty spaces in descending order of size
-            empty_spaces.sort_by(|a, b| {
-                if a.width > b.width && a.height > b.height {
-                    Ordering::Less
-                } else {
+            empty_spaces.sort_unstable_by(|a, b| {
+                if (a.width > b.width && a.height > b.height) || util::max(&a.width, &a.height) > util::max(&b.width, &b.height) {
                     Ordering::Greater
+                } else {
+                    Ordering::Less
                 }
             });
         }

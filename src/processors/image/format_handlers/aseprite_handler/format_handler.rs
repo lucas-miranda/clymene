@@ -153,14 +153,14 @@ impl format_handlers::FormatHandler for FormatHandler {
                 // skip empty frames
                 OsStr::new("--ignore-empty"), 
 
+                // trim empty space
+                //OsStr::new("--trim"), // removed since it doesn't work at all when exporting images
+
                 // .ase/.aseprite file path
                 source_file_path.as_os_str(), 
 
                 // save every frame as
-                OsStr::new("--save-as"), frame_pathbuf.as_os_str(), 
-
-                // trim empty space
-                OsStr::new("--trim"), 
+                OsStr::new("--save-as"), frame_pathbuf.as_os_str()
             ])
             .output()
             .map_err(Error::IO)?;
