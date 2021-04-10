@@ -1,6 +1,10 @@
 # personal
 TODO
 
+# unnecesary files
+*.ase
+*.png
+
 # raven folders
 atlas-cache/
 cache/

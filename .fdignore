@@ -3,3 +3,5 @@ tools/
 source/
 output/
 _old/
+*.ase
+*.png
