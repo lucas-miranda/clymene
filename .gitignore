@@ -6,14 +6,13 @@ TODO
 *.png
 
 # raven folders
-atlas-cache/
-cache/
-output/
-source/
-tools/
-_old/
+/atlas-cache/
+/output/
+/source/
+/tools/
+/_old/
 
 # Cargo
-target/
+/target/
 **/*.rs.bk
 Cargo.lock
