@@ -9,7 +9,10 @@ mod math;
 mod processors;
 use processors::{
     config::ConfigProcessor,
-    cache::CacheProcessor,
+    cache::{
+        CacheImporterProcessor,
+        CacheExporterProcessor
+    },
     image::{
         format_handlers::aseprite_handler,
         ImageProcessor,
@@ -59,11 +62,12 @@ fn main() {
     image_processor.register_handler(aseprite_handler::FormatHandler::new());
 
     let result = ProcessorsPipeline::new()
-                       .enqueue(ConfigProcessor::new())  // ensure essential config are working and prepare it to be at valid state
-                       .enqueue(CacheProcessor::new())   // verifies cache status and prepares it to the next steps
-                       .enqueue(image_processor)         // handle source images to be at expected format
-                       .enqueue(PackerProcessor::new())  // retrieve every image and packs into a single atlas
-                       //.enqueue(DataProcessor::new())    // get every data from previous steps and packs it together into a nicer format
+                       .enqueue(ConfigProcessor::new())         // ensure essential config are working and prepare it to be at valid state
+                       .enqueue(CacheImporterProcessor::new())    // import cache entries and prepares them to the next steps
+                       .enqueue(image_processor)                // handle source images to be at expected format
+                       .enqueue(PackerProcessor::new())         // retrieve every image and packs into a single atlas
+                       //.enqueue(DataProcessor::new())         // get every data from previous steps and packs it together into a nicer format
+                       .enqueue(CacheExporterProcessor::new())    // exports cache entries into file format again (to be reusable in next usage)
                        .start(&mut config, &args);
 
     if let Err(e) = result {

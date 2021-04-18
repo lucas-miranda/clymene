@@ -8,7 +8,7 @@ use crate::{
 
 pub struct Data<'a> {
     pub config: &'a mut Config,
-    pub cache: Cache,
+    pub cache: Option<Cache>,
     pub graphic_output: GraphicOutput
 }
 
@@ -16,7 +16,7 @@ impl<'a> Data<'a> {
     pub fn new<'c>(config: &'c mut Config) -> Data<'c> {
         Data {
             config,
-            cache: Cache::new(),
+            cache: None,
             graphic_output: GraphicOutput::new()
         }
     }

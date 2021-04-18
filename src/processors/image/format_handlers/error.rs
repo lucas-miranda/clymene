@@ -17,6 +17,7 @@ use crate::processors::image::{
 #[derive(Debug)]
 pub enum Error {
     FileExpected,
+    DirectoryExpected,
     WrongFileType,
     PathAlreadyExists,
     ExternalProgramFail(Vec<u8>),
@@ -29,6 +30,7 @@ impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &self {
             Error::FileExpected => None,
+            Error::DirectoryExpected => None,
             Error::WrongFileType => None,
             Error::PathAlreadyExists => None,
             Error::ExternalProgramFail(_) => None,
@@ -43,6 +45,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
             Error::FileExpected => write!(f, "File expected at path."),
+            Error::DirectoryExpected => write!(f, "Directory expected at path."),
             Error::WrongFileType => write!(f, "Wrong file type."),
             Error::PathAlreadyExists => write!(f, "Supplied path already exists."),
             Error::ExternalProgramFail(stderr) => {

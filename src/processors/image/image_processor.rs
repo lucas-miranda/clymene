@@ -173,32 +173,82 @@ impl<'a> Processor for ImageProcessor<'a> {
 
                 match source_file.strip_prefix(&source_path) {
                     Ok(path) => {
-                        location = path
+                        location = path.with_extension("");
                     },
                     Err(_) => {
                         continue;
                     }
                 }
 
-                if let Some(cache_entry) = data.cache.get(location) {
-                    if let Some(graphic) = cache_entry.retrieve_graphic() {
-                        info!("+ {}", source_file.display().to_string().green());
+                trace!("=> {}", location.display());
 
-                        match graphic {
-                            Graphic::Empty => (),
-                            Graphic::Image(image) => output.images.push(image),
-                            Graphic::Animation(animation) => output.animations.push(animation)
+                // verify cache entry
+                match &data.cache {
+                    Some(cache) => {
+                        if let Some(cache_entry) = cache.get(&location) {
+                            trace!("{}", "Cache Hit".green());
+
+                            if let Some(graphic) = cache_entry.borrow().retrieve_graphic() {
+                                info!("+ {}", location.display().to_string().green());
+
+                                match graphic {
+                                    Graphic::Empty => (),
+                                    _ => output.graphics.push(graphic)
+                                }
+
+                                continue;
+                            }
+                        } else {
+                            trace!("{}", "Cache Miss".red());
                         }
-
-                        continue;
-                    }
+                    },
+                    None => return Err(Error::ImageProcessor(image::Error::ExpectingAccessToCache))
                 }
 
-                let output_path = match source_file.file_stem() {
-                    Some(stem) => data.config.cache.images_path().join(stem),
-                    None => continue
+                // prepare output path
+                let output_path = match source_file.strip_prefix(&data.config.image.input_path) {
+                    Ok(p) => {
+                        data.config
+                            .cache
+                            .images_path()
+                            .join(p.with_extension(""))
+                    },
+                    Err(e) => panic!("Can't strip prefix '{}' from source path '{}':\n{}", data.config.image.input_path, source_file.display(), e)
                 };
 
+                // ensure output directory, and it's intermediate ones, exists
+                match output_path.metadata() {
+                    Ok(metadata) => {
+                        if metadata.is_dir() {
+                            // ensure it's empty
+                            if !util::fs::is_dir_empty(&output_path).unwrap() {
+                                fs::remove_dir_all(&output_path).unwrap();
+
+                                let duration = std::time::Duration::from_millis(10u64);
+                                while output_path.exists() {
+                                    std::thread::sleep(duration);
+                                }
+
+                                fs::create_dir(&output_path).unwrap();
+                            }
+
+                            Ok(())
+                        } else {
+                            Err(image::Error::InvalidOutputPath(output_path.display().to_string()))
+                        }
+                    },
+                    Err(e) => {
+                        match e.kind() {
+                            io::ErrorKind::NotFound => {
+                                fs::create_dir_all(&output_path)
+                                   .map_err(image::Error::IO)
+                            },
+                            _ => Err(image::Error::IO(e))
+                        }
+                    }
+                }.map_err(Error::ImageProcessor)?;
+
+                // process source file
                 match format_handler.process(source_file, &output_path, &data.config) {
                     Ok(processed_file) => {
                         match processed_file {
@@ -207,8 +257,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                                 trace!("Ignoring it, empty graphic.");
                                 continue;
                             },
-                            Graphic::Image(image) => output.images.push(image),
-                            Graphic::Animation(animation) => output.animations.push(animation)
+                            _ => output.graphics.push(processed_file)
                         }
 
                         info!("+ {}", location.display().to_string().green());

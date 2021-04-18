@@ -14,26 +14,26 @@ use crate::graphics::{
 #[derive(Debug)]
 pub struct Animation {
     pub name: OsString,
-    pub folder_location: PathBuf,
+    pub directory_location: PathBuf,
     pub indices: Vec<u32>,
     pub source_images: HashMap<u32, Image>,
     pub tracks: Vec<Track>
 }
 
 impl Animation {
-    pub fn new(folder_location: PathBuf) -> Result<Self, Error> {
-        let metadata = folder_location.metadata()?;
+    pub fn new(directory_location: PathBuf) -> Result<Self, Error> {
+        let metadata = directory_location.metadata()?;
 
         if !metadata.is_dir() {
             return Err(Error::DirectoryExpected);
         }
 
-        let name = folder_location.file_name()
-                                  .ok_or(Error::DirectoryExpected)?;
+        let name = directory_location.file_name()
+                                     .ok_or(Error::DirectoryExpected)?;
 
         Ok(Self {
             name: name.to_owned(),
-            folder_location,
+            directory_location,
             indices: Vec::new(),
             source_images: HashMap::new(),
             tracks: Vec::new()

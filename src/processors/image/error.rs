@@ -19,7 +19,8 @@ pub enum Error {
     InvalidInputPath(String),
     InvalidOutputPath(String),
     IO(io::Error),
-    FormatHandler(format_handlers::Error)
+    FormatHandler(format_handlers::Error),
+    ExpectingAccessToCache
 }
 
 impl error::Error for Error {
@@ -28,7 +29,8 @@ impl error::Error for Error {
             Error::InvalidInputPath(_) => None,
             Error::InvalidOutputPath(_) => None,
             Error::IO(io_error) => Some(io_error),
-            Error::FormatHandler(handler_error) => Some(handler_error)
+            Error::FormatHandler(handler_error) => Some(handler_error),
+            Error::ExpectingAccessToCache => None
         }
     }
 }
@@ -39,7 +41,8 @@ impl Display for Error {
             Error::InvalidInputPath(path) => write!(f, "Invalid input path '{}'. Expected a valid folder.", path),
             Error::InvalidOutputPath(path) => write!(f, "Invalid output path '{}'. Expected a valid folder.", path),
             Error::IO(io_error) => write!(f, "IO error: {}", io_error),
-            Error::FormatHandler(handler_error) => write!(f, "Format handler error: {}", handler_error)
+            Error::FormatHandler(handler_error) => write!(f, "Format handler error: {}", handler_error),
+            Error::ExpectingAccessToCache => write!(f, "Image processor tried to access cache, but it's on an invalid state.")
         }
     }
 }

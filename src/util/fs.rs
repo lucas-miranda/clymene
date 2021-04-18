@@ -7,6 +7,14 @@ use std::{
     path::Path
 };
 
+pub fn is_dir_empty<P: AsRef<Path>>(dir: P) -> io::Result<bool> {
+    for dir_entry in fs::read_dir(dir)? {
+        return Ok(false);
+    }
+
+    return Ok(true);
+}
+
 pub fn for_every_entry<P: AsRef<Path>, F: FnMut(&DirEntry)>(dir: P, callback: &mut F) -> io::Result<()> {
     for dir_entry in fs::read_dir(dir)? {
         let entry = dir_entry?;

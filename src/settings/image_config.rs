@@ -32,3 +32,9 @@ impl Default for ImageConfig {
         }
     }
 }
+
+impl ImageConfig {
+    pub fn source_path(&self) -> PathBuf {
+        PathBuf::from(&self.input_path)
+    }
+}

@@ -1,18 +1,13 @@
-use crate::graphics::{
-    animation::Animation,
-    Image
-};
+use crate::graphics::Graphic;
 
 pub struct GraphicOutput {
-    pub images: Vec<Image>,
-    pub animations: Vec<Animation>
+    pub graphics: Vec<Graphic>
 }
 
 impl GraphicOutput {
     pub fn new() -> Self {
         Self {
-            images: Vec::new(),
-            animations: Vec::new()
+            graphics: Vec::new(),
         }
     }
 }

@@ -1,6 +1,7 @@
 use std::{
     fs,
-    io
+    io,
+    iter
 };
 
 use image::{
@@ -10,7 +11,10 @@ use image::{
 };
 
 use crate::{
-    graphics::Image,
+    graphics::{
+        Graphic,
+        Image
+    },
     math::Size,
     processors::{
         ConfigStatus,
@@ -51,9 +55,16 @@ impl Processor for PackerProcessor {
 
         match &self.packer {
             Some(packer) => {
-                let mut source_images = data.graphic_output.images.iter_mut()
-                                            .chain(data.graphic_output.animations.iter_mut().map(|a| a.source_images.values_mut()).flatten())
-                                            .into_iter()
+                let mut source_images = data.graphic_output.graphics
+                                            .iter_mut()
+                                            .filter_map(|g| -> Option<Box<dyn Iterator<Item = &mut Image>>> {
+                                                match g {
+                                                    Graphic::Image(img) => Some(Box::new(iter::once(img))),
+                                                    Graphic::Animation(anim) => Some(Box::new(anim.source_images.values_mut())),
+                                                    Graphic::Empty => None
+                                                }
+                                            })
+                                            .flatten()
                                             .collect::<Vec<&mut Image>>();
 
                 packer.execute(Size::new(data.config.packer.atlas_size, data.config.packer.atlas_size), &mut source_images);

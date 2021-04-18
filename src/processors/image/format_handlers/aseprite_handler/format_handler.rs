@@ -83,7 +83,7 @@ impl format_handlers::FormatHandler for FormatHandler {
         Ok(config_status)
     }
 
-    fn process(&self, source_file_path: &Path, output_folder_path: &Path, config: &Config) -> Result<Graphic, Error> {
+    fn process(&self, source_file_path: &Path, output_dir_path: &Path, config: &Config) -> Result<Graphic, Error> {
         trace!("|| aseprite file => {}", source_file_path.display());
 
         // check if file is valid
@@ -114,34 +114,22 @@ impl format_handlers::FormatHandler for FormatHandler {
             }
         }
 
-        let file_stem = source_file_path.file_stem().unwrap();
+        // verify output directory
+        trace!("|| output path => {}", output_dir_path.display());
 
-        let output_path = config.cache
-                                .images_path()
-                                .join(file_stem);
-
-        trace!("|| output path => {}", output_path.display());
-
-        // create output folder
-        match output_path.metadata() {
-            Ok(_metadata) => {
-                return Err(Error::PathAlreadyExists);
-            },
-            Err(e) => {
-                match e.kind() {
-                    io::ErrorKind::NotFound => {
-                        if let Err(io_error) = fs::create_dir(&output_path) {
-                            return Err(Error::IO(io_error));
-                        }
-                    },
-                        // ret error: io error
-                    _ => return Err(Error::IO(e))
+        match output_dir_path.metadata() {
+            Ok(metadata) => {
+                if metadata.is_dir() {
+                    Ok(())
+                } else {
+                    Err(Error::DirectoryExpected)
                 }
-            }
-        }
+            },
+            Err(e) => Err(Error::IO(e))
+        }?;
 
         // extract every frame (excluding empty ones)
-        let frame_pathbuf = output_path.join(FRAME_FILE_NAME_FORMAT);
+        let frame_pathbuf = output_dir_path.join(FRAME_FILE_NAME_FORMAT);
 
         trace!("|| frames path format => {}", frame_pathbuf.display());
 
@@ -170,7 +158,7 @@ impl format_handlers::FormatHandler for FormatHandler {
         }
 
         // generate data
-        let data_pathbuf = output_path.join(DATA_FILE_NAME);
+        let data_pathbuf = output_dir_path.join(DATA_FILE_NAME);
 
         trace!("|| data path => {}", data_pathbuf.display());
 
@@ -207,7 +195,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                                  .map_err(|e| e.into())?;
 
         // retrieve source images
-        let mut source_images = self.find_source_images(&output_folder_path, &aseprite_data.frames)?;
+        let mut source_images = self.find_source_images(&output_dir_path, &aseprite_data.frames)?;
 
         if source_images.is_empty() {
             return Ok(Graphic::Empty);
@@ -218,7 +206,7 @@ impl format_handlers::FormatHandler for FormatHandler {
             return Ok(source_images.remove(0).image.into());
         }
 
-        let mut animation = Animation::new(output_folder_path.to_owned())
+        let mut animation = Animation::new(output_dir_path.to_owned())
                                       .map_err(|e| e.into())?;
 
         // register source images
