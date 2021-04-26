@@ -19,7 +19,6 @@ use crate::{
     processors::{
         ConfigStatus,
         Data,
-        Error,
         packer::{
             CustomPacker,
             Packer
@@ -36,7 +35,11 @@ pub struct PackerProcessor {
 }
 
 impl Processor for PackerProcessor {
-    fn setup(&mut self, config: &mut Config) -> Result<ConfigStatus, Error> {
+    fn name(&self) -> &str {
+        "Packer"
+    }
+
+    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
 
         if config.packer.atlas_size == 0 {
@@ -47,10 +50,10 @@ impl Processor for PackerProcessor {
         // TODO  make a better way to select packer
         self.packer = Some(Box::new(CustomPacker::new()));
 
-        Ok(config_status)
+        config_status
     }
 
-    fn execute(&self, data: &mut Data) -> Result<(), Error> {
+    fn execute(&self, data: &mut Data) {
         log::info!("-> Packing images...");
 
         match &self.packer {
@@ -99,7 +102,7 @@ impl Processor for PackerProcessor {
                 );
 
                 for source_image in source_images {
-                    let image = image::open(&source_image.location).unwrap();
+                    let image = image::open(&source_image.path).unwrap();
                     image_buffer.copy_from(
                         &image.view(
                             source_image.source_region.x, 
@@ -125,22 +128,6 @@ impl Processor for PackerProcessor {
             },
             None => ()
         }
-
-        /*
-        // !!! REMOVE ME !!!
-        log::info!("Packer Result:");
-
-        for image in &data.graphic_output.images {
-            log::info!("{:?}", image);
-        }
-
-        for anim in &data.graphic_output.animations {
-            log::info!("{:?}", anim);
-        }
-        // !!! REMOVE ME !!!
-        */
-
-        Ok(())
     }
 }
 

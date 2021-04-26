@@ -9,9 +9,6 @@ pub use config_status::ConfigStatus;
 mod data;
 pub use data::Data;
 
-mod error;
-pub use error::Error;
-
 mod processor;
 pub use processor::Processor;
 

@@ -4,6 +4,7 @@ use std::{
         OpenOptions
     },
     io::{
+        self,
         BufReader,
         BufWriter,
         prelude::*
@@ -76,19 +77,22 @@ impl Config {
 
         BufReader::new(file)
                   .read_to_string(&mut contents)
-                  .map_err(LoadError::IO)?;
+                  .unwrap();
 
         toml::from_str(&contents)
              .map_err(LoadError::Deserialize)
     }
 
     pub fn load_from_path<P: AsRef<Path>>(filepath: P) -> Result<Config, LoadError> {
-        let file = OpenOptions::new()
-                               .read(true)
-                               .write(true)
-                               .append(false)
-                               .open(filepath)
-                               .map_err(LoadError::IO)?;
+        let file = match OpenOptions::new().read(true).write(true).append(false).open(&filepath) {
+            Ok(f) => Ok(f),
+            Err(e) => {
+                match e.kind() {
+                    io::ErrorKind::NotFound => Err(LoadError::FileNotFound(filepath.as_ref().to_owned())),
+                    _ => panic!(e)
+                }
+            }
+        }?;
 
         Self::load(&file)
     }
@@ -106,8 +110,7 @@ impl Config {
                              .map_err(SaveError::Serialize)?;
 
         let mut buffer = BufWriter::new(file);
-        buffer.write_all(toml_data.as_bytes())
-              .map_err(SaveError::IO)?;
+        buffer.write_all(toml_data.as_bytes()).unwrap();
 
         Ok(())
     }
@@ -118,7 +121,7 @@ impl Config {
                                .append(false)
                                .create(true)
                                .open(filepath)
-                               .map_err(SaveError::IO)?;
+                               .unwrap();
 
         self.save(&file)
     }

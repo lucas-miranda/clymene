@@ -2,7 +2,10 @@ use std::{
     convert::TryInto,
     ffi::OsString,
     fs,
-    path::PathBuf,
+    path::{
+        Path,
+        PathBuf,
+    },
     time::SystemTime
 };
 
@@ -38,7 +41,7 @@ pub struct CacheEntry {
 }
 
 impl CacheEntry {
-    pub fn retrieve_graphic(&self) -> Option<Graphic> {
+    pub fn retrieve_graphic<P: AsRef<Path>>(&self, source_path: P) -> Option<Graphic> {
         let mut source_images = Vec::new();
         let dir_iter;
 
@@ -101,7 +104,7 @@ impl CacheEntry {
                         }
                     }
 
-                    match Image::new(path, dimensions, source_region) {
+                    match Image::new(path, source_path.as_ref().to_owned(), dimensions, source_region) {
                         Ok(image) => source_images.push(SourceImage { image, frame_index }),
                         Err(_) => ()
                     }

@@ -14,10 +14,8 @@ use log::{
 
 use crate::{
     processors::{
-        config,
         ConfigStatus,
         Data,
-        Error,
         Processor
     },
     settings::Config
@@ -27,7 +25,11 @@ pub struct ConfigProcessor {
 }
 
 impl Processor for ConfigProcessor {
-    fn setup(&mut self, config: &mut Config) -> Result<ConfigStatus, Error> {
+    fn name(&self) -> &str {
+        "Config"
+    }
+
+    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
         let mut output_path = config.output_path.clone();
 
@@ -49,7 +51,7 @@ impl Processor for ConfigProcessor {
         match output_pathbuf.metadata() {
             Ok(metadata) => {
                 if !metadata.is_dir() {
-                    return Err(config::Error::InvalidOutputPath(output_pathbuf.display().to_string()).into());
+                    panic!("Expected a directory at output path '{}'.", output_pathbuf.display());
                 }
             },
             Err(io_error) => {
@@ -71,7 +73,7 @@ impl Processor for ConfigProcessor {
                         info!("{}  Output folder created!", "Raven".bold());
                     },
                     _ => {
-                        return Err(config::Error::IO(io_error).into());
+                        panic!(io_error);
                     }
                 }
             }
@@ -83,12 +85,11 @@ impl Processor for ConfigProcessor {
             config_status = ConfigStatus::Modified;
         }
 
-        Ok(config_status)
+        config_status
     }
 
-    fn execute(&self, _data: &mut Data) -> Result<(), Error> {
+    fn execute(&self, _data: &mut Data) {
         // there is nothing to do at this phase
-        Ok(())
     }
 }
 

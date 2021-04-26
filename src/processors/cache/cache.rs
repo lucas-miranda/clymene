@@ -8,6 +8,7 @@ use std::{
         OpenOptions
     },
     io::{
+        self,
         BufReader,
         BufWriter,
         Write
@@ -27,6 +28,7 @@ use serde::{
 use super::{
     CacheEntry,
     CacheMetadata,
+    CacheStatus,
     Error,
     LoadError,
     SaveError
@@ -63,7 +65,12 @@ impl Cache {
     pub fn load_from_path<P: AsRef<Path>>(filepath: P) -> Result<Self, LoadError> {
         match OpenOptions::new().read(true).open(&filepath) {
             Ok(file) => Self::load(&file),
-            Err(e) => Err(LoadError::IO(e))
+            Err(e) => {
+                match e.kind() {
+                    io::ErrorKind::NotFound => Err(LoadError::FileNotFound(filepath.as_ref().to_owned())),
+                    _ => panic!(e)
+                }
+            }
         }
     }
 
@@ -73,8 +80,7 @@ impl Cache {
         serde_json::to_writer(&mut buf_writer, &self)
                    .map_err(SaveError::Serialize)?;
 
-        buf_writer.flush()
-                  .map_err(SaveError::IO)?;
+        buf_writer.flush().unwrap();
 
         Ok(())
     }
@@ -85,17 +91,35 @@ impl Cache {
                                    .append(false)
                                    .create(true)
                                    .open(filepath)
-                                   .map_err(SaveError::IO)?;
+                                   .unwrap();
 
         self.save(&mut file)
     }
 
-    pub fn get<P: AsRef<Path> + Eq + Hash>(&self, location: P) -> Option<&RefCell<CacheEntry>> {
-        self.files.get(location.as_ref())
+    pub fn retrieve<'r, P: AsRef<Path> + Eq + Hash>(&'r self, location: P, source_metadata: &Metadata) -> CacheStatus<'r> {
+        let source_modtime = source_metadata.modified().unwrap();
+
+        match self.files.get(location.as_ref()) {
+            Some(cache_file) => {
+                let cache = cache_file.borrow();
+                if cache.modtime.eq(&source_modtime) {
+                    CacheStatus::Found(cache)
+                } else {
+                    CacheStatus::Outdated
+                }
+            },
+            None => CacheStatus::NotFound
+        }
     }
 
+    /*
+    pub fn get<P: AsRef<Path> + Eq + Hash>(&self, location: P, source_metadata: &Metadata) -> Option<&RefCell<CacheEntry>> {
+        self.files.get(location.as_ref())
+    }
+    */
+
     pub fn register<P: AsRef<Path> + Eq + Hash>(&mut self, location: P, metadata: &Metadata) -> Result<(), Error> {
-        let modtime = metadata.modified().map_err(Error::IO)?;
+        let modtime = metadata.modified().unwrap();
 
         self.files.insert(
             location.as_ref().to_owned(), 

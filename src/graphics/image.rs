@@ -24,9 +24,11 @@ pub struct Image {
     /// File name without extension.
     pub name: OsString,
 
-    /// Graphical file absolute path which generated this [`Image`].
-    /// It's always a path to a file at intermediate folder (cache).
-    pub location: PathBuf,
+    /// File location
+    pub path: PathBuf,
+
+    /// Source file path which yields this.
+    pub source_path: PathBuf,
 
     /// Original file dimensions.
     pub dimensions: Size<u32>,
@@ -36,20 +38,21 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new(location: PathBuf, dimensions: Size<u32>, source_region: Rectangle<u32>) -> Result<Self, Error> {
-        let metadata = location.metadata()?;
+    pub fn new(path: PathBuf, source_path: PathBuf, dimensions: Size<u32>, source_region: Rectangle<u32>) -> Result<Self, Error> {
+        let metadata = source_path.metadata().unwrap();
 
         if !metadata.is_file() {
-            return Err(Error::FileExpected);
+            return Err(Error::FileExpected(source_path.clone()));
         }
 
-        let name = location.file_stem()
-                           .ok_or(Error::FileExpected)?;
+        let name = source_path.file_stem()
+                              .ok_or(Error::FileExpected(source_path.clone()))?;
 
         Ok(Self {
             atlas_region: Rectangle::default(),
             name: name.to_owned(),
-            location,
+            path,
+            source_path,
             dimensions,
             source_region
         })

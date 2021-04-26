@@ -76,7 +76,7 @@ impl format_handlers::FormatHandler for FormatHandler {
     fn setup(&self, config: &mut Config) -> Result<ConfigStatus, Error> {
         let mut config_status = ConfigStatus::NotModified;
 
-        if let ConfigStatus::Modified = self.verify_aseprite_bin(config)? {
+        if let ConfigStatus::Modified = self.verify_aseprite_bin(config) {
             config_status = ConfigStatus::Modified;
         }
 
@@ -90,7 +90,7 @@ impl format_handlers::FormatHandler for FormatHandler {
         match source_file_path.metadata() {
             Ok(metadata) => {
                 if !metadata.is_file() {
-                    return Err(Error::FileExpected);
+                    return Err(Error::FileExpected(source_file_path.to_path_buf()));
                 }
 
                 // check magic number section
@@ -110,7 +110,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                 }
             },
             Err(e) => {
-                return Err(Error::IO(e));
+                panic!(e)
             }
         }
 
@@ -125,7 +125,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                     Err(Error::DirectoryExpected)
                 }
             },
-            Err(e) => Err(Error::IO(e))
+            Err(e) => panic!(e)
         }?;
 
         // extract every frame (excluding empty ones)
@@ -151,7 +151,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                 OsStr::new("--save-as"), frame_pathbuf.as_os_str()
             ])
             .output()
-            .map_err(Error::IO)?;
+            .unwrap();
 
         if !output.status.success() {
             return Err(Error::ExternalProgramFail(output.stderr));
@@ -183,7 +183,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                 OsStr::new("--trim") 
             ])
             .output()
-            .map_err(Error::IO)?;
+            .unwrap();
 
         if !output.status.success() {
             return Err(Error::ExternalProgramFail(output.stderr));
@@ -195,7 +195,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                                  .map_err(|e| e.into())?;
 
         // retrieve source images
-        let mut source_images = self.find_source_images(&output_dir_path, &aseprite_data.frames)?;
+        let mut source_images = self.find_source_images(&source_file_path, &output_dir_path, &aseprite_data.frames);
 
         if source_images.is_empty() {
             return Ok(Graphic::Empty);
@@ -206,7 +206,7 @@ impl format_handlers::FormatHandler for FormatHandler {
             return Ok(source_images.remove(0).image.into());
         }
 
-        let mut animation = Animation::new(output_dir_path.to_owned())
+        let mut animation = Animation::new(source_file_path.to_owned())
                                       .map_err(|e| e.into())?;
 
         // register source images
@@ -274,7 +274,7 @@ impl FormatHandler {
         }
     }
 
-    fn verify_aseprite_bin(&self, config: &mut Config) -> Result<ConfigStatus, Error> {
+    fn verify_aseprite_bin(&self, config: &mut Config) -> ConfigStatus {
         // confirm config.aseprite.bin_path holds a valid aseprite bin path
         let c = &mut config.image.aseprite;
 
@@ -283,12 +283,12 @@ impl FormatHandler {
                 Some(pathbuf) => {
                     if pathbuf == PathBuf::from(&c.bin_path) {
                         // doesn't need to do anything else
-                        return Ok(ConfigStatus::NotModified);
+                        return ConfigStatus::NotModified;
                     }
 
                     c.bin_path = pathbuf.display().to_string();
                     info!("Aseprite bin found at '{}'.", c.bin_path);
-                    return Ok(ConfigStatus::Modified);
+                    return ConfigStatus::Modified;
                 },
                 None => {
                     warn!("Can't find aseprite bin at '{}'.", c.bin_path);
@@ -322,7 +322,7 @@ impl FormatHandler {
                     error!("> Aseprite not found at entered path");
                 },
                 Err(e) => {
-                    return Err(Error::IO(e));
+                    panic!(e);
                 }
             };
 
@@ -332,7 +332,7 @@ impl FormatHandler {
         info!("|- Aseprite found!");
         c.bin_path = ase_filepath.display().to_string();
 
-        Ok(ConfigStatus::Modified)
+        ConfigStatus::Modified
     }
 
     fn find_aseprite_bin_path(&self, input: &str) -> Option<PathBuf> {
@@ -385,11 +385,11 @@ impl FormatHandler {
         }
     }
 
-    fn find_source_images(&self, output_folder_path: &Path, frames_data: &[FrameData]) -> Result<Vec<SourceImage>, Error> {
+    fn find_source_images(&self, source_file_path: &Path, images_folder_path: &Path, frames_data: &[FrameData]) -> Vec<SourceImage> {
         let mut images = Vec::new();
 
-        for dir_entry in fs::read_dir(output_folder_path).map_err(Error::IO)? {
-            let entry = dir_entry.map_err(Error::IO)?;
+        for dir_entry in fs::read_dir(images_folder_path).unwrap() {
+            let entry = dir_entry.unwrap();
             let path = entry.path();
 
             if let Ok(metadata) = entry.metadata() {
@@ -444,13 +444,13 @@ impl FormatHandler {
                     }
                 }
 
-                if let Ok(image) = Image::new(path, dimensions, source_region) {
+                if let Ok(image) = Image::new(path, source_file_path.to_owned(), dimensions, source_region) {
                     images.push(SourceImage { image, frame_index });
                 }
             }
         }
 
-        Ok(images)
+        images
     }
 }
 

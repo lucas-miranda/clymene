@@ -24,7 +24,6 @@ use crate::{
         },
         ConfigStatus,
         Data,
-        Error,
         Processor
     },
     settings::Config
@@ -34,22 +33,28 @@ pub struct CacheImporterProcessor {
 }
 
 impl Processor for CacheImporterProcessor {
-    fn setup(&mut self, config: &mut Config) -> Result<ConfigStatus, Error> {
+    fn name(&self) -> &str {
+        "Cache Importer"
+    }
+
+    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
 
         // handle cache output directory path
         let cache_dir_pathbuf = if config.cache.path.is_empty() {
             config_status = ConfigStatus::Modified;
-            Self::get_default_cache_path()
-                 .ok_or_else(|| cache::Error::InvalidOutputPath(config.cache.path.clone()))
+            match Self::get_default_cache_path() {
+                Some(default_cache_path) => default_cache_path,
+                None => panic!("Failed to retrieve default cache path.")
+            }
         } else {
-            Ok(PathBuf::from(&config.cache.path))
-        }.map_err(Error::CacheProcessor)?;
+            PathBuf::from(&config.cache.path)
+        };
 
         match cache_dir_pathbuf.metadata() {
             Ok(metadata) => {
                 if !metadata.is_dir() {
-                    return Err(cache::Error::InvalidOutputPath(cache_dir_pathbuf.display().to_string()).into());
+                    panic!("Cache path '{}' isn't a valid directory.", cache_dir_pathbuf.display());
                 }
             },
             Err(io_error) => {
@@ -71,7 +76,7 @@ impl Processor for CacheImporterProcessor {
                         info!("{}  Cache output directory created!", "Raven".bold());
                     },
                     _ => {
-                        return Err(cache::Error::IO(io_error).into());
+                        panic!("When trying to access directory '{}' metadata: {}", cache_dir_pathbuf.display(), io_error);
                     }
                 }
             }
@@ -132,7 +137,7 @@ impl Processor for CacheImporterProcessor {
             }
 
             if tries <= 0 {
-                return Err(cache::Error::CantGenerateValidIdentifier.into());
+                panic!("Exceeded max tries. Can't generate a valid identifier.");
             }
 
             config_status = ConfigStatus::Modified;
@@ -145,35 +150,24 @@ impl Processor for CacheImporterProcessor {
         match cache_instance_path.metadata() {
             Ok(metadata) => {
                 if !metadata.is_dir() {
-                    Err(Error::CacheProcessor(
-                        cache::Error::InvalidOutputPath(
-                            cache_instance_path.display().to_string()
-                        )
-                    ))
-                } else {
-                    Ok(())
+                    panic!("Cache instance path '{}' isn't a valid directory.", cache_instance_path.display());
                 }
             },
             Err(e) => {
                 if let io::ErrorKind::NotFound = e.kind() {
-                    fs::create_dir(&cache_instance_path)
-                       .map_err(|e| Error::CacheProcessor(cache::Error::IO(e)))
+                    fs::create_dir(&cache_instance_path).unwrap();
                 } else {
-                    Err(Error::CacheProcessor(
-                        cache::Error::InvalidOutputPath(
-                            cache_instance_path.display().to_string()
-                        )
-                    ))
+                    panic!("Failed to access cache instance directory metadata at '{}': {}", cache_instance_path.display(), e);
                 }
             }
-        }?;
+        }
 
         config.cache.identifier = identifier;
 
-        Ok(config_status)
+        config_status
     }
 
-    fn execute(&self, data: &mut Data) -> Result<(), Error> {
+    fn execute(&self, data: &mut Data) {
         info!("> Checking cache version...");
 
         let cache_dir_pathbuf = data.config.cache.root_path();
@@ -185,19 +179,14 @@ impl Processor for CacheImporterProcessor {
             Err(e) => {
                 warn!("  Cache file not found at expected path.");
                 match &e {
-                    cache::LoadError::IO(io_error) => {
-                        match io_error.kind() {
-                            io::ErrorKind::NotFound => {
-                                info!("  Creating a new one...");
-                                let c = Cache::new();
+                    cache::LoadError::FileNotFound(path) => {
+                        info!("  Creating a new one...");
+                        let c = Cache::new();
 
-                                c.save_to_path(&cache_pathbuf)
-                                 .unwrap();
+                        c.save_to_path(&path)
+                         .unwrap();
 
-                                c
-                            },
-                            _ => panic!(e)
-                        }
+                        c
                     }
                     _ => panic!(e)
                 }
@@ -212,10 +201,10 @@ impl Processor for CacheImporterProcessor {
                 info!("|- Ok!");
 
                 // atlas subdir
-                self.create_subdir(&cache_dir_pathbuf, "atlas")?;
+                self.create_subdir(&cache_dir_pathbuf, "atlas").unwrap();
 
                 // images subdir
-                self.create_subdir(&cache_dir_pathbuf, "images")?;
+                self.create_subdir(&cache_dir_pathbuf, "images").unwrap();
 
                 // remove invalid cache's entries
                 // checking if directory entry still exists
@@ -257,8 +246,7 @@ impl Processor for CacheImporterProcessor {
 
                         if cache_pathbuf.is_dir() {
                             // remove directory
-                            fs::remove_dir_all(&cache_pathbuf)
-                               .map_err(|e| Error::CacheProcessor(cache::Error::IO(e)))?;
+                            fs::remove_dir_all(&cache_pathbuf).unwrap();
 
                             // wait until is complete removed
                             while cache_pathbuf.is_dir() {
@@ -268,8 +256,7 @@ impl Processor for CacheImporterProcessor {
                         }
 
                         // create cache instance root directory
-                        fs::create_dir_all(&cache_pathbuf)
-                           .map_err(|e| Error::CacheProcessor(cache::Error::IO(e)))?;
+                        fs::create_dir_all(&cache_pathbuf).unwrap();
 
                         while !cache_pathbuf.is_dir() {
                             std::thread::sleep(std::time::Duration::from_millis(10u64));
@@ -277,27 +264,24 @@ impl Processor for CacheImporterProcessor {
                         }
 
                         // atlas subdir
-                        self.create_subdir(&cache_pathbuf, "atlas")?;
+                        self.create_subdir(&cache_pathbuf, "atlas").unwrap();
 
                         // images subdir
-                        self.create_subdir(&cache_pathbuf, "images")?;
+                        self.create_subdir(&cache_pathbuf, "images").unwrap();
 
                         info!("> Initializing cache file");
                         cache = Cache::new();
-                        cache.save_to_path(&cache_pathbuf)
-                             .map_err(|e| Error::CacheProcessor(cache::Error::Save(e)))?;
+                        cache.save_to_path(&cache_pathbuf).unwrap();
 
                         info!("|- Created at '{}'", cache_pathbuf.display());
                         info!("|-- Cache instance created!");
                     },
-                    _ => return Err(Error::CacheProcessor(e))
+                    _ => panic!(e)
                 }
             }
         }
 
         data.cache.replace(cache);
-
-        Ok(())
     }
 }
 
@@ -332,7 +316,7 @@ impl CacheImporterProcessor {
         }
     }
 
-    fn create_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> Result<PathBuf, Error> {
+    fn create_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> Result<PathBuf, cache::Error> {
         let pathbuf = cache_pathbuf.join(dir_name);
 
         match pathbuf.metadata() {
@@ -340,19 +324,18 @@ impl CacheImporterProcessor {
                 if metadata.is_dir() {
                     Ok(())
                 } else {
-                    Err(Error::CacheProcessor(cache::Error::DirectoryExpected(pathbuf.clone())))
+                    Err(cache::Error::DirectoryExpected(pathbuf.clone()))
                 }
             },
             Err(e) => {
                 match e.kind() {
                     io::ErrorKind::NotFound => Ok(()),
-                    _ => Err(Error::CacheProcessor(cache::Error::IO(e)))
+                    _ => panic!(e)
                 }
             }
         }?;
 
-        fs::create_dir_all(&pathbuf)
-           .map_err(|e| Error::CacheProcessor(cache::Error::IO(e)))?;
+        fs::create_dir_all(&pathbuf).unwrap();
 
         while !pathbuf.is_dir() {
             std::thread::sleep(std::time::Duration::from_millis(10u64));

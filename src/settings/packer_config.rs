@@ -3,8 +3,6 @@ use serde::{
     Serialize 
 };
 
-const DEFAULT_ATLAS_NAME: &str = "atlas";
-
 #[derive(Serialize, Deserialize)]
 pub struct PackerConfig {
     #[serde(default)]

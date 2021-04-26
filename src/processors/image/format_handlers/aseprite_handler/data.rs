@@ -1,10 +1,7 @@
 use std::{
     fs::OpenOptions,
     path::Path,
-    io::{ 
-        self, 
-        BufReader 
-    }
+    io::BufReader
 };
 
 use serde::Deserialize;
@@ -96,7 +93,7 @@ impl Data {
         let data_file = OpenOptions::new()
                                     .read(true)
                                     .open(path)
-                                    .map_err(FormatHandlerError::IO)?;
+                                    .unwrap();
 
         let buf_reader = BufReader::new(data_file);
         let aseprite_animation_data: Self = serde_json::from_reader(buf_reader)

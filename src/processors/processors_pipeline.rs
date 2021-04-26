@@ -5,7 +5,6 @@ use crate::{
     processors::{
         ConfigStatus,
         Data,
-        Error,
         Processor
     },
     settings::Config
@@ -22,26 +21,21 @@ impl<'a> ProcessorsPipeline<'a> {
         }
     }
 
-    pub fn start(&mut self, config: &mut Config, args: &Args) -> Result<(), Error> {
+    pub fn start(&mut self, config: &mut Config, args: &Args) {
         let mut config_status = ConfigStatus::NotModified;
 
         for processor in self.processors.iter_mut() {
-            match processor.setup(config) {
-                Ok(processor_config_status) => {
-                    match &processor_config_status {
-                        ConfigStatus::NotModified => (),
-                        ConfigStatus::Modified => {
-                            // save processor config status for later use
-                            // if it's modified
-                            match &config_status {
-                                ConfigStatus::NotModified => config_status = ConfigStatus::Modified,
-                                ConfigStatus::Modified => ()
-                            }
-                        }
+            match &processor.setup(config) {
+                ConfigStatus::NotModified => (),
+                ConfigStatus::Modified => {
+                    // save processor config status for later use
+                    // if it's modified
+                    match &config_status {
+                        ConfigStatus::NotModified => config_status = ConfigStatus::Modified,
+                        ConfigStatus::Modified => ()
                     }
-                },
-                Err(e) => return Err(e)
-            };
+                }
+            }
         }
 
         if let ConfigStatus::Modified = config_status {
@@ -53,10 +47,8 @@ impl<'a> ProcessorsPipeline<'a> {
         let mut data = Data::new(config);
 
         for processor in &self.processors {
-            processor.execute(&mut data)?;
+            processor.execute(&mut data);
         }
-
-        Ok(())
     }
 
     pub fn enqueue<P: Processor + 'a>(&mut self, processor: P) -> &mut Self {

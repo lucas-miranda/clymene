@@ -16,9 +16,9 @@ pub use data_config::DataConfig;
 mod config;
 pub use config::Config;
 
-mod error;
-pub use error::{
-    Error,
-    LoadError,
-    SaveError
-};
+mod load_error;
+pub use load_error::LoadError;
+
+mod save_error;
+pub use save_error::SaveError;
+

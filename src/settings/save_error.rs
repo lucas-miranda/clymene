@@ -5,8 +5,7 @@ use std::{
         Debug,
         Display,
         Formatter
-    },
-    io
+    }
 };
 
 #[derive(Debug)]

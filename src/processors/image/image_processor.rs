@@ -19,13 +19,10 @@ use colored::Colorize;
 use crate::{
     graphics::Graphic,
     processors::{
-        image::{
-            self,
-            format_handlers::FormatHandler
-        },
+        cache::CacheStatus,
         ConfigStatus,
         Data,
-        Error,
+        image::format_handlers::FormatHandler,
         Processor
     },
     settings::Config,
@@ -37,31 +34,25 @@ pub struct ImageProcessor<'a> {
 }
 
 impl<'a> Processor for ImageProcessor<'a> {
-    fn setup(&mut self, config: &mut Config) -> Result<ConfigStatus, Error> {
+    fn name(&self) -> &str {
+        "Image"
+    }
+
+    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let input_pathbuf = PathBuf::from(&config.image.input_path);
 
         match input_pathbuf.metadata() {
             Ok(metadata) => {
                 if !metadata.is_dir() {
-                    return Err(
-                        image::Error::InvalidInputPath(
-                            input_pathbuf.display().to_string()
-                        )
-                        .into()
-                    );
+                    panic!("Expected a valid directory at input path '{}'.", input_pathbuf.display());
                 }
             },
             Err(e) => {
                 if let io::ErrorKind::NotFound = e.kind() {
-                    return Err(
-                        image::Error::InvalidInputPath(
-                            input_pathbuf.display().to_string()
-                        )
-                        .into()
-                    );
+                    panic!("Directory not found at input path '{}'.", input_pathbuf.display());
                 }
 
-                return Err(image::Error::IO(e).into());
+                panic!(e);
             }
         }
 
@@ -77,12 +68,9 @@ impl<'a> Processor for ImageProcessor<'a> {
                 if let io::ErrorKind::NotFound = e.kind() {
                     info!("Trying to create '{}'...", output_path.display());
 
-                    fs::create_dir(&output_path)
-                       .map_err(|_e| {
-                           image::Error::InvalidOutputPath(output_path.display().to_string()).into()
-                       })?;
+                    fs::create_dir(&output_path).unwrap();
                 } else {
-                    return Err(image::Error::IO(e).into());
+                    panic!(e);
                 }
             }
         }
@@ -106,16 +94,15 @@ impl<'a> Processor for ImageProcessor<'a> {
                 },
                 Err(e) => {
                     info!("  {}  {}", handler.name(), "Fail".red());
-                    let image_err: image::Error = e.into();
-                    return Err(image_err.into());
+                    trace!("{}: {}", "Error".bold().red(), e);
                 }
             }
         }
 
-        Ok(config_status)
+        config_status
     }
 
-    fn execute(&self, data: &mut Data) -> Result<(), Error> {
+    fn execute(&self, data: &mut Data) {
         trace!("| Source: {}", data.config.image.input_path);
         trace!("| Target: {}", data.config.image.output_path.display());
 
@@ -155,8 +142,7 @@ impl<'a> Processor for ImageProcessor<'a> {
 
                 source_files.push(path_buf.as_path().to_owned());
             }
-        ).map_err(|e| image::Error::IO(e).into())?;
-
+        ).unwrap();
 
         // process every format and collect it's graphic data (as image or animation)
         let output = &mut data.graphic_output;
@@ -170,6 +156,7 @@ impl<'a> Processor for ImageProcessor<'a> {
 
             for source_file in &source_files {
                 let location;
+                let source_metadata = source_file.metadata().unwrap();
 
                 match source_file.strip_prefix(&source_path) {
                     Ok(path) => {
@@ -185,24 +172,32 @@ impl<'a> Processor for ImageProcessor<'a> {
                 // verify cache entry
                 match &data.cache {
                     Some(cache) => {
-                        if let Some(cache_entry) = cache.get(&location) {
-                            trace!("{}", "Cache Hit".green());
+                        match cache.retrieve(&location, &source_metadata) {
+                            CacheStatus::Found(cache_entry) => {
+                                trace!("{}", "Cache Found".green());
 
-                            if let Some(graphic) = cache_entry.borrow().retrieve_graphic() {
-                                info!("+ {}", location.display().to_string().green());
+                                if let Some(graphic) = cache_entry.retrieve_graphic(&source_file) {
+                                    info!("+ {}", location.display().to_string().green());
 
-                                match graphic {
-                                    Graphic::Empty => (),
-                                    _ => output.graphics.push(graphic)
+                                    match graphic {
+                                        Graphic::Empty => (),
+                                        _ => output.graphics.push(graphic)
+                                    }
+
+                                    continue;
                                 }
-
-                                continue;
+                            },
+                            CacheStatus::NotFound => {
+                                trace!("{}", "Cache Not Found".red());
+                            },
+                            CacheStatus::Outdated => {
+                                trace!("{}", "Cache Outdated".yellow());
                             }
-                        } else {
-                            trace!("{}", "Cache Miss".red());
                         }
                     },
-                    None => return Err(Error::ImageProcessor(image::Error::ExpectingAccessToCache))
+                    None => {
+                        panic!("Can't access cache. Isn't at valid state.");
+                    }
                 }
 
                 // prepare output path
@@ -219,34 +214,29 @@ impl<'a> Processor for ImageProcessor<'a> {
                 // ensure output directory, and it's intermediate ones, exists
                 match output_path.metadata() {
                     Ok(metadata) => {
-                        if metadata.is_dir() {
-                            // ensure it's empty
-                            if !util::fs::is_dir_empty(&output_path).unwrap() {
-                                fs::remove_dir_all(&output_path).unwrap();
+                        if !metadata.is_dir() {
+                            panic!("Output path '{}' already exists and isn't a directory.", output_path.display());
+                        }
 
-                                let duration = std::time::Duration::from_millis(10u64);
-                                while output_path.exists() {
-                                    std::thread::sleep(duration);
-                                }
+                        // ensure it's empty
+                        if !util::fs::is_dir_empty(&output_path).unwrap() {
+                            fs::remove_dir_all(&output_path).unwrap();
 
-                                fs::create_dir(&output_path).unwrap();
+                            let duration = std::time::Duration::from_millis(10u64);
+                            while output_path.exists() {
+                                std::thread::sleep(duration);
                             }
 
-                            Ok(())
-                        } else {
-                            Err(image::Error::InvalidOutputPath(output_path.display().to_string()))
+                            fs::create_dir(&output_path).unwrap();
                         }
                     },
                     Err(e) => {
                         match e.kind() {
-                            io::ErrorKind::NotFound => {
-                                fs::create_dir_all(&output_path)
-                                   .map_err(image::Error::IO)
-                            },
-                            _ => Err(image::Error::IO(e))
+                            io::ErrorKind::NotFound => fs::create_dir_all(&output_path).unwrap(),
+                            _ => panic!(e)
                         }
                     }
-                }.map_err(Error::ImageProcessor)?;
+                }
 
                 // process source file
                 match format_handler.process(source_file, &output_path, &data.config) {
@@ -269,8 +259,6 @@ impl<'a> Processor for ImageProcessor<'a> {
                 }
             }
         }
-
-        Ok(())
     }
 }
 

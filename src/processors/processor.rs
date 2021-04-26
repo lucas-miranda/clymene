@@ -1,13 +1,13 @@
 use crate::{
     processors::{
         ConfigStatus,
-        Data,
-        Error
+        Data
     },
     settings::Config
 };
 
 pub trait Processor {
-    fn setup(&mut self, config: &mut Config) -> Result<ConfigStatus, Error>;
-    fn execute(&self, data: &mut Data) -> Result<(), Error>;
+    fn name(&self) -> &str;
+    fn setup(&mut self, config: &mut Config) -> ConfigStatus;
+    fn execute(&self, data: &mut Data);
 }

@@ -44,7 +44,7 @@ impl Packer for CustomPacker {
 
                 match selected_space {
                     Some(space) => space,
-                    None => panic!("Can't find a valid location for source image '{}'.", image.location.display())
+                    None => panic!("Can't find a valid location for source image '{}'.", image.source_path.display())
                 }
             };
 
