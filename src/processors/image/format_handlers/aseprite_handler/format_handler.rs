@@ -195,7 +195,7 @@ impl format_handlers::FormatHandler for FormatHandler {
         // process generated images and data
 
         let aseprite_data = Data::from_file(&data_pathbuf)
-                                 .map_err(|e| e.into())?;
+                                 .map_err::<Error, _>(|e| e.into())?;
 
         // retrieve source images
         let mut graphic_sources_set = self.find_graphic_sources(&output_dir_path, &aseprite_data.frames);
@@ -217,11 +217,10 @@ impl format_handlers::FormatHandler for FormatHandler {
         }
 
         let mut animation = Animation::new(source_file_path.to_owned())
-                                      .map_err(|e| e.into())?;
+                                      .map_err::<Error, _>(|e| e.into())?;
 
         // register source images
-        let mut frame_index = 0usize;
-        for source_data in graphic_sources_set.sources.drain(..) {
+        for (frame_index, source_data) in graphic_sources_set.sources.drain(..).enumerate() {
             match aseprite_data.frames.get(frame_index) {
                 Some(frame_data) => {
                     animation.push_frame(
@@ -237,8 +236,6 @@ impl format_handlers::FormatHandler for FormatHandler {
                 },
                 None => panic!("Expected frame {} not found. At aseprite data file '{}'.", frame_index, data_pathbuf.display())
             }
-
-            frame_index += 1;
         }
 
         // register tracks
@@ -374,14 +371,9 @@ impl FormatHandler {
                     aseprite_executable_name.eq(&e.file_name().to_str().unwrap().to_lowercase())
                 }
             ) {
-                Ok(entry) => {
-                    match entry {
-                        Some(found_entry) => Some(found_entry.path()),
-                        None => None
-                    }
-                },
+                Ok(entry) => entry.map(|found_entry| found_entry.path()),
                 Err(_) => None
-            }
+                }
         } else {
             None
         }
@@ -449,7 +441,7 @@ impl FormatHandler {
                         }
                     );
 
-                    if let None = data_set.dimensions {
+                    if data_set.dimensions.is_none() {
                         if let Some(frame_dimensions) = Size::with(frame_data.source_size.w, frame_data.source_size.h) {
                             data_set.dimensions = Some(frame_dimensions);
                         }

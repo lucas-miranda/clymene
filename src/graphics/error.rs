@@ -32,9 +32,9 @@ impl Display for Error {
     }
 }
 
-impl Into<format_handlers::Error> for Error {
-    fn into(self) -> format_handlers::Error {
-        match self {
+impl From<Error> for format_handlers::Error {
+    fn from(error: Error) -> Self {
+        match error {
             Error::FileExpected(path) => format_handlers::Error::FileExpected(path)
         }
     }

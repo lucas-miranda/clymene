@@ -67,12 +67,11 @@ impl Display for LoadError {
     }
 }
 
-impl Into<Error> for LoadError {
-    fn into(self) -> Error {
-        Error::Load(self)
+impl From<LoadError> for Error {
+    fn from(error: LoadError) -> Self {
+        Error::Load(error)
     }
 }
-
 
 
 #[derive(Debug)]
@@ -98,8 +97,8 @@ impl Display for SaveError {
     }
 }
 
-impl Into<Error> for SaveError {
-    fn into(self) -> Error {
-        Error::Save(self)
+impl From<SaveError> for Error {
+    fn from(error: SaveError) -> Self {
+        Error::Save(error)
     }
 }

@@ -13,7 +13,7 @@ pub struct State<'a> {
 }
 
 impl<'a> State<'a> {
-    pub fn new<'c>(config: &'c mut Config) -> State<'c> {
+    pub fn new(config: &mut Config) -> State<'_> {
         State {
             config,
             cache: None,

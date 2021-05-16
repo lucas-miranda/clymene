@@ -8,11 +8,11 @@ use std::{
 };
 
 pub fn is_dir_empty<P: AsRef<Path>>(dir: P) -> io::Result<bool> {
-    for _dir_entry in fs::read_dir(dir)? {
+    if fs::read_dir(dir)?.next().is_some() {
         return Ok(false);
     }
 
-    return Ok(true);
+    Ok(true)
 }
 
 pub fn for_every_entry<P: AsRef<Path>, F: FnMut(&DirEntry)>(dir: P, callback: &mut F) -> io::Result<()> {
@@ -65,9 +65,8 @@ pub fn find<P: AsRef<Path>, F: FnMut(&DirEntry) -> bool>(dir: P, filter: &mut F)
 
         match find(&path, filter) {
             Ok(entry) => {
-                match entry {
-                    Some(found_entry) => return Ok(Some(found_entry)),
-                    None => ()
+                if let Some(found_entry) = entry {
+                    return Ok(Some(found_entry));
                 }
             },
             Err(e) => return Err(e)

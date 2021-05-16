@@ -29,8 +29,8 @@ impl Display for FormatHandlerError {
     }
 }
 
-impl Into<super::Error> for FormatHandlerError {
-    fn into(self) -> super::Error {
-        super::Error::FormatHandlerFailed(self)
+impl From<FormatHandlerError> for super::Error {
+    fn from(error: FormatHandlerError) -> Self {
+        super::Error::FormatHandlerFailed(error)
     }
 }

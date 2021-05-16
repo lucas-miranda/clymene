@@ -13,7 +13,7 @@ impl MetaData {
     pub fn new() -> Self {
         Self {
             app: String::from("https://github.com/lucas-miranda/raven"),
-            version: String::from(option_env!("CARGO_PKG_VERSION").unwrap_or("unknown").to_owned())
+            version: option_env!("CARGO_PKG_VERSION").unwrap_or("unknown").to_owned()
         }
     }
 }

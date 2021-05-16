@@ -52,9 +52,8 @@ impl Display for Error {
     }
 }
 
-impl Into<image::Error> for Error {
-    fn into(self) -> image::Error {
-        image::Error::FormatHandler(self)
+impl From<Error> for image::Error {
+    fn from(error: Error) -> Self {
+        image::Error::FormatHandler(error)
     }
 }
-

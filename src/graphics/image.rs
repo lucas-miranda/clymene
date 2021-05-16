@@ -29,11 +29,11 @@ impl Image {
         let metadata = source_path.metadata().unwrap();
 
         if !metadata.is_file() {
-            return Err(Error::FileExpected(source_path.clone()));
+            return Err(Error::FileExpected(source_path));
         }
 
         let source_name = source_path.file_stem()
-                                     .ok_or(Error::FileExpected(source_path.clone()))?;
+                                     .ok_or_else(|| Error::FileExpected(source_path.clone()))?;
 
         Ok(Self {
             source_name: source_name.to_owned(),
@@ -50,11 +50,11 @@ impl Image {
         let metadata = source_path.metadata().unwrap();
 
         if !metadata.is_file() {
-            return Err(Error::FileExpected(source_path.clone()));
+            return Err(Error::FileExpected(source_path));
         }
 
         let source_name = source_path.file_stem()
-                                     .ok_or(Error::FileExpected(source_path.clone()))?;
+                                     .ok_or_else(|| Error::FileExpected(source_path.clone()))?;
 
         Ok(Self {
             source_name: source_name.to_owned(),
@@ -64,8 +64,8 @@ impl Image {
     }
 }
 
-impl Into<Graphic> for Image {
-    fn into(self) -> Graphic {
-        Graphic::Image(self)
+impl From<Image> for Graphic {
+    fn from(image: Image) -> Self {
+        Graphic::Image(image)
     }
 }

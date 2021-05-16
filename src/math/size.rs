@@ -48,9 +48,9 @@ impl<T: Unsigned + NumCast + PartialOrd + Copy> Size<T> {
     }
 }
 
-impl<T: Unsigned + NumCast + PartialOrd + Copy> Into<Rectangle<T>> for Size<T> {
-    fn into(self) -> Rectangle<T> {
-        Rectangle::new(zero::<T>(), zero::<T>(), self.width, self.height)
+impl<T: Unsigned + NumCast + PartialOrd + Copy> From<Size<T>> for Rectangle<T> {
+    fn from(size: Size<T>) -> Self {
+        Rectangle::new(zero::<T>(), zero::<T>(), size.width, size.height)
     }
 }
 

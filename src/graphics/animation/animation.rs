@@ -60,8 +60,8 @@ impl Animation {
     }
 }
 
-impl Into<Graphic> for Animation {
-    fn into(self) -> Graphic {
-        Graphic::Animation(self)
+impl From<Animation> for Graphic {
+    fn from(animation: Animation) -> Self {
+        Graphic::Animation(animation)
     }
 }

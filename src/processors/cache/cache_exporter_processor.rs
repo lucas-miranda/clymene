@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     fs,
     io,
     path::Path
@@ -99,12 +100,10 @@ impl Processor for CacheExporterProcessor {
                                         let from = *index_range_start.expect("Undefined range start.");
                                         let to = *index_range_end.expect("Undefined range end.");
 
-                                        if to > from {
-                                            indices.push(FrameIndicesData::Range { from, to });
-                                        } else if to == from {
-                                            indices.push(FrameIndicesData::Value(to));
-                                        } else {
-                                            panic!("Malformed indices array. From: {}, To: {}", from, to)
+                                        match to.cmp(&from) {
+                                            Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
+                                            Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
+                                            _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
                                         }
 
                                         index_range_start = Some(index);
@@ -123,12 +122,10 @@ impl Processor for CacheExporterProcessor {
                             let from = *from;
                             let to = *index_range_end.expect("Undefined range end.");
 
-                            if to > from {
-                                indices.push(FrameIndicesData::Range { from, to });
-                            } else if from == to {
-                                indices.push(FrameIndicesData::Value(to));
-                            } else {
-                                panic!("Malformed indices array. From: {}, To: {}", from, to)
+                            match to.cmp(&from) {
+                                Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
+                                Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
+                                _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
                             }
                         }
 

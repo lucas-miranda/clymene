@@ -310,10 +310,8 @@ impl CacheImporterProcessor {
     }
 
     fn get_default_cache_path() -> Option<PathBuf> {
-        match ProjectDirs::from("io", "Raven", "Raven") {
-            Some(project_dirs) => Some(PathBuf::from(project_dirs.cache_dir())),
-            None => None
-        }
+        ProjectDirs::from("io", "Raven", "Raven")
+                    .map(|project_dirs| PathBuf::from(project_dirs.cache_dir()))
     }
 
     fn create_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> Result<PathBuf, cache::Error> {
