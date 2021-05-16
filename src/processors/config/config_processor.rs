@@ -73,7 +73,7 @@ impl Processor for ConfigProcessor {
                         info!("{}  Output folder created!", "Raven".bold());
                     },
                     _ => {
-                        panic!(io_error);
+                        panic!("{}", io_error);
                     }
                 }
             }

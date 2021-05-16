@@ -80,7 +80,7 @@ impl Cache {
             Err(e) => {
                 match e.kind() {
                     io::ErrorKind::NotFound => Err(LoadError::FileNotFound(filepath.as_ref().to_owned())),
-                    _ => panic!(e)
+                    _ => panic!("{}", e)
                 }
             }
         }

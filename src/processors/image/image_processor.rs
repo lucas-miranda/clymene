@@ -52,7 +52,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                     panic!("Directory not found at input path '{}'.", input_pathbuf.display());
                 }
 
-                panic!(e);
+                panic!("{}", e);
             }
         }
 
@@ -70,7 +70,7 @@ impl<'a> Processor for ImageProcessor<'a> {
 
                     fs::create_dir(&output_path).unwrap();
                 } else {
-                    panic!(e);
+                    panic!("{}", e);
                 }
             }
         }
@@ -233,7 +233,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                     Err(e) => {
                         match e.kind() {
                             io::ErrorKind::NotFound => fs::create_dir_all(&output_path).unwrap(),
-                            _ => panic!(e)
+                            _ => panic!("{}", e)
                         }
                     }
                 }

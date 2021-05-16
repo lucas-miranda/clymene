@@ -113,7 +113,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                 }
             },
             Err(e) => {
-                panic!(e)
+                panic!("{}", e)
             }
         }
 
@@ -128,7 +128,7 @@ impl format_handlers::FormatHandler for FormatHandler {
                     Err(Error::DirectoryExpected)
                 }
             },
-            Err(e) => panic!(e)
+            Err(e) => panic!("{}", e)
         }?;
 
         // extract every frame (excluding empty ones)
@@ -324,7 +324,7 @@ impl FormatHandler {
                     error!("> Aseprite not found at entered path");
                 },
                 Err(e) => {
-                    panic!(e);
+                    panic!("{}", e);
                 }
             };
 

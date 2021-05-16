@@ -188,7 +188,7 @@ impl Processor for CacheImporterProcessor {
 
                         c
                     }
-                    _ => panic!(e)
+                    _ => panic!("{}", e)
                 }
             }
         };
@@ -276,7 +276,7 @@ impl Processor for CacheImporterProcessor {
                         info!("|- Created at '{}'", cache_pathbuf.display());
                         info!("|-- Cache instance created!");
                     },
-                    _ => panic!(e)
+                    _ => panic!("{}", e)
                 }
             }
         }
@@ -330,7 +330,7 @@ impl CacheImporterProcessor {
             Err(e) => {
                 match e.kind() {
                     io::ErrorKind::NotFound => Ok(()),
-                    _ => panic!(e)
+                    _ => panic!("{}", e)
                 }
             }
         }?;

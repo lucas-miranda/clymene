@@ -88,7 +88,7 @@ impl Processor for PackerProcessor {
                             io::ErrorKind::NotFound => {
                                 fs::create_dir(&atlas_folder_path).unwrap();
                             },
-                            _ => panic!(e)
+                            _ => panic!("{}", e)
                         }
                     }
                 }
