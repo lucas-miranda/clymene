@@ -15,8 +15,8 @@ use log::{
 use crate::{
     processors::{
         ConfigStatus,
-        Data,
-        Processor
+        Processor,
+        State
     },
     settings::Config
 };
@@ -88,7 +88,7 @@ impl Processor for ConfigProcessor {
         config_status
     }
 
-    fn execute(&self, _data: &mut Data) {
+    fn execute(&self, _state: &mut State) {
         // there is nothing to do at this phase
     }
 }

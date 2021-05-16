@@ -6,15 +6,15 @@ use crate::{
     settings::Config
 };
 
-pub struct Data<'a> {
+pub struct State<'a> {
     pub config: &'a mut Config,
     pub cache: Option<Cache>,
     pub graphic_output: GraphicOutput
 }
 
-impl<'a> Data<'a> {
-    pub fn new<'c>(config: &'c mut Config) -> Data<'c> {
-        Data {
+impl<'a> State<'a> {
+    pub fn new<'c>(config: &'c mut Config) -> State<'c> {
+        State {
             config,
             cache: None,
             graphic_output: GraphicOutput::new()

@@ -8,7 +8,7 @@ use std::{
 };
 
 pub fn is_dir_empty<P: AsRef<Path>>(dir: P) -> io::Result<bool> {
-    for dir_entry in fs::read_dir(dir)? {
+    for _dir_entry in fs::read_dir(dir)? {
         return Ok(false);
     }
 

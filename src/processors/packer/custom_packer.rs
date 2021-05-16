@@ -1,8 +1,7 @@
-//use std::rc::Rc;
 use std::cmp::Ordering;
 
 use crate::{
-    graphics::Image,
+    graphics::GraphicSource,
     math::{
         Rectangle,
         Size,
@@ -15,27 +14,27 @@ pub struct CustomPacker {
 }
 
 impl Packer for CustomPacker {
-    fn execute(&self, atlas_min_size: Size<u32>, source_images: &mut Vec<&mut Image>) -> Option<()> {
-        if atlas_min_size.width == 0 || atlas_min_size.height == 0 {
+    fn execute(&self, atlas_size: Size<u32>, graphic_sources: &mut Vec<&mut GraphicSource>) -> Option<()> {
+        if atlas_size.width == 0 || atlas_size.height == 0 {
             return None;
         }
 
-        let atlas_size = atlas_min_size;
+        let a = atlas_size.clone();
         let mut empty_spaces: Vec<Rectangle<u32>> = vec![ atlas_size.into() ];
 
         // sort by decreasing order of their height
-        source_images.sort_by(|a, b| (*a).source_region.width.cmp(&(*b).source_region.width).reverse());
+        graphic_sources.sort_by(|a, b| (*a).region.width.cmp(&(*b).region.width).reverse());
 
-        for image in source_images {
+        for source in graphic_sources {
             if empty_spaces.is_empty() {
                 panic!("Out of empty spaces.");
             }
 
             let empty_space = {
                 let mut selected_space = None;
-                let size = image.source_region.size();
+                let size = source.region.size();
 
-                for space_index in 0..(empty_spaces.len() + 1) {
+                for space_index in 0..=empty_spaces.len() {
                     if empty_spaces[space_index].fit_size(&size) {
                         selected_space = Some(empty_spaces.remove(space_index));
                         break;
@@ -44,18 +43,33 @@ impl Packer for CustomPacker {
 
                 match selected_space {
                     Some(space) => space,
-                    None => panic!("Can't find a valid location for source image '{}'.", image.source_path.display())
+                    None => panic!("Can't find a valid location for source image '{}'.", source.path.display())
                 }
             };
 
-            image.atlas_region = Rectangle::new(empty_space.x, empty_space.y, image.source_region.width, image.source_region.height);
+            let atlas_region = Rectangle::new(empty_space.x, empty_space.y, source.region.width, source.region.height);
+            log::trace!("Source region: {}, Target Atlas Region: {}, Atlas size: {}, Empty space: {}", source.region, atlas_region, a, empty_space);
+
+            if empty_space.x + source.region.width > a.width {
+                panic!("Source not fit. Source region: {}, Target Atlas Region: {}, Atlas size: {}, Empty space: {}", source.region, atlas_region, a, empty_space);
+            }
+
+            if empty_space.y + source.region.height > a.height {
+                panic!("Source not fit. Source region: {}, Target Atlas Region: {}, Atlas size: {}, Empty space: {}", source.region, atlas_region, a, empty_space);
+            }
 
             // space to the right
-            let space_right_side = if empty_space.width - image.source_region.width > 0 {
+            // 4 - 4 = 0 (rem width)
+            // [0], [1, 2, 3, 4]
+            //
+            // 1 + 4 = 5
+            // 5 > 5? 
+            //
+            let space_right_side = if empty_space.width > source.region.width {
                 Some(Rectangle::new(
-                    image.atlas_region.right(), 
-                    image.atlas_region.top(), 
-                    empty_space.width - image.source_region.width,
+                    atlas_region.right(), 
+                    atlas_region.top(), 
+                    empty_space.width - source.region.width,
                     empty_space.height
                 ))
             } else {
@@ -63,22 +77,22 @@ impl Packer for CustomPacker {
             };
 
             // space to the bottom
-            let space_bottom_side = if empty_space.height - image.source_region.height > 0 {
+            let space_bottom_side = if empty_space.height > source.region.height {
                 match &space_right_side {
                     Some(right_size) => {
                         Some(Rectangle::new(
-                            image.atlas_region.left(), 
-                            image.atlas_region.bottom(), 
+                            atlas_region.left(), 
+                            atlas_region.bottom(), 
                             empty_space.width - right_size.width,
-                            empty_space.height - image.source_region.height
+                            empty_space.height - source.region.height
                         ))
                     },
                     None => {
                         Some(Rectangle::new(
-                            image.atlas_region.left(), 
-                            image.atlas_region.bottom(), 
+                            atlas_region.left(), 
+                            atlas_region.bottom(), 
                             empty_space.width,
-                            empty_space.height - image.source_region.height
+                            empty_space.height - source.region.height
                         ))
                     }
                 }
@@ -86,12 +100,26 @@ impl Packer for CustomPacker {
                 None
             };
 
+            source.atlas_region = Some(atlas_region);
+
             // push spaces
             if let Some(space) = space_right_side {
+                log::trace!("- Right empty space: {}", space);
+
+                if space.x + space.width > a.width || space.y + space.height > a.height {
+                    panic!("Invalid right empty space. Space: {}", space);
+                }
+
                 empty_spaces.push(space);
             }
 
             if let Some(space) = space_bottom_side {
+                log::trace!("- Bottom empty space: {}", space);
+
+                if space.x + space.width > a.width || space.y + space.height > a.height {
+                    panic!("Invalid bottom empty space. Space: {}", space);
+                }
+
                 empty_spaces.push(space);
             }
 

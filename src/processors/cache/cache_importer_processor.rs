@@ -23,8 +23,8 @@ use crate::{
             Cache
         },
         ConfigStatus,
-        Data,
-        Processor
+        Processor,
+        State
     },
     settings::Config
 };
@@ -167,10 +167,10 @@ impl Processor for CacheImporterProcessor {
         config_status
     }
 
-    fn execute(&self, data: &mut Data) {
+    fn execute(&self, state: &mut State) {
         info!("> Checking cache version...");
 
-        let cache_dir_pathbuf = data.config.cache.root_path();
+        let cache_dir_pathbuf = state.config.cache.root_path();
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
         trace!("- At file '{}'", cache_pathbuf.display());
@@ -181,7 +181,7 @@ impl Processor for CacheImporterProcessor {
                 match &e {
                     cache::LoadError::FileNotFound(path) => {
                         info!("  Creating a new one...");
-                        let c = Cache::new();
+                        let c = Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path());
 
                         c.save_to_path(&path)
                          .unwrap();
@@ -195,7 +195,7 @@ impl Processor for CacheImporterProcessor {
 
         let version = option_env!("CARGO_PKG_VERSION").unwrap_or("unknown");
 
-        let cache_images_path = data.config.cache.images_path();
+        let cache_images_path = state.config.cache.images_path();
         match cache.meta.expect_version(&version) {
             Ok(_) => {
                 info!("|- Ok!");
@@ -241,8 +241,8 @@ impl Processor for CacheImporterProcessor {
                     cache::Error::InvalidVersion { .. } => {
                         warn!("| {}", &e);
 
-                        let cache_pathbuf = PathBuf::from(&data.config.cache.path)
-                                                    .join(&data.config.cache.identifier);
+                        let cache_pathbuf = PathBuf::from(&state.config.cache.path)
+                                                    .join(&state.config.cache.identifier);
 
                         if cache_pathbuf.is_dir() {
                             // remove directory
@@ -270,7 +270,7 @@ impl Processor for CacheImporterProcessor {
                         self.create_subdir(&cache_pathbuf, "images").unwrap();
 
                         info!("> Initializing cache file");
-                        cache = Cache::new();
+                        cache = Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path());
                         cache.save_to_path(&cache_pathbuf).unwrap();
 
                         info!("|- Created at '{}'", cache_pathbuf.display());
@@ -281,7 +281,7 @@ impl Processor for CacheImporterProcessor {
             }
         }
 
-        data.cache.replace(cache);
+        state.cache.replace(cache);
     }
 }
 

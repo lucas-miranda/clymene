@@ -1,7 +1,7 @@
 use crate::{
     processors::{
         ConfigStatus,
-        Data
+        State
     },
     settings::Config
 };
@@ -9,5 +9,5 @@ use crate::{
 pub trait Processor {
     fn name(&self) -> &str;
     fn setup(&mut self, config: &mut Config) -> ConfigStatus;
-    fn execute(&self, data: &mut Data);
+    fn execute(&self, state: &mut State);
 }

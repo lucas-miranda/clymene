@@ -1,20 +1,14 @@
-use super::Frame;
-
 #[derive(Debug)]
 pub struct Track {
-    label: Option<String>,
-    frames: Vec<Frame>
+    pub label: Option<String>,
+    pub frame_indices: Vec<u32>
 }
 
 impl Track {
     pub fn new(label: Option<String>) -> Self {
         Self {
             label,
-            frames: Vec::new()
+            frame_indices: Vec::new()
         }
-    }
-
-    pub fn push(&mut self, frame: Frame) {
-        self.frames.push(frame);
     }
 }

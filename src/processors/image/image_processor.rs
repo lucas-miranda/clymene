@@ -21,9 +21,9 @@ use crate::{
     processors::{
         cache::CacheStatus,
         ConfigStatus,
-        Data,
         image::format_handlers::FormatHandler,
-        Processor
+        Processor,
+        State
     },
     settings::Config,
     util
@@ -102,9 +102,9 @@ impl<'a> Processor for ImageProcessor<'a> {
         config_status
     }
 
-    fn execute(&self, data: &mut Data) {
-        trace!("| Source: {}", data.config.image.input_path);
-        trace!("| Target: {}", data.config.image.output_path.display());
+    fn execute(&self, state: &mut State) {
+        trace!("| Source: {}", state.config.image.input_path);
+        trace!("| Target: {}", state.config.image.output_path.display());
 
         info!("> Looking for source files...");
 
@@ -113,7 +113,7 @@ impl<'a> Processor for ImageProcessor<'a> {
         source_files_by_extension.insert(OsString::default(), Vec::new());
         let default_ext = OsString::default();
 
-        let source_path = PathBuf::from(&data.config.image.input_path);
+        let source_path = PathBuf::from(&state.config.image.input_path);
         util::fs::for_every_file(
             &source_path,
             &mut |entry: &DirEntry| {
@@ -145,7 +145,7 @@ impl<'a> Processor for ImageProcessor<'a> {
         ).unwrap();
 
         // process every format and collect it's graphic data (as image or animation)
-        let output = &mut data.graphic_output;
+        let output = &mut state.graphic_output;
 
         for format_handler in &self.format_handlers {
             let source_files = format_handler.extensions()
@@ -170,7 +170,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                 trace!("=> {}", location.display());
 
                 // verify cache entry
-                match &data.cache {
+                match &state.cache {
                     Some(cache) => {
                         match cache.retrieve(&location, &source_metadata) {
                             CacheStatus::Found(cache_entry) => {
@@ -201,14 +201,14 @@ impl<'a> Processor for ImageProcessor<'a> {
                 }
 
                 // prepare output path
-                let output_path = match source_file.strip_prefix(&data.config.image.input_path) {
+                let output_path = match source_file.strip_prefix(&state.config.image.input_path) {
                     Ok(p) => {
-                        data.config
-                            .cache
-                            .images_path()
-                            .join(p.with_extension(""))
+                        state.config
+                             .cache
+                             .images_path()
+                             .join(p.with_extension(""))
                     },
-                    Err(e) => panic!("Can't strip prefix '{}' from source path '{}':\n{}", data.config.image.input_path, source_file.display(), e)
+                    Err(e) => panic!("Can't strip prefix '{}' from source path '{}':\n{}", state.config.image.input_path, source_file.display(), e)
                 };
 
                 // ensure output directory, and it's intermediate ones, exists
@@ -239,7 +239,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                 }
 
                 // process source file
-                match format_handler.process(source_file, &output_path, &data.config) {
+                match format_handler.process(source_file, &output_path, &state.config) {
                     Ok(processed_file) => {
                         match processed_file {
                             Graphic::Empty => {

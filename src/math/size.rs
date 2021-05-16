@@ -1,4 +1,7 @@
-use std::cmp::PartialOrd;
+use std::{
+    cmp::PartialOrd,
+    fmt
+};
 
 use num_traits::{
     cast::{
@@ -48,5 +51,11 @@ impl<T: Unsigned + NumCast + PartialOrd + Copy> Size<T> {
 impl<T: Unsigned + NumCast + PartialOrd + Copy> Into<Rectangle<T>> for Size<T> {
     fn into(self) -> Rectangle<T> {
         Rectangle::new(zero::<T>(), zero::<T>(), self.width, self.height)
+    }
+}
+
+impl<T: Unsigned + NumCast + PartialOrd + Copy + fmt::Display> fmt::Display for Size<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}, {}", self.width, self.height)
     }
 }

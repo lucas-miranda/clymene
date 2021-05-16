@@ -1,4 +1,7 @@
-use std::cmp::PartialOrd;
+use std::{
+    cmp::PartialOrd,
+    fmt
+};
 
 use num_traits::{
     cast::{
@@ -9,9 +12,14 @@ use num_traits::{
     sign::Unsigned
 };
 
+use serde::{
+    Deserialize,
+    Serialize
+};
+
 use super::Size;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Rectangle<T: Num + NumCast + PartialOrd + Copy> {
     pub x: T,
     pub y: T,
@@ -66,5 +74,11 @@ impl<T: Unsigned + NumCast + PartialOrd + Copy> Rectangle<T> {
 
     pub fn fit_size(&self, size: &Size<T>) -> bool {
         self.width.ge(&size.width) && self.height.ge(&size.height)
+    }
+}
+
+impl<T: Num + NumCast + PartialOrd + Copy + fmt::Display> fmt::Display for Rectangle<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}, {}, {}, {}", self.x, self.y, self.width, self.height)
     }
 }

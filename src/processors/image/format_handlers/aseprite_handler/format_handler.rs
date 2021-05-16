@@ -1,5 +1,4 @@
 use std::{
-    convert::TryInto,
     ffi::OsStr,
     fs::{
         self,
@@ -31,10 +30,10 @@ use crate::{
     graphics::{
         animation::{
             Animation,
-            Frame,
             Track
         },
         Graphic,
+        GraphicSource,
         Image
     },
     math::{
@@ -42,13 +41,17 @@ use crate::{
         Size
     },
     processors::{
-        image::format_handlers::{
-            self,
-            aseprite_handler::data::{
-                Data,
-                FrameData
+        image::{
+            format_handlers::{
+                self,
+                aseprite_handler::data::{
+                    Data,
+                    FrameData
+                },
+                Error,
             },
-            Error,
+            GraphicSourceData,
+            GraphicSourceDataSet
         },
         ConfigStatus
     },
@@ -195,23 +198,47 @@ impl format_handlers::FormatHandler for FormatHandler {
                                  .map_err(|e| e.into())?;
 
         // retrieve source images
-        let mut source_images = self.find_source_images(&source_file_path, &output_dir_path, &aseprite_data.frames);
+        let mut graphic_sources_set = self.find_graphic_sources(&output_dir_path, &aseprite_data.frames);
 
-        if source_images.is_empty() {
+        if graphic_sources_set.sources.is_empty() {
             return Ok(Graphic::Empty);
         }
 
-        if source_images.len() == 1 && aseprite_data.meta.frame_tags.is_empty() && aseprite_data.meta.slices.is_empty() {
+        if graphic_sources_set.sources.len() == 1 && aseprite_data.meta.frame_tags.is_empty() && aseprite_data.meta.slices.is_empty() {
             // single image
-            return Ok(source_images.remove(0).image.into());
+            return Ok(
+                Image::with_graphic_source(
+                    graphic_sources_set.sources.remove(0).source,
+                    source_file_path.to_owned()
+                )
+                .unwrap()
+                .into()
+            );
         }
 
         let mut animation = Animation::new(source_file_path.to_owned())
                                       .map_err(|e| e.into())?;
 
         // register source images
-        for source_image in source_images.drain(..) {
-            animation.insert_source_image(source_image.frame_index, source_image.image);
+        let mut frame_index = 0usize;
+        for source_data in graphic_sources_set.sources.drain(..) {
+            match aseprite_data.frames.get(frame_index) {
+                Some(frame_data) => {
+                    animation.push_frame(
+                        source_data.source, 
+                        {
+                            if frame_data.duration < 0 {
+                                0u32
+                            } else {
+                                frame_data.duration as u32
+                            }
+                        }
+                    );
+                },
+                None => panic!("Expected frame {} not found. At aseprite data file '{}'.", frame_index, data_pathbuf.display())
+            }
+
+            frame_index += 1;
         }
 
         // register tracks
@@ -226,41 +253,16 @@ impl format_handlers::FormatHandler for FormatHandler {
 
             let mut track = Track::new(label);
 
-            for index in frame_tag_data.from..(frame_tag_data.to + 1) {
+            for index in frame_tag_data.from..=frame_tag_data.to {
                 if index < 0 {
                     error!("Skipping invalid index '{}'.", index);
                     continue;
                 }
 
-                let index_u32 = index as u32;
-
-                let duration = {
-                    match index.try_into() {
-                        Ok(i) => {
-                            match aseprite_data.frames.get::<usize>(i) {
-                                Some(frame_data) => frame_data.duration,
-                                None => 0
-                            }
-                        },
-                        Err(e) => {
-                            error!("When trying to convert index type into usize.");
-                            panic!(e);
-                        }
-                    }
-                };
-
-                track.push(Frame::new(
-                    index_u32,
-                    {
-                        if duration < 0 {
-                            0
-                        } else {
-                            duration as u32
-                        }
-                    }
-                ));
+                track.frame_indices.push(index as u32);
             }
 
+            track.frame_indices.sort_unstable();
             animation.push_track(track);
         }
 
@@ -385,8 +387,11 @@ impl FormatHandler {
         }
     }
 
-    fn find_source_images(&self, source_file_path: &Path, images_folder_path: &Path, frames_data: &[FrameData]) -> Vec<SourceImage> {
-        let mut images = Vec::new();
+    fn find_graphic_sources(&self, images_folder_path: &Path, frames_data: &[FrameData]) -> GraphicSourceDataSet {
+        let mut data_set = GraphicSourceDataSet {
+            sources: Vec::new(),
+            dimensions: None
+        };
 
         for dir_entry in fs::read_dir(images_folder_path).unwrap() {
             let entry = dir_entry.unwrap();
@@ -423,38 +428,40 @@ impl FormatHandler {
                     None => continue
                 };
 
-                let dimensions: Size<u32>;
                 let source_region: Rectangle<u32>;
 
-                match frames_data.get(frame_index as usize) {
-                    Some(frame_data) => {
-                        dimensions = Size::with(frame_data.source_size.w, frame_data.source_size.h)
-                                          .unwrap_or_else(Size::default);
+                if let Some(frame_data) = frames_data.get(frame_index as usize) {
+                    source_region = Rectangle::with(
+                        frame_data.sprite_source_size.x,
+                        frame_data.sprite_source_size.y,
+                        frame_data.sprite_source_size.w,
+                        frame_data.sprite_source_size.h
+                    ).unwrap_or_else(Rectangle::default);
 
-                        source_region = Rectangle::with(
-                            frame_data.sprite_source_size.x,
-                            frame_data.sprite_source_size.y,
-                            frame_data.sprite_source_size.w,
-                            frame_data.sprite_source_size.h
-                        ).unwrap_or_else(Rectangle::default);
-                    },
-                    None => {
-                        dimensions = Size::default();
-                        source_region = Rectangle::default();
+                    data_set.sources.push(
+                        GraphicSourceData {
+                            source: GraphicSource {
+                                atlas_region: None,
+                                path,
+                                region: source_region
+                            },
+                            frame_index
+                        }
+                    );
+
+                    if let None = data_set.dimensions {
+                        if let Some(frame_dimensions) = Size::with(frame_data.source_size.w, frame_data.source_size.h) {
+                            data_set.dimensions = Some(frame_dimensions);
+                        }
                     }
-                }
-
-                if let Ok(image) = Image::new(path, source_file_path.to_owned(), dimensions, source_region) {
-                    images.push(SourceImage { image, frame_index });
                 }
             }
         }
 
-        images
+        data_set.sources.sort_unstable_by(|a, b| a.frame_index.cmp(&b.frame_index));
+
+        data_set
     }
 }
 
-struct SourceImage {
-    pub image: Image,
-    pub frame_index: u32
-}
+

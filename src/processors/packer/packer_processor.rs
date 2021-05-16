@@ -13,17 +13,17 @@ use image::{
 use crate::{
     graphics::{
         Graphic,
-        Image
+        GraphicSource
     },
     math::Size,
     processors::{
         ConfigStatus,
-        Data,
         packer::{
             CustomPacker,
             Packer
         },
-        Processor
+        Processor,
+        State
     },
     settings::Config
 };
@@ -53,28 +53,28 @@ impl Processor for PackerProcessor {
         config_status
     }
 
-    fn execute(&self, data: &mut Data) {
+    fn execute(&self, state: &mut State) {
         log::info!("-> Packing images...");
 
         match &self.packer {
             Some(packer) => {
-                let mut source_images = data.graphic_output.graphics
-                                            .iter_mut()
-                                            .filter_map(|g| -> Option<Box<dyn Iterator<Item = &mut Image>>> {
-                                                match g {
-                                                    Graphic::Image(img) => Some(Box::new(iter::once(img))),
-                                                    Graphic::Animation(anim) => Some(Box::new(anim.source_images.values_mut())),
-                                                    Graphic::Empty => None
-                                                }
-                                            })
-                                            .flatten()
-                                            .collect::<Vec<&mut Image>>();
+                let mut graphic_sources = state.graphic_output.graphics
+                                               .iter_mut()
+                                               .filter_map(|g| -> Option<Box<dyn Iterator<Item = &mut GraphicSource>>> {
+                                                   match g {
+                                                       Graphic::Image(img) => Some(Box::new(iter::once(&mut img.graphic_source))),
+                                                       Graphic::Animation(anim) => Some(Box::new(anim.frames.iter_mut().map(|f| &mut f.graphic_source))),
+                                                       Graphic::Empty => None
+                                                   }
+                                               })
+                                               .flatten()
+                                               .collect::<Vec<&mut GraphicSource>>();
 
-                packer.execute(Size::new(data.config.packer.atlas_size, data.config.packer.atlas_size), &mut source_images);
+                packer.execute(Size::new(state.config.packer.atlas_size, state.config.packer.atlas_size), &mut graphic_sources);
 
                 log::info!("-> Generating output...");
 
-                let atlas_folder_path = data.config.cache.atlas_path();
+                let atlas_folder_path = state.config.cache.atlas_path();
 
                 // ensure atlas folder path it's valid
                 match atlas_folder_path.metadata() {
@@ -96,30 +96,39 @@ impl Processor for PackerProcessor {
                 // generate atlas file
 
                 let mut image_buffer = image::ImageBuffer::from_pixel(
-                    data.config.packer.atlas_size, 
-                    data.config.packer.atlas_size,
+                    state.config.packer.atlas_size, 
+                    state.config.packer.atlas_size,
                     image::Rgba([0u8; 4])
                 );
 
-                for source_image in source_images {
-                    let image = image::open(&source_image.path).unwrap();
-                    image_buffer.copy_from(
-                        &image.view(
-                            source_image.source_region.x, 
-                            source_image.source_region.y, 
-                            source_image.source_region.width, 
-                            source_image.source_region.height
-                        ), 
-                        source_image.atlas_region.x, 
-                        source_image.atlas_region.y
-                    ).unwrap();
+                for graphic_source in graphic_sources {
+                    let image = image::open(&graphic_source.path).unwrap();
+
+                    match &graphic_source.atlas_region {
+                        Some(atlas_region) => {
+                            //log::trace!("Copying graphic source {} to position {}", graphic_source.region, atlas_region);
+                            image_buffer.copy_from(
+                                &image.view(
+                                    graphic_source.region.x, 
+                                    graphic_source.region.y, 
+                                    graphic_source.region.width, 
+                                    graphic_source.region.height
+                                ), 
+                                atlas_region.x, 
+                                atlas_region.y
+                            ).unwrap();
+                        },
+                        None => {
+                            log::warn!("Atlas region isn't defined from graphic source at '{}'", graphic_source.path.display());
+                        }
+                    }
                 }
 
                 let output_atlas_path = {
-                    if data.config.output_name.is_empty() {
+                    if state.config.output_name.is_empty() {
                         atlas_folder_path.join(format!("{}.png", Config::default_output_name()))
                     } else {
-                        atlas_folder_path.join(format!("{}.png", data.config.output_name))
+                        atlas_folder_path.join(format!("{}.png", state.config.output_name))
                     }
                 };
 

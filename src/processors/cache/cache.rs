@@ -25,13 +25,16 @@ use serde::{
     Deserialize 
 };
 
-use super::{
-    CacheEntry,
-    CacheMetadata,
-    CacheStatus,
-    Error,
-    LoadError,
-    SaveError
+use crate::processors::{
+    cache::{
+        CacheEntry,
+        CacheMetadata,
+        CacheStatus,
+        Error,
+        LoadError,
+        SaveError
+    },
+    data::GraphicData
 };
 
 #[derive(Serialize, Deserialize)]
@@ -39,14 +42,23 @@ pub struct Cache {
     #[serde(default)]
     pub meta: CacheMetadata,
 
-    pub files: HashMap<PathBuf, RefCell<CacheEntry>>
+    /// Cache entries by location.
+    pub files: HashMap<PathBuf, RefCell<CacheEntry>>,
+
+    #[serde(skip)]
+    pub images_path: PathBuf,
+
+    #[serde(skip)]
+    pub atlas_output_path: PathBuf
 }
 
 impl Cache {
-    pub fn new() -> Self {
+    pub fn new(images_path: PathBuf, atlas_output_path: PathBuf) -> Self {
         Self {
             meta: CacheMetadata::default(),
-            files: HashMap::new()
+            files: HashMap::new(),
+            images_path,
+            atlas_output_path
         }
     }
 
@@ -118,14 +130,15 @@ impl Cache {
     }
     */
 
-    pub fn register<P: AsRef<Path> + Eq + Hash>(&mut self, location: P, metadata: &Metadata) -> Result<(), Error> {
+    pub fn register<P: AsRef<Path> + Eq + Hash>(&mut self, location: P, metadata: &Metadata, data: GraphicData) -> Result<(), Error> {
         let modtime = metadata.modified().unwrap();
 
         self.files.insert(
             location.as_ref().to_owned(), 
             RefCell::new(CacheEntry {
                 modtime,
-                path: location.as_ref().to_owned()
+                data,
+                location: location.as_ref().to_owned()
             })
         );
 

@@ -13,6 +13,7 @@ use processors::{
         CacheImporterProcessor,
         CacheExporterProcessor
     },
+    data::DataProcessor,
     image::{
         format_handlers::aseprite_handler,
         ImageProcessor,
@@ -67,7 +68,7 @@ fn main() {
                        .enqueue(CacheImporterProcessor::new())      // import cache entries and prepares them to the next steps
                        .enqueue(image_processor)                    // handle source images to be at expected format
                        .enqueue(PackerProcessor::new())             // retrieve every image and packs into a single atlas
-                       //.enqueue(DataProcessor::new())             // get every data from previous steps and packs it together into a nicer format
                        .enqueue(CacheExporterProcessor::new())      // exports cache entries into file format again (to be reusable in next usage)
+                       .enqueue(DataProcessor::new())               // get every data from previous steps and packs it together into a nicer format
                        .start(&mut config, &args);
 }

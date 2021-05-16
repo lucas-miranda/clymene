@@ -4,8 +4,8 @@ use crate::{
     args::Args,
     processors::{
         ConfigStatus,
-        Data,
-        Processor
+        Processor,
+        State
     },
     settings::Config
 };
@@ -44,10 +44,10 @@ impl<'a> ProcessorsPipeline<'a> {
                   .unwrap();
         }
 
-        let mut data = Data::new(config);
+        let mut state = State::new(config);
 
         for processor in &self.processors {
-            processor.execute(&mut data);
+            processor.execute(&mut state);
         }
     }
 
