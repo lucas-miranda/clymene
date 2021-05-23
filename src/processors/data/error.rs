@@ -12,9 +12,7 @@ use std::{
 #[derive(Debug)]
 pub enum Error {
     Load(LoadError),
-    Save(SaveError),
-    DirectoryExpected(PathBuf),
-    InvalidVersion { version: String, expected: String }
+    Save(SaveError)
 }
 
 impl error::Error for Error {
@@ -22,8 +20,6 @@ impl error::Error for Error {
         match &self {
             Error::Load(load_error) => Some(load_error),
             Error::Save(save_error) => Some(save_error),
-            Error::DirectoryExpected(_path) => None,
-            Error::InvalidVersion { .. } => None
         }
     }
 }
@@ -33,8 +29,6 @@ impl Display for Error {
         match &self {
             Error::Load(load_error) => write!(f, "Error when loading an atlas data file: {}", load_error),
             Error::Save(save_error) => write!(f, "Error when saving an atlas data file: {}", save_error),
-            Error::DirectoryExpected(path) => write!(f, "Directory expected at path '{}'", path.display()),
-            Error::InvalidVersion { version, expected } => write!(f, "Invalid cache version '{}', expected version '{}'", version, expected)
         }
     }
 }

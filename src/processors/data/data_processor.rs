@@ -12,8 +12,6 @@ use crate::{
     }
 };
 
-const CACHE_ENTRY_DATA_FILENAME: &str = "data";
-
 pub struct DataProcessor {
     verbose: bool,
     prettify_output: bool
