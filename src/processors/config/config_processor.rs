@@ -50,10 +50,6 @@ impl Processor for ConfigProcessor {
         let mut config_status = ConfigStatus::NotModified;
         let mut output_path = config.output_path.clone();
 
-        if config.verbose {
-            self.verbose(true);
-        }
-
         if output_path.is_empty() {
             output_path = Config::default_output_path();
 

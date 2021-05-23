@@ -109,10 +109,6 @@ impl Processor for CacheImporterProcessor {
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
 
-        if config.cache.verbose {
-            self.verbose(true);
-        }
-
         // handle cache output directory path
         let cache_dir_pathbuf = if config.cache.path.is_empty() {
             config_status = ConfigStatus::Modified;
