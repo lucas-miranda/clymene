@@ -20,9 +20,6 @@ pub struct AsepriteConfig {
 
     #[serde(default)]
     pub input_path: String,
-
-    #[serde(default)]
-    pub prettify_json: bool
 }
 
 impl ProcessorConfig for AsepriteConfig {
