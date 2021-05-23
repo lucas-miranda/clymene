@@ -15,16 +15,18 @@ use crate::{
 const CACHE_ENTRY_DATA_FILENAME: &str = "data";
 
 pub struct DataProcessor {
-    verbose: bool
+    verbose: bool,
+    prettify_output: bool
 }
 
 impl DataProcessor {
     pub fn new() -> Self {
         Self {
-            verbose: false
+            verbose: false,
+            prettify_output: false
         }
     }
-}
+    }
 
 impl Processor for DataProcessor {
     fn name(&self) -> &str {
@@ -35,7 +37,8 @@ impl Processor for DataProcessor {
         &config.data
     }
 
-    fn setup(&mut self, _config: &mut Config) -> ConfigStatus {
+    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
+        self.prettify_output = config.data.prettify || config.prettify_json;
         ConfigStatus::NotModified
     }
 
@@ -120,7 +123,11 @@ impl Processor for DataProcessor {
             );
 
         log::info!("Generating atlas data at {}...", output_atlas_data_path.display());
-        atlas_data.save_to_path(output_atlas_data_path).unwrap();
+        if self.prettify_output {
+            atlas_data.save_pretty_to_path(output_atlas_data_path).unwrap();
+        } else {
+            atlas_data.save_to_path(output_atlas_data_path).unwrap();
+        }
         log::info!("Done!")
     }
 }

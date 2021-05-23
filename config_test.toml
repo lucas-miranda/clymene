@@ -1,0 +1,28 @@
+verbose = false
+output_name = "atlas"
+output_path = "output"
+prettify_json = true
+
+[cache]
+verbose = false
+path = "/home/luke/.cache/raven"
+identifier = "0M6IsjVKcM"
+
+[packer]
+verbose = false
+atlas_size = 1024
+optimize = true
+force = false
+
+[image]
+verbose = false
+input_path = "source"
+
+[image.aseprite]
+verbose = false
+bin_path = "/bin/aseprite"
+input_path = ""
+
+[data]
+verbose = false
+prettify = false
