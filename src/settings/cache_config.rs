@@ -5,10 +5,17 @@ use serde::{
     Serialize 
 };
 
+use flexi_logger::LogSpecBuilder;
+
+use crate::{
+    common::Verbosity,
+    settings::ProcessorConfig
+};
+
 const IMAGES_FOLDER_NAME: &str = "images";
 const ATLAS_FOLDER_NAME: &str = "atlas";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct CacheConfig {
     #[serde(default)]
     pub verbose: bool,
@@ -20,13 +27,21 @@ pub struct CacheConfig {
     pub identifier: String,
 }
 
-impl Default for CacheConfig {
-    fn default() -> CacheConfig {
-        CacheConfig {
-            verbose: false,
-            path: String::new(),
-            identifier: String::new()
+impl ProcessorConfig for CacheConfig {
+    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
+        if self.is_verbose() {
+            builder.module("raven::processors::cache", log::LevelFilter::Trace);
         }
+    }
+}
+
+impl Verbosity for CacheConfig {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }
 

@@ -27,6 +27,7 @@ use log::{
 };
 
 use crate::{
+    common::Verbosity,
     graphics::{
         animation::{
             Animation,
@@ -65,6 +66,197 @@ const FRAME_FILE_NAME_FORMAT: &str = "{frame}.png";
 const DATA_FILE_NAME: &str = "data.json";
 
 pub struct FormatHandler {
+    verbose: bool
+}
+
+impl FormatHandler {
+    pub fn new() -> Self {
+        Self {
+            verbose: false
+        }
+    }
+
+    fn verify_aseprite_bin(&self, config: &mut Config) -> ConfigStatus {
+        // confirm config.aseprite.bin_path holds a valid aseprite bin path
+        let c = &mut config.image.aseprite;
+
+        if !c.bin_path.is_empty() {
+            match self.find_aseprite_bin_path(&c.bin_path) {
+                Some(pathbuf) => {
+                    if pathbuf == PathBuf::from(&c.bin_path) {
+                        // doesn't need to do anything else
+                        return ConfigStatus::NotModified;
+                    }
+
+                    c.bin_path = pathbuf.display().to_string();
+                    info!("Aseprite bin found at '{}'.", c.bin_path);
+                    return ConfigStatus::Modified;
+                },
+                None => {
+                    warn!("Can't find aseprite bin at '{}'.", c.bin_path);
+                }
+            };
+        } else {
+            warn!("Aseprite bin path undefined.");
+        }
+
+        // get aseprite bin path
+
+        let mut line_input = String::new();
+        let stdin = io::stdin();
+
+        let ase_filepath: PathBuf;
+
+        'bin_search: loop {
+            trace!("> Please, enter Aseprite path: ");
+
+            match stdin.lock().read_line(&mut line_input) {
+                Ok(_bytes) => {
+                    // remove whitespace at the end
+                    let len = line_input.trim_end_matches(&['\r', '\n'][..]).len();
+                    line_input.truncate(len);
+
+                    if let Some(pathbuf) = self.find_aseprite_bin_path(&line_input) {
+                        ase_filepath = pathbuf;
+                        break 'bin_search;
+                    }
+
+                    error!("> Aseprite not found at entered path");
+                },
+                Err(e) => {
+                    panic!("{}", e);
+                }
+            };
+
+            line_input.clear();
+        }
+
+        info!("|- Aseprite found!");
+        c.bin_path = ase_filepath.display().to_string();
+
+        ConfigStatus::Modified
+    }
+
+    fn find_aseprite_bin_path(&self, input: &str) -> Option<PathBuf> {
+        let pathbuf = PathBuf::from(input);
+
+        let metadata = match pathbuf.metadata() {
+            Ok(metadata) => metadata,
+            Err(_e) => {
+                return None;
+            }
+        };
+
+        let aseprite_executable_name = if cfg!(target_os = "windows") {
+            "aseprite.exe"
+        } else {
+            "aseprite"
+        };
+
+        if metadata.is_file() {
+            match pathbuf.file_name() {
+                Some(filename) => {
+                    let f = filename.to_str().unwrap();
+                    info!("aseprite filename: {}", f);
+
+                    if f.to_lowercase().eq(aseprite_executable_name) {
+                        Some(pathbuf)
+                    } else {
+                        None
+                    }
+                },
+                None => None
+            }
+        } else if metadata.is_dir() {
+            match util::fs::find(
+                pathbuf, 
+                &mut move |e: &DirEntry| {
+                    aseprite_executable_name.eq(&e.file_name().to_str().unwrap().to_lowercase())
+                }
+            ) {
+                Ok(entry) => entry.map(|found_entry| found_entry.path()),
+                Err(_) => None
+                }
+        } else {
+            None
+        }
+    }
+
+    fn find_graphic_sources(&self, images_folder_path: &Path, frames_data: &[FrameData]) -> GraphicSourceDataSet {
+        let mut data_set = GraphicSourceDataSet {
+            sources: Vec::new(),
+            dimensions: None
+        };
+
+        for dir_entry in fs::read_dir(images_folder_path).unwrap() {
+            let entry = dir_entry.unwrap();
+            let path = entry.path();
+
+            if let Ok(metadata) = entry.metadata() {
+                if !metadata.is_file() {
+                    continue;
+                }
+
+                // verify extension
+                match path.extension() {
+                    Some(ext) => {
+                        if ext != FRAME_FILE_NAME_EXTENSION {
+                            continue;
+                        }
+                    },
+                    None => continue
+                };
+
+                // frame index
+                let frame_index: u32 = match path.file_stem() {
+                    Some(stem) => {
+                        match stem.to_str() {
+                            Some(stem_str) => {
+                                match stem_str.parse() {
+                                    Ok(index) => index,
+                                    Err(_) => continue
+                                }
+                            },
+                            None => continue
+                        }
+                    },
+                    None => continue
+                };
+
+                let source_region: Rectangle<u32>;
+
+                if let Some(frame_data) = frames_data.get(frame_index as usize) {
+                    source_region = Rectangle::with(
+                        frame_data.sprite_source_size.x,
+                        frame_data.sprite_source_size.y,
+                        frame_data.sprite_source_size.w,
+                        frame_data.sprite_source_size.h
+                    ).unwrap_or_else(Rectangle::default);
+
+                    data_set.sources.push(
+                        GraphicSourceData {
+                            source: GraphicSource {
+                                atlas_region: None,
+                                path,
+                                region: source_region
+                            },
+                            frame_index
+                        }
+                    );
+
+                    if data_set.dimensions.is_none() {
+                        if let Some(frame_dimensions) = Size::with(frame_data.source_size.w, frame_data.source_size.h) {
+                            data_set.dimensions = Some(frame_dimensions);
+                        }
+                    }
+                }
+            }
+        }
+
+        data_set.sources.sort_unstable_by(|a, b| a.frame_index.cmp(&b.frame_index));
+
+        data_set
+    }
 }
 
 impl format_handlers::FormatHandler for FormatHandler {
@@ -267,192 +459,13 @@ impl format_handlers::FormatHandler for FormatHandler {
     }
 }
 
-impl FormatHandler {
-    pub fn new() -> Self {
-        Self {
-        }
+impl Verbosity for FormatHandler {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
     }
 
-    fn verify_aseprite_bin(&self, config: &mut Config) -> ConfigStatus {
-        // confirm config.aseprite.bin_path holds a valid aseprite bin path
-        let c = &mut config.image.aseprite;
-
-        if !c.bin_path.is_empty() {
-            match self.find_aseprite_bin_path(&c.bin_path) {
-                Some(pathbuf) => {
-                    if pathbuf == PathBuf::from(&c.bin_path) {
-                        // doesn't need to do anything else
-                        return ConfigStatus::NotModified;
-                    }
-
-                    c.bin_path = pathbuf.display().to_string();
-                    info!("Aseprite bin found at '{}'.", c.bin_path);
-                    return ConfigStatus::Modified;
-                },
-                None => {
-                    warn!("Can't find aseprite bin at '{}'.", c.bin_path);
-                }
-            };
-        } else {
-            warn!("Aseprite bin path undefined.");
-        }
-
-        // get aseprite bin path
-
-        let mut line_input = String::new();
-        let stdin = io::stdin();
-
-        let ase_filepath: PathBuf;
-
-        'bin_search: loop {
-            trace!("> Please, enter Aseprite path: ");
-
-            match stdin.lock().read_line(&mut line_input) {
-                Ok(_bytes) => {
-                    // remove whitespace at the end
-                    let len = line_input.trim_end_matches(&['\r', '\n'][..]).len();
-                    line_input.truncate(len);
-
-                    if let Some(pathbuf) = self.find_aseprite_bin_path(&line_input) {
-                        ase_filepath = pathbuf;
-                        break 'bin_search;
-                    }
-
-                    error!("> Aseprite not found at entered path");
-                },
-                Err(e) => {
-                    panic!("{}", e);
-                }
-            };
-
-            line_input.clear();
-        }
-
-        info!("|- Aseprite found!");
-        c.bin_path = ase_filepath.display().to_string();
-
-        ConfigStatus::Modified
-    }
-
-    fn find_aseprite_bin_path(&self, input: &str) -> Option<PathBuf> {
-        let pathbuf = PathBuf::from(input);
-
-        let metadata = match pathbuf.metadata() {
-            Ok(metadata) => metadata,
-            Err(_e) => {
-                return None;
-            }
-        };
-
-        let aseprite_executable_name = if cfg!(target_os = "windows") {
-            "aseprite.exe"
-        } else {
-            "aseprite"
-        };
-
-        if metadata.is_file() {
-            match pathbuf.file_name() {
-                Some(filename) => {
-                    let f = filename.to_str().unwrap();
-                    info!("aseprite filename: {}", f);
-
-                    if f.to_lowercase().eq(aseprite_executable_name) {
-                        Some(pathbuf)
-                    } else {
-                        None
-                    }
-                },
-                None => None
-            }
-        } else if metadata.is_dir() {
-            match util::fs::find(
-                pathbuf, 
-                &mut move |e: &DirEntry| {
-                    aseprite_executable_name.eq(&e.file_name().to_str().unwrap().to_lowercase())
-                }
-            ) {
-                Ok(entry) => entry.map(|found_entry| found_entry.path()),
-                Err(_) => None
-                }
-        } else {
-            None
-        }
-    }
-
-    fn find_graphic_sources(&self, images_folder_path: &Path, frames_data: &[FrameData]) -> GraphicSourceDataSet {
-        let mut data_set = GraphicSourceDataSet {
-            sources: Vec::new(),
-            dimensions: None
-        };
-
-        for dir_entry in fs::read_dir(images_folder_path).unwrap() {
-            let entry = dir_entry.unwrap();
-            let path = entry.path();
-
-            if let Ok(metadata) = entry.metadata() {
-                if !metadata.is_file() {
-                    continue;
-                }
-
-                // verify extension
-                match path.extension() {
-                    Some(ext) => {
-                        if ext != FRAME_FILE_NAME_EXTENSION {
-                            continue;
-                        }
-                    },
-                    None => continue
-                };
-
-                // frame index
-                let frame_index: u32 = match path.file_stem() {
-                    Some(stem) => {
-                        match stem.to_str() {
-                            Some(stem_str) => {
-                                match stem_str.parse() {
-                                    Ok(index) => index,
-                                    Err(_) => continue
-                                }
-                            },
-                            None => continue
-                        }
-                    },
-                    None => continue
-                };
-
-                let source_region: Rectangle<u32>;
-
-                if let Some(frame_data) = frames_data.get(frame_index as usize) {
-                    source_region = Rectangle::with(
-                        frame_data.sprite_source_size.x,
-                        frame_data.sprite_source_size.y,
-                        frame_data.sprite_source_size.w,
-                        frame_data.sprite_source_size.h
-                    ).unwrap_or_else(Rectangle::default);
-
-                    data_set.sources.push(
-                        GraphicSourceData {
-                            source: GraphicSource {
-                                atlas_region: None,
-                                path,
-                                region: source_region
-                            },
-                            frame_index
-                        }
-                    );
-
-                    if data_set.dimensions.is_none() {
-                        if let Some(frame_dimensions) = Size::with(frame_data.source_size.w, frame_data.source_size.h) {
-                            data_set.dimensions = Some(frame_dimensions);
-                        }
-                    }
-                }
-            }
-        }
-
-        data_set.sources.sort_unstable_by(|a, b| a.frame_index.cmp(&b.frame_index));
-
-        data_set
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }
 

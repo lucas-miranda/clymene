@@ -3,7 +3,14 @@ use serde::{
     Serialize 
 };
 
-#[derive(Serialize, Deserialize)]
+use flexi_logger::LogSpecBuilder;
+
+use crate::{
+    common::Verbosity,
+    settings::ProcessorConfig
+};
+
+#[derive(Default, Serialize, Deserialize)]
 pub struct AsepriteConfig {
     #[serde(default)]
     pub verbose: bool,
@@ -18,13 +25,20 @@ pub struct AsepriteConfig {
     pub prettify_json: bool
 }
 
-impl Default for AsepriteConfig {
-    fn default() -> AsepriteConfig {
-        AsepriteConfig {
-            verbose: false,
-            bin_path: String::new(),
-            input_path: String::new(),
-            prettify_json: false
+impl ProcessorConfig for AsepriteConfig {
+    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
+        if self.is_verbose() {
+            builder.module("raven::processors::image::format_handlers::aseprite_handler", log::LevelFilter::Trace);
         }
+    }
+}
+
+impl Verbosity for AsepriteConfig {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }

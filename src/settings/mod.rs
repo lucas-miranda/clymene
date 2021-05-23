@@ -4,6 +4,9 @@ pub use aseprite_config::AsepriteConfig;
 mod cache_config;
 pub use cache_config::CacheConfig;
 
+mod processor_config;
+pub use processor_config::ProcessorConfig;
+
 mod packer_config;
 pub use packer_config::PackerConfig;
 
@@ -21,4 +24,3 @@ pub use load_error::LoadError;
 
 mod save_error;
 pub use save_error::SaveError;
-

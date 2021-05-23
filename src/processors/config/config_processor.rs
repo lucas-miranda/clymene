@@ -13,15 +13,28 @@ use log::{
 };
 
 use crate::{
+    common::Verbosity,
     processors::{
         ConfigStatus,
         Processor,
         State
     },
-    settings::Config
+    settings::{
+        Config,
+        ProcessorConfig
+    }
 };
 
 pub struct ConfigProcessor {
+    verbose: bool
+}
+
+impl ConfigProcessor {
+    pub fn new() -> Self {
+        ConfigProcessor {
+            verbose: false
+        }
+    }
 }
 
 impl Processor for ConfigProcessor {
@@ -29,9 +42,17 @@ impl Processor for ConfigProcessor {
         "Config"
     }
 
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
+        config
+    }
+
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
         let mut output_path = config.output_path.clone();
+
+        if config.verbose {
+            self.verbose(true);
+        }
 
         if output_path.is_empty() {
             output_path = Config::default_output_path();
@@ -93,9 +114,12 @@ impl Processor for ConfigProcessor {
     }
 }
 
-impl ConfigProcessor {
-    pub fn new() -> Self {
-        ConfigProcessor {
-        }
+impl Verbosity for ConfigProcessor {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }

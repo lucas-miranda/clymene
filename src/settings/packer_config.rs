@@ -3,7 +3,14 @@ use serde::{
     Serialize 
 };
 
-#[derive(Serialize, Deserialize)]
+use flexi_logger::LogSpecBuilder;
+
+use crate::{
+    common::Verbosity,
+    settings::ProcessorConfig
+};
+
+#[derive(Default, Serialize, Deserialize)]
 pub struct PackerConfig {
     #[serde(default)]
     pub verbose: bool,
@@ -18,16 +25,21 @@ pub struct PackerConfig {
     pub force: bool
 }
 
-impl Default for PackerConfig {
-    fn default() -> PackerConfig {
-        PackerConfig {
-            verbose: false,
-            atlas_size: 0,
-            optimize: true,
-            force: false
+impl ProcessorConfig for PackerConfig {
+    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
+        if self.is_verbose() {
+            builder.module("raven::processors::packer", log::LevelFilter::Trace);
         }
     }
 }
 
-impl PackerConfig {
+impl Verbosity for PackerConfig {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
+    }
 }
+

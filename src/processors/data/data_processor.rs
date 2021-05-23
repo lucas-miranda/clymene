@@ -1,21 +1,38 @@
 use crate::{
+    common::Verbosity,
     processors::{
         ConfigStatus,
         data::AtlasData,
         Processor,
         State
     },
-    settings::Config
+    settings::{
+        Config,
+        ProcessorConfig
+    }
 };
 
 const CACHE_ENTRY_DATA_FILENAME: &str = "data";
 
 pub struct DataProcessor {
+    verbose: bool
+}
+
+impl DataProcessor {
+    pub fn new() -> Self {
+        Self {
+            verbose: false
+        }
+    }
 }
 
 impl Processor for DataProcessor {
     fn name(&self) -> &str {
         "Data"
+    }
+
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
+        &config.data
     }
 
     fn setup(&mut self, _config: &mut Config) -> ConfigStatus {
@@ -108,9 +125,12 @@ impl Processor for DataProcessor {
     }
 }
 
-impl DataProcessor {
-    pub fn new() -> Self {
-        Self {
-        }
+impl Verbosity for DataProcessor {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }

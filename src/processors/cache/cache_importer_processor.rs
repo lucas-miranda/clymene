@@ -17,6 +17,7 @@ use log::{
 };
 
 use crate::{
+    common::Verbosity,
     processors::{
         cache::{
             self,
@@ -26,10 +27,74 @@ use crate::{
         Processor,
         State
     },
-    settings::Config
+    settings::{
+        Config,
+        ProcessorConfig
+    }
 };
 
 pub struct CacheImporterProcessor {
+    verbose: bool
+}
+
+impl CacheImporterProcessor {
+    pub fn new() -> Self {
+        Self {
+            verbose: false
+        }
+    }
+
+    fn generate_hash() -> String {
+        use rand::Rng;
+
+        const HASH_LENGTH: usize = 10;
+        const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                                 abcdefghijklmnopqrstuvwxyz\
+                                 0123456789";
+
+        let mut rng = rand::thread_rng();
+
+        (0..HASH_LENGTH)
+           .map(|_| {
+               let i = rng.gen_range(0, CHARSET.len());
+               CHARSET[i] as char
+           })
+           .collect::<String>()
+    }
+
+    fn get_default_cache_path() -> Option<PathBuf> {
+        ProjectDirs::from("io", "Raven", "Raven")
+                    .map(|project_dirs| PathBuf::from(project_dirs.cache_dir()))
+    }
+
+    fn create_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> Result<PathBuf, cache::Error> {
+        let pathbuf = cache_pathbuf.join(dir_name);
+
+        match pathbuf.metadata() {
+            Ok(metadata) => {
+                if metadata.is_dir() {
+                    Ok(())
+                } else {
+                    Err(cache::Error::DirectoryExpected(pathbuf.clone()))
+                }
+            },
+            Err(e) => {
+                match e.kind() {
+                    io::ErrorKind::NotFound => Ok(()),
+                    _ => panic!("{}", e)
+                }
+            }
+        }?;
+
+        fs::create_dir_all(&pathbuf).unwrap();
+
+        while !pathbuf.is_dir() {
+            std::thread::sleep(std::time::Duration::from_millis(10u64));
+            continue;
+        }
+
+        Ok(pathbuf)
+    }
 }
 
 impl Processor for CacheImporterProcessor {
@@ -37,8 +102,16 @@ impl Processor for CacheImporterProcessor {
         "Cache Importer"
     }
 
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
+        &config.cache
+    }
+
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
+
+        if config.cache.verbose {
+            self.verbose(true);
+        }
 
         // handle cache output directory path
         let cache_dir_pathbuf = if config.cache.path.is_empty() {
@@ -285,61 +358,12 @@ impl Processor for CacheImporterProcessor {
     }
 }
 
-impl CacheImporterProcessor {
-    pub fn new() -> Self {
-        Self {
-        }
+impl Verbosity for CacheImporterProcessor {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
     }
 
-    fn generate_hash() -> String {
-        use rand::Rng;
-
-        const HASH_LENGTH: usize = 10;
-        const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
-                                 abcdefghijklmnopqrstuvwxyz\
-                                 0123456789";
-
-        let mut rng = rand::thread_rng();
-
-        (0..HASH_LENGTH)
-           .map(|_| {
-               let i = rng.gen_range(0, CHARSET.len());
-               CHARSET[i] as char
-           })
-           .collect::<String>()
-    }
-
-    fn get_default_cache_path() -> Option<PathBuf> {
-        ProjectDirs::from("io", "Raven", "Raven")
-                    .map(|project_dirs| PathBuf::from(project_dirs.cache_dir()))
-    }
-
-    fn create_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> Result<PathBuf, cache::Error> {
-        let pathbuf = cache_pathbuf.join(dir_name);
-
-        match pathbuf.metadata() {
-            Ok(metadata) => {
-                if metadata.is_dir() {
-                    Ok(())
-                } else {
-                    Err(cache::Error::DirectoryExpected(pathbuf.clone()))
-                }
-            },
-            Err(e) => {
-                match e.kind() {
-                    io::ErrorKind::NotFound => Ok(()),
-                    _ => panic!("{}", e)
-                }
-            }
-        }?;
-
-        fs::create_dir_all(&pathbuf).unwrap();
-
-        while !pathbuf.is_dir() {
-            std::thread::sleep(std::time::Duration::from_millis(10u64));
-            continue;
-        }
-
-        Ok(pathbuf)
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }

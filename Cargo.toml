@@ -19,7 +19,7 @@ directories = "^1.0"
 rand = "^0.7"
 colored = "^2.0.0"
 log = "^0.4"
-simple_logger = "^1.11.0"
+flexi_logger = { version = "^0.17.1", features = ["colors"] }
 num-traits = "^0.2.14"
 image = "^0.23.14"
 

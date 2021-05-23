@@ -17,19 +17,25 @@ use serde::{
     Serialize 
 };
 
-use crate::settings::{
-    CacheConfig,
-    DataConfig,
-    ImageConfig,
-    LoadError,
-    SaveError,
-    PackerConfig
+use flexi_logger::LogSpecBuilder;
+
+use crate::{
+    common::Verbosity,
+    settings::{
+        CacheConfig,
+        DataConfig,
+        ImageConfig,
+        LoadError,
+        SaveError,
+        PackerConfig,
+        ProcessorConfig
+    }
 };
 
 const DEFAULT_OUTPUT_NAME: &str = "atlas";
 const DEFAULT_OUTPUT_FOLDER_PATH: &str = "output";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub verbose: bool,
@@ -56,18 +62,27 @@ pub struct Config {
     pub data: DataConfig,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
-            verbose: false,
-            output_name: Config::default_output_name(),
-            output_path: Config::default_output_path(),
-            prettify_json: false,
-            cache: CacheConfig::default(),
-            packer: PackerConfig::default(),
-            image: ImageConfig::default(),
-            data: DataConfig::default()
+impl ProcessorConfig for Config {
+    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
+        if self.is_verbose() {
+            builder.default(log::LevelFilter::Trace);
+            return;
         }
+
+        self.cache.configure_logger(builder);
+        self.packer.configure_logger(builder);
+        self.image.configure_logger(builder);
+        self.data.configure_logger(builder);
+    }
+}
+
+impl Verbosity for Config {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }
 

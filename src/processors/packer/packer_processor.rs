@@ -11,6 +11,7 @@ use image::{
 };
 
 use crate::{
+    common::Verbosity,
     graphics::{
         Graphic,
         GraphicSource
@@ -25,18 +26,54 @@ use crate::{
         Processor,
         State
     },
-    settings::Config
+    settings::{
+        Config,
+        ProcessorConfig
+    }
 };
 
 const DEFAULT_ATLAS_SIZE: u32 = 1024;
 
 pub struct PackerProcessor {
+    verbose: bool,
     packer: Option<Box<dyn Packer>>
+}
+
+impl PackerProcessor {
+    pub fn new() -> Self {
+        PackerProcessor {
+            verbose: false,
+            packer: None
+        }
+    }
+
+    fn calculate_optimal_atlas_size(size: u32) -> u32 {
+        // round up to the next highest power of 2
+        // ref: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+
+        if size == 0u32 {
+            return DEFAULT_ATLAS_SIZE;
+        }
+
+        let mut size = size - 1;
+        size |= size >> 1;
+        size |= size >> 2;
+        size |= size >> 4;
+        size |= size >> 8;
+        size |= size >> 16;
+
+        size + 1
+    }
+
 }
 
 impl Processor for PackerProcessor {
     fn name(&self) -> &str {
         "Packer"
+    }
+
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
+        &config.packer
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
@@ -140,29 +177,12 @@ impl Processor for PackerProcessor {
     }
 }
 
-impl PackerProcessor {
-    pub fn new() -> Self {
-        PackerProcessor {
-            packer: None
-        }
+impl Verbosity for PackerProcessor {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
     }
 
-    fn calculate_optimal_atlas_size(size: u32) -> u32 {
-        // round up to the next highest power of 2
-        // ref: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-
-        if size == 0u32 {
-            return DEFAULT_ATLAS_SIZE;
-        }
-
-        let mut size = size - 1;
-        size |= size >> 1;
-        size |= size >> 2;
-        size |= size >> 4;
-        size |= size >> 8;
-        size |= size >> 16;
-
-        size + 1
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
-
 }

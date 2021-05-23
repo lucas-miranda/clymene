@@ -1,6 +1,4 @@
-use std::{
-    env
-};
+use std::env;
 
 const DEFAULT_FILEPATH: &str = "config.toml";
 

@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use crate::{
+    common::Verbosity,
     graphics::Graphic,
     processors::{
         image::format_handlers::Error,
@@ -9,7 +10,7 @@ use crate::{
     settings::Config
 };
 
-pub trait FormatHandler {
+pub trait FormatHandler: Verbosity {
     fn name(&self) -> &'static str;
     fn extensions(&self) -> &[&str];
     fn setup(&self, config: &mut Config) -> Result<ConfigStatus, Error>;

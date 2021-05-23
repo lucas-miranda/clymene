@@ -1,8 +1,12 @@
-use simple_logger::SimpleLogger;
+use flexi_logger::{
+    Logger,
+    LogSpecBuilder
+};
 
 mod args;
 use args::Args;
 
+mod common;
 mod graphics;
 mod math;
 
@@ -23,14 +27,24 @@ use processors::{
 };
 
 mod settings;
-use settings::Config;
+use settings::{
+    Config,
+    ProcessorConfig
+};
 
 mod util;
 
 fn main() {
-    SimpleLogger::new()
-                 .init()
-                 .unwrap();
+    let mut builder = LogSpecBuilder::new();
+    builder.default(log::LevelFilter::Info);
+
+    let mut logger_reconf_handle = Logger::with(builder.build())
+                                          .check_parser_error()
+                                          .unwrap()
+                                          .format_for_stdout(flexi_logger::colored_default_format)
+                                          .format_for_stderr(flexi_logger::colored_default_format)
+                                          .start()
+                                          .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
 
     let args = Args::parse_env();
 
@@ -54,11 +68,17 @@ fn main() {
             }
         });
 
+
     if args.verbose {
-        log::set_max_level(log::LevelFilter::Trace);
+        builder.default(log::LevelFilter::Trace);
+        config.verbose = true;
     } else {
-        log::set_max_level(log::LevelFilter::Info);
+        config.configure_logger(&mut builder);
     }
+
+    logger_reconf_handle.set_new_spec(builder.build());
+
+    //
 
     let mut image_processor = ImageProcessor::new();
     image_processor.register_handler(aseprite_handler::FormatHandler::new());

@@ -1,13 +1,21 @@
 use std::path::PathBuf;
 
+use flexi_logger::LogSpecBuilder;
+
 use serde::{ 
     Deserialize, 
     Serialize 
 };
 
-use crate::settings::AsepriteConfig;
+use crate::{
+    common::Verbosity,
+    settings::{
+        AsepriteConfig,
+        ProcessorConfig
+    }
+};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct ImageConfig {
     #[serde(default)]
     pub verbose: bool,
@@ -22,19 +30,29 @@ pub struct ImageConfig {
     pub aseprite: AsepriteConfig
 }
 
-impl Default for ImageConfig {
-    fn default() -> ImageConfig {
-        ImageConfig {
-            verbose: false,
-            input_path: String::new(),
-            output_path: PathBuf::default(),
-            aseprite: AsepriteConfig::default()
-        }
-    }
-}
-
 impl ImageConfig {
     pub fn source_path(&self) -> PathBuf {
         PathBuf::from(&self.input_path)
+    }
+}
+
+impl ProcessorConfig for ImageConfig {
+    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
+        if self.is_verbose() {
+            builder.module("raven::processors::image", log::LevelFilter::Trace);
+            return;
+        }
+
+        self.aseprite.configure_logger(builder);
+    }
+}
+
+impl Verbosity for ImageConfig {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }

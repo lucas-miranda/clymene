@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    common::Verbosity,
     graphics::Graphic,
     processors::{
         cache::Cache,
@@ -19,15 +20,31 @@ use crate::{
         Processor,
         State
     },
-    settings::Config
+    settings::{
+        Config,
+        ProcessorConfig
+    }
 };
 
 pub struct CacheExporterProcessor {
+    verbose: bool
+}
+
+impl CacheExporterProcessor {
+    pub fn new() -> Self {
+        Self {
+            verbose: false
+        }
+    }
 }
 
 impl Processor for CacheExporterProcessor {
     fn name(&self) -> &str {
         "Cache Exporter"
+    }
+
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
+        &config.cache
     }
 
     fn setup(&mut self, _config: &mut Config) -> ConfigStatus {
@@ -178,9 +195,12 @@ impl Processor for CacheExporterProcessor {
     }
 }
 
-impl CacheExporterProcessor {
-    pub fn new() -> Self {
-        Self {
-        }
+impl Verbosity for CacheExporterProcessor {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }

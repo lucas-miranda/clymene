@@ -17,6 +17,7 @@ use log::{
 use colored::Colorize;
 
 use crate::{
+    common::Verbosity,
     graphics::Graphic,
     processors::{
         cache::CacheStatus,
@@ -25,17 +26,39 @@ use crate::{
         Processor,
         State
     },
-    settings::Config,
+    settings::{
+        Config,
+        ProcessorConfig
+    },
     util
 };
 
 pub struct ImageProcessor<'a> {
+    verbose: bool,
     format_handlers: Vec<Box<(dyn FormatHandler + 'a)>>
+}
+
+impl<'a> ImageProcessor<'a> {
+    pub fn new() -> Self {
+        ImageProcessor {
+            verbose: false,
+            format_handlers: Vec::new()
+        }
+    }
+
+    pub fn register_handler<H: 'a + FormatHandler>(&mut self, handler: H) -> &mut Self {
+        self.format_handlers.push(Box::new(handler));
+        self
+    }
 }
 
 impl<'a> Processor for ImageProcessor<'a> {
     fn name(&self) -> &str {
         "Image"
+    }
+
+    fn retrieve_processor_config<'c>(&self, config: &'c Config) -> &'c dyn ProcessorConfig {
+        &config.image
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
@@ -262,15 +285,12 @@ impl<'a> Processor for ImageProcessor<'a> {
     }
 }
 
-impl<'a> ImageProcessor<'a> {
-    pub fn new() -> Self {
-        ImageProcessor {
-            format_handlers: Vec::new()
-        }
+impl<'a> Verbosity for ImageProcessor<'a> {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
     }
 
-    pub fn register_handler<H: 'a + FormatHandler>(&mut self, handler: H) -> &mut Self {
-        self.format_handlers.push(Box::new(handler));
-        self
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }
