@@ -17,12 +17,12 @@ use serde::{
     Serialize 
 };
 
-use flexi_logger::LogSpecBuilder;
-
 use crate::{
     common::Verbosity,
+    log::Logger,
     settings::{
         CacheConfig,
+        ConfigLoggerStatus,
         DataConfig,
         ImageConfig,
         LoadError,
@@ -63,16 +63,19 @@ pub struct Config {
 }
 
 impl ProcessorConfig for Config {
-    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
-        if self.is_verbose() {
-            builder.default(log::LevelFilter::Trace);
-            return;
+    fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus) {
+        let logger_status = ConfigLoggerStatus {
+            verbose: self.is_verbose() || parent_logger_status.verbose
+        };
+
+        if logger_status.verbose {
+            logger.verbose(true);
         }
 
-        self.cache.configure_logger(builder);
-        self.packer.configure_logger(builder);
-        self.image.configure_logger(builder);
-        self.data.configure_logger(builder);
+        self.cache.configure_logger(logger, &logger_status);
+        self.packer.configure_logger(logger, &logger_status);
+        self.image.configure_logger(logger, &logger_status);
+        self.data.configure_logger(logger, &logger_status);
     }
 }
 

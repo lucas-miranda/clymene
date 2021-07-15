@@ -5,6 +5,8 @@ use std::{
     path::Path
 };
 
+use colored::Colorize;
+
 use crate::{
     common::Verbosity,
     graphics::Graphic,
@@ -52,6 +54,9 @@ impl Processor for CacheExporterProcessor {
     }
 
     fn execute(&self, state: &mut State) {
+        infoln!(block, "Cache result");
+        infoln!("Preparing to update entries");
+
         let cache_dir_pathbuf = state.config.cache.root_path();
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
@@ -60,17 +65,22 @@ impl Processor for CacheExporterProcessor {
                 io::ErrorKind::NotFound => (),
                 _ => panic!("Can't remove cache file at '{}': {}", cache_pathbuf.display(), e)
             }
+        } else {
+            traceln!("Removed old cache file at {}", cache_pathbuf.display().to_string().bold());
         }
 
         let cache = if let Some(c) = &mut state.cache {
             c
         } else {
+            infoln!("Initializing cache");
             state.cache = Some(Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path()));
             state.cache.as_mut().unwrap()
         };
 
         // insert graphics to cache (if isn't already registered)
         let cache_images_path = state.config.cache.images_path();
+
+        infoln!(block, "Registering generated graphics and data");
         for g in state.graphic_output.graphics.iter() {
             let source_path;
             let location: &Path;
@@ -178,10 +188,6 @@ impl Processor for CacheExporterProcessor {
                     if metadata.is_dir() {
                         cache.register(location, &source_metadata, data)
                              .unwrap();
-
-                        log::trace!("Cache path '{}'", graphic_cache_dir_path.display());
-                    } else {
-                        log::error!("Ignoring, expected a directory at graphic's cache path '{}'.", graphic_cache_dir_path.display());
                     }
                 },
                 Err(e) => {
@@ -190,8 +196,15 @@ impl Processor for CacheExporterProcessor {
             }
         }
 
+        infoln!(last, "{}", "Done".green());
+
         // write cache to file
+        infoln!("Writing to file");
+        traceln!("At {}", cache_pathbuf.display().to_string().bold());
+
         cache.save_to_path(&cache_pathbuf).unwrap();
+
+        infoln!(last, "{}", "Done".green());
     }
 }
 

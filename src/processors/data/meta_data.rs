@@ -12,8 +12,8 @@ pub struct MetaData {
 impl MetaData {
     pub fn new() -> Self {
         Self {
-            app: String::from("https://github.com/lucas-miranda/raven"),
-            version: option_env!("CARGO_PKG_VERSION").unwrap_or("unknown").to_owned()
+            app: String::from("https://github.com/lucas-miranda/clymene"),
+            version: env!("CARGO_PKG_VERSION").to_owned()
         }
     }
 }

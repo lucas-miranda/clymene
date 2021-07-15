@@ -1,7 +1,12 @@
-use flexi_logger::{
-    Logger,
-    LogSpecBuilder
+use colored::Colorize;
+
+use tree_decorator::{
+    DecoratorBuilder,
+    StandardDecorator
 };
+
+#[macro_use]
+mod log;
 
 mod args;
 use args::Args;
@@ -34,19 +39,34 @@ use settings::{
 
 mod util;
 
+static mut LOGGER: Option<log::Logger> = None;
+
+pub fn logger<'a>() -> &'a Option<log::Logger> {
+    unsafe {
+        &LOGGER
+    }
+}
+
+//
+
 fn main() {
-    let mut builder = LogSpecBuilder::new();
-    builder.default(log::LevelFilter::Info);
+    println!(" ┌───────────┐");
+    println!(" │  {}  │", env!("CARGO_PKG_NAME").bold().magenta());
+    println!(" │   v{}  │", env!("CARGO_PKG_VERSION").bold());
+    println!(" └───────────┘");
 
-    let mut logger_reconf_handle = Logger::with(builder.build())
-                                          .check_parser_error()
-                                          .unwrap()
-                                          .format_for_stdout(flexi_logger::colored_default_format)
-                                          .format_for_stderr(flexi_logger::colored_default_format)
-                                          .start()
-                                          .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
-
+    // TODO  parse_env should provides an error, when parsing failed
     let args = Args::parse_env();
+    let mut logger = log::Logger::default();
+
+    if args.debug {
+        logger.debug(true);
+    }
+
+    if args.verbose {
+        logger.verbose(true);
+        println!("With config file at {}", args.config_filepath.bold());
+    }
 
     let mut config = Config::load_from_path(&args.config_filepath)
        .unwrap_or_else(|e| {
@@ -60,7 +80,7 @@ fn main() {
                     );
                 },
                 settings::LoadError::FileNotFound(path) => {
-                    log::trace!("Config file created at '{}'.", path.display());
+                    println!("Config file created at '{}'.", path.display());
                     let c = Config::default();
                     c.save_to_path(&path).unwrap();
                     c
@@ -68,17 +88,29 @@ fn main() {
             }
         });
 
-
-    if args.verbose {
-        builder.default(log::LevelFilter::Trace);
-        config.verbose = true;
-    } else {
-        config.configure_logger(&mut builder);
+    // args display option has higher priority
+    if let Some(display) = args.display {
+        config.image.display = display;
     }
 
-    logger_reconf_handle.set_new_spec(builder.build());
+    // configure logger
+    let logger_status = settings::ConfigLoggerStatus {
+        verbose: logger.is_verbose()
+    };
 
-    //
+    config.configure_logger(&mut logger, &logger_status);
+
+    if logger.is_verbose() {
+        config.image.display = settings::DisplayKind::Detailed;
+    }
+
+    unsafe {
+        LOGGER = Some(logger);
+    }
+
+    // tree decorator
+    DecoratorBuilder::with(StandardDecorator::new(2))
+                     .build();
 
     let mut image_processor = ImageProcessor::new();
     image_processor.register_handler(aseprite_handler::FormatHandler::new());

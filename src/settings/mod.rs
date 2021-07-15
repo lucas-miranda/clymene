@@ -1,3 +1,6 @@
+mod config_logger_status;
+pub use config_logger_status::ConfigLoggerStatus;
+
 mod aseprite_config;
 pub use aseprite_config::AsepriteConfig;
 
@@ -11,7 +14,10 @@ mod packer_config;
 pub use packer_config::PackerConfig;
 
 mod image_config;
-pub use image_config::ImageConfig;
+pub use image_config::{
+    DisplayKind,
+    ImageConfig
+};
 
 mod data_config;
 pub use data_config::DataConfig;

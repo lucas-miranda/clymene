@@ -1,18 +1,16 @@
 # personal
 TODO
 
-# unnecesary files
-*.ase
-*.png
-
-# raven folders
+# clymene folders
 /atlas-cache/
 /output/
 /source/
-/tools/
 /_old/
 
-# Cargo
+# cargo
 /target/
 **/*.rs.bk
-Cargo.lock
+
+# others
+*.ase
+*.png

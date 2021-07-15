@@ -13,7 +13,7 @@ pub struct CacheMetadata {
 impl Default for CacheMetadata {
     fn default() -> Self {
         CacheMetadata {
-            version: option_env!("CARGO_PKG_VERSION").unwrap_or("unknown").to_owned()
+            version: env!("CARGO_PKG_VERSION").to_owned()
         }
     }
 }
@@ -34,7 +34,7 @@ impl CacheMetadata {
     /*
     pub fn new() -> CacheMetadata {
         CacheMetadata {
-            version: option_env!("CARGO_PKG_VERSION").unwrap_or("unknown").to_owned()
+            version: env!("CARGO_PKG_VERSION").to_owned()
         }
     }
     */

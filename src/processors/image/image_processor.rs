@@ -9,12 +9,8 @@ use std::{
     path::PathBuf
 };
 
-use log::{
-    info,
-    trace
-};
-
 use colored::Colorize;
+use tree_decorator::decorator;
 
 use crate::{
     common::Verbosity,
@@ -28,6 +24,7 @@ use crate::{
     },
     settings::{
         Config,
+        DisplayKind,
         ProcessorConfig
     },
     util
@@ -64,10 +61,14 @@ impl<'a> Processor for ImageProcessor<'a> {
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let input_pathbuf = PathBuf::from(&config.image.input_path);
 
+        infoln!(block, "Verifying image input path");
+        traceln!("At {}", input_pathbuf.display().to_string().bold());
         match input_pathbuf.metadata() {
             Ok(metadata) => {
                 if !metadata.is_dir() {
                     panic!("Expected a valid directory at input path '{}'.", input_pathbuf.display());
+                } else {
+                    infoln!(last, "{}", "Done".green());
                 }
             },
             Err(e) => {
@@ -79,19 +80,24 @@ impl<'a> Processor for ImageProcessor<'a> {
             }
         }
 
-        info!("Verifying image output path...");
         let output_path = config.cache.images_path();
+
+        infoln!(block, "Verifying image output path");
+        traceln!("At {}", output_path.display().to_string().bold());
 
         match output_path.metadata() {
             Ok(_metadata) => {
-                info!("Ok!");
+                infoln!(last, "{}", "Done".green());
                 config.image.output_path = output_path;
             },
             Err(e) => {
                 if let io::ErrorKind::NotFound = e.kind() {
-                    info!("Trying to create '{}'...", output_path.display());
+                    traceln!("Directory not found");
+                    infoln!("Creating directory '{}'", output_path.display());
 
                     fs::create_dir(&output_path).unwrap();
+
+                    infoln!(last, "{}", "Done".green());
                 } else {
                     panic!("{}", e);
                 }
@@ -100,8 +106,9 @@ impl<'a> Processor for ImageProcessor<'a> {
 
         let mut config_status = ConfigStatus::NotModified;
 
-        info!("Preparing format handlers...");
+        infoln!(block, "Preparing format handlers");
         for handler in &self.format_handlers {
+            infoln!(block, "{}", handler.name().bold());
             match handler.setup(config) {
                 Ok(handler_config_status) => {
                     // update config status 
@@ -113,23 +120,30 @@ impl<'a> Processor for ImageProcessor<'a> {
                         }
                     }
 
-                    info!("  {}  {}", handler.name(), "Ok".green());
+                    infoln!(last, "{}", "Ok".green());
                 },
                 Err(e) => {
-                    info!("  {}  {}", handler.name(), "Fail".red());
-                    trace!("{}: {}", "Error".bold().red(), e);
+                    traceln!("{}: {}", "Error".bold().red(), e);
+                    infoln!(last, "{}", "Fail".red());
                 }
             }
         }
+        infoln!(last, "{}", "Done".green());
 
         config_status
     }
 
     fn execute(&self, state: &mut State) {
-        trace!("| Source: {}", state.config.image.input_path);
-        trace!("| Target: {}", state.config.image.output_path.display());
+        let display_kind = if is_trace_enabled!() {
+            DisplayKind::Detailed
+        } else {
+            state.config.image.display
+        };
 
-        info!("> Looking for source files...");
+        infoln!(block, "Looking for source files");
+
+        traceln!(entry: decorator::Entry::None, "Source path: {}", state.config.image.input_path.bold());
+        traceln!(entry: decorator::Entry::None, "Target path: {}", state.config.image.output_path.display().to_string().bold());
 
         // sort files by it's extension
         let mut source_files_by_extension: HashMap<OsString, Vec<PathBuf>> = HashMap::new();
@@ -170,6 +184,23 @@ impl<'a> Processor for ImageProcessor<'a> {
         // process every format and collect it's graphic data (as image or animation)
         let output = &mut state.graphic_output;
 
+        // progress bar
+        let mut file_count = 0;
+
+        for source_files in source_files_by_extension.values() {
+            file_count += source_files.len();
+        }
+
+        let bar_length = 20;
+
+        if let DisplayKind::Simple = display_kind {
+            info!(
+                "[{}]  0/{}  0%", 
+                " ".repeat(bar_length),
+                file_count,
+            );
+        }
+
         for format_handler in &self.format_handlers {
             let source_files = format_handler.extensions()
                     .iter()
@@ -177,7 +208,31 @@ impl<'a> Processor for ImageProcessor<'a> {
                     .flatten()
                     .collect::<Vec<PathBuf>>();
 
-            for source_file in &source_files {
+            for (file_index, source_file) in source_files.iter().enumerate() {
+                if let DisplayKind::Simple = display_kind {
+                    // progress bar
+                    let completed_percentage = (file_index as f32) / (source_files.len() as f32);
+                    let completed_bar_length = (completed_percentage * (bar_length as f32)).round() as usize;
+
+                    print!("\r");
+                    info!(
+                        "[{}{}]  {}/{}  {:.2}%           ", 
+                        "=".repeat(completed_bar_length),
+                        {
+                            if completed_bar_length > 0 && completed_bar_length < bar_length {
+                                let mut s = ">".to_owned();
+                                s.push_str(&" ".repeat(bar_length - completed_bar_length - 1));
+                                s
+                            } else {
+                                " ".repeat(bar_length - completed_bar_length)
+                            }
+                        },
+                        file_index,
+                        file_count,
+                        completed_percentage * 100f32
+                    );
+                }
+
                 let location;
                 let source_metadata = source_file.metadata().unwrap();
 
@@ -190,17 +245,25 @@ impl<'a> Processor for ImageProcessor<'a> {
                     }
                 }
 
-                trace!("=> {}", location.display());
+                if let DisplayKind::Detailed = display_kind {
+                    infoln!(block, "{}", location.display().to_string().bold().cyan());
+                }
 
                 // verify cache entry
                 match &state.cache {
                     Some(cache) => {
                         match cache.retrieve(&location, &source_metadata) {
                             CacheStatus::Found(cache_entry) => {
-                                trace!("{}", "Cache Found".green());
+                                if let DisplayKind::Detailed = display_kind {
+                                    infoln!("Cache: {}", "Found".green());
+                                }
 
                                 if let Some(graphic) = cache_entry.retrieve_graphic(&source_file) {
-                                    info!("+ {}", location.display().to_string().green());
+                                    match display_kind {
+                                        DisplayKind::List => infoln!("{} {}", "*".bold().blue(), location.display().to_string().bold().cyan()),
+                                        DisplayKind::Detailed => infoln!(last, "{} {}", "*".blue().bold(), "Include".blue()),
+                                        _ => ()
+                                    }
 
                                     match graphic {
                                         Graphic::Empty => (),
@@ -211,10 +274,14 @@ impl<'a> Processor for ImageProcessor<'a> {
                                 }
                             },
                             CacheStatus::NotFound => {
-                                trace!("{}", "Cache Not Found".red());
+                                if let DisplayKind::Detailed = display_kind {
+                                    infoln!("Cache: {}", "Not Found".red());
+                                }
                             },
                             CacheStatus::Outdated => {
-                                trace!("{}", "Cache Outdated".yellow());
+                                if let DisplayKind::Detailed = display_kind {
+                                    infoln!("Cache: {}", "Outdated".yellow());
+                                }
                             }
                         }
                     },
@@ -266,22 +333,51 @@ impl<'a> Processor for ImageProcessor<'a> {
                     Ok(processed_file) => {
                         match processed_file {
                             Graphic::Empty => {
-                                info!("- {}", location.display().to_string().red());
-                                trace!("Ignoring it, empty graphic.");
+                                match display_kind {
+                                    DisplayKind::List => infoln!("{} {}", "~".yellow().bold(), location.display().to_string().bold().cyan()),
+                                    DisplayKind::Detailed => {
+                                        traceln!(entry: decorator::Entry::None, "Graphic is empty");
+                                        infoln!(last, "{} {}", "~".yellow().bold(), "Ignore".yellow());
+                                    },
+                                    _ => ()
+                                }
+
                                 continue;
                             },
                             _ => output.graphics.push(processed_file)
                         }
 
-                        info!("+ {}", location.display().to_string().green());
+                        match display_kind {
+                            DisplayKind::List => infoln!("{} {}", "+".green().bold(), location.display().to_string().bold().cyan()),
+                            DisplayKind::Detailed => infoln!(last, "{} {}", "+".green().bold(), "Include".green()),
+                            _ => ()
+                        }
                     },
                     Err(e) => {
-                        info!("- {}", location.display().to_string().red());
-                        trace!("{}: {}", "Error".bold().red(), e);
+                        match display_kind {
+                            DisplayKind::List => infoln!("{} {}", "x".red().bold(), location.display().to_string().bold().cyan()),
+                            DisplayKind::Detailed => {
+                                errorln!(entry: decorator::Entry::None, "{}: {}", "Error".bold().red(), e);
+                                infoln!(last, "{} {}", "x".red().bold(), "Error".red());
+                            },
+                            _ => ()
+                        }
                     }
                 }
             }
         }
+
+        if let DisplayKind::Simple = display_kind {
+            print!("\r");
+            infoln!(
+                "[{}]  {}/{}  100%           ", 
+                "=".repeat(bar_length),
+                file_count,
+                file_count
+            );
+        }
+
+        infoln!(last, "{}", "Done".green());
     }
 }
 

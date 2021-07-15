@@ -1,11 +1,11 @@
 [package]
-name = "raven"
+name = "clymene"
 description = "Process graphic files, merge them into an atlas file and provides data at a sensible format."
-version = "1.0.0"
+version = "0.1.0"
 authors = ["Lucas Miranda <miranda.a.lucas@gmail.com>"]
 license = "MIT"
-homepage = "https://github.com/lucas-miranda/raven"
-repository = "https://github.com/lucas-miranda/raven"
+homepage = "https://github.com/lucas-miranda/clymene"
+repository = "https://github.com/lucas-miranda/clymene"
 readme = "README.md"
 keywords = ["aseprite", "atlas", "packer", "graphics"]
 edition = "2018"
@@ -18,10 +18,9 @@ regex = "^1"
 directories = "^1.0"
 rand = "^0.7"
 colored = "^2.0.0"
-log = "^0.4"
-flexi_logger = { version = "^0.17.1", features = ["colors"] }
 num-traits = "^0.2.14"
 image = "^0.23.14"
+tree_decorator = { git = "https://github.com/lucas-miranda/tree_decorator", version = "^0.1.2", features = ["no_log"] }
 
 [profile.dev]
 opt-level = 0

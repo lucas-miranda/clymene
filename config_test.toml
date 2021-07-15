@@ -5,8 +5,8 @@ prettify_json = true
 
 [cache]
 verbose = false
-path = "/home/luke/.cache/raven"
-identifier = "0M6IsjVKcM"
+path = "/home/luke/.cache/clymene"
+identifier = "ceX3a4Re53"
 
 [packer]
 verbose = false
@@ -17,6 +17,7 @@ force = false
 [image]
 verbose = false
 input_path = "source"
+display = "simple"
 
 [image.aseprite]
 verbose = false

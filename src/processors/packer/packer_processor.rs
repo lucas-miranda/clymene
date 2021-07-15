@@ -4,11 +4,15 @@ use std::{
     iter
 };
 
+use colored::Colorize;
+
 use image::{
     self,
     GenericImage,
     GenericImageView
 };
+
+use tree_decorator::decorator;
 
 use crate::{
     common::Verbosity,
@@ -91,10 +95,12 @@ impl Processor for PackerProcessor {
     }
 
     fn execute(&self, state: &mut State) {
-        log::info!("-> Packing images...");
-
         match &self.packer {
             Some(packer) => {
+                infoln!(block, "Packing");
+                infoln!(block, "Calculating");
+                traceln!(entry: decorator::Entry::None, "With atlas size {}x{}", state.config.packer.atlas_size, state.config.packer.atlas_size);
+
                 let mut graphic_sources = state.graphic_output.graphics
                                                .iter_mut()
                                                .filter_map(|g| -> Option<Box<dyn Iterator<Item = &mut GraphicSource>>> {
@@ -107,23 +113,27 @@ impl Processor for PackerProcessor {
                                                .flatten()
                                                .collect::<Vec<&mut GraphicSource>>();
 
+                traceln!("Using {} packer", packer.name().bold());
                 packer.execute(Size::new(state.config.packer.atlas_size, state.config.packer.atlas_size), &mut graphic_sources);
 
-                log::info!("-> Generating output...");
+                infoln!(last, "{}", "Done".green());
+                infoln!("Generating output");
 
-                let atlas_folder_path = state.config.cache.atlas_path();
+                let atlas_dir_path = state.config.cache.atlas_path();
+                traceln!(entry: decorator::Entry::None, "With output path {}", atlas_dir_path.display().to_string().bold());
 
-                // ensure atlas folder path it's valid
-                match atlas_folder_path.metadata() {
+                // ensure atlas directory path is valid
+                match atlas_dir_path.metadata() {
                     Ok(metadata) => {
                         if !metadata.is_dir() {
-                            panic!("Atlas output path '{}' is already in use.", atlas_folder_path.display());
+                            panic!("Atlas output path '{}' is already in use.", atlas_dir_path.display());
                         }
                     },
                     Err(e) => {
                         match e.kind() {
                             io::ErrorKind::NotFound => {
-                                fs::create_dir(&atlas_folder_path).unwrap();
+                                traceln!("Creating output directory");
+                                fs::create_dir(&atlas_dir_path).unwrap();
                             },
                             _ => panic!("{}", e)
                         }
@@ -143,7 +153,6 @@ impl Processor for PackerProcessor {
 
                     match &graphic_source.atlas_region {
                         Some(atlas_region) => {
-                            //log::trace!("Copying graphic source {} to position {}", graphic_source.region, atlas_region);
                             image_buffer.copy_from(
                                 &image.view(
                                     graphic_source.region.x, 
@@ -156,23 +165,27 @@ impl Processor for PackerProcessor {
                             ).unwrap();
                         },
                         None => {
-                            log::warn!("Atlas region isn't defined from graphic source at '{}'", graphic_source.path.display());
+                            warnln!("Atlas region isn't defined from graphic source at '{}'", graphic_source.path.display());
                         }
                     }
                 }
 
                 let output_atlas_path = {
                     if state.config.output_name.is_empty() {
-                        atlas_folder_path.join(format!("{}.png", Config::default_output_name()))
+                        atlas_dir_path.join(format!("{}.png", Config::default_output_name()))
                     } else {
-                        atlas_folder_path.join(format!("{}.png", state.config.output_name))
+                        atlas_dir_path.join(format!("{}.png", state.config.output_name))
                     }
                 };
 
-                log::info!("Writing to file '{}'...", output_atlas_path.display());
+                infoln!("Exporting to file {}", output_atlas_path.display().to_string().bold());
                 image_buffer.save_with_format(output_atlas_path, image::ImageFormat::Png).unwrap();
+
+                infoln!(last, "{}", "Done".green());
             },
-            None => ()
+            None => {
+                warnln!("There is no packer defined");
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
-use flexi_logger::LogSpecBuilder;
-use crate::common::Verbosity;
+use crate::{
+    common::Verbosity,
+    log::Logger,
+    settings::ConfigLoggerStatus
+};
 
 pub trait ProcessorConfig: Verbosity {
-    fn configure_logger(&self, builder: &mut LogSpecBuilder);
+    fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus);
 }

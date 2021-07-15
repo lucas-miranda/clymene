@@ -6,10 +6,9 @@ use std::{
 
 use colored::Colorize;
 
-use log::{
-    info,
-    trace,
-    warn
+use tree_decorator::{
+    close_tree_item,
+    decorator
 };
 
 use crate::{
@@ -50,16 +49,16 @@ impl Processor for ConfigProcessor {
         let mut config_status = ConfigStatus::NotModified;
         let mut output_path = config.output_path.clone();
 
+        infoln!(block, "Checking {} config", env!("CARGO_PKG_NAME").bold().magenta());
+
+        traceln!(block, "Output path");
+
         if output_path.is_empty() {
             output_path = Config::default_output_path();
-
-            warn!(
-                "{}  Output dir path is empty, default value '{}' will be used.", 
-                "Raven".bold(), 
-                output_path
-            );
-
+            warnln!("Output directory path is empty, default value '{}' will be used.", output_path);
             config_status = ConfigStatus::Modified;
+        } else {
+            traceln!("Using provided output directory path {}", output_path.bold());
         }
 
         // handle output folder path
@@ -69,16 +68,15 @@ impl Processor for ConfigProcessor {
             Ok(metadata) => {
                 if !metadata.is_dir() {
                     panic!("Expected a directory at output path '{}'.", output_pathbuf.display());
+                } else {
+                    traceln!(last, "{}", "Found".green());
                 }
             },
             Err(io_error) => {
                 match &io_error.kind() {
                     io::ErrorKind::NotFound => {
-                        trace!(
-                            "{}  Output dir path '{}' doesn't seems to exist, it'll be created right now...", 
-                            "Raven".bold(), 
-                            output_pathbuf.display()
-                        );
+                        warnln!(block, "Output directory path {} doesn't seems to exist", output_pathbuf.display().to_string().bold());
+                        infoln!(entry: decorator::Entry::None, "It'll be created right now...");
 
                         fs::create_dir_all(&output_pathbuf).unwrap();
 
@@ -87,12 +85,14 @@ impl Processor for ConfigProcessor {
                             std::thread::sleep(std::time::Duration::from_millis(10u64));
                         }
 
-                        info!("{}  Output folder created!", "Raven".bold());
+                        infoln!(last, "{}", "Done".green());
                     },
                     _ => {
                         panic!("{}", io_error);
                     }
                 }
+
+                close_tree_item!();
             }
         }
 
@@ -101,6 +101,8 @@ impl Processor for ConfigProcessor {
             config.output_name = Config::default_output_name();
             config_status = ConfigStatus::Modified;
         }
+
+        infoln!(last, "{}", "Done".green());
 
         config_status
     }

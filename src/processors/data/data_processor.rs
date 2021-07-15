@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{
     common::Verbosity,
     processors::{
@@ -41,6 +43,7 @@ impl Processor for DataProcessor {
     }
 
     fn execute(&self, state: &mut State) {
+        infoln!(block, "Processing data");
         let mut atlas_data = AtlasData::new();
 
         let cache = match &state.cache {
@@ -49,7 +52,8 @@ impl Processor for DataProcessor {
         };
 
         //let cache_images_path = state.config.cache.images_path();
-        log::info!("Gathering data entries...");
+        infoln!(block, "Gathering graphics' data entries");
+
         for entry in cache.files.values() {
             match entry.borrow().location.file_stem() {
                 Some(location_stem) => {
@@ -108,6 +112,8 @@ impl Processor for DataProcessor {
             */
         }
 
+        infoln!(last, "{}", "Done".green());
+
         let output_atlas_data_path = state
             .config
             .cache
@@ -120,13 +126,21 @@ impl Processor for DataProcessor {
                }
             );
 
-        log::info!("Generating atlas data at {}...", output_atlas_data_path.display());
+        if self.prettify_output {
+            infoln!("Exporting prettified data to file");
+        } else {
+            infoln!("Exporting data to file");
+        }
+
+        traceln!("At {}", output_atlas_data_path.display().to_string().bold());
+
         if self.prettify_output {
             atlas_data.save_pretty_to_path(output_atlas_data_path).unwrap();
         } else {
             atlas_data.save_to_path(output_atlas_data_path).unwrap();
         }
-        log::info!("Done!")
+
+        infoln!(last, "{}", "Done".green());
     }
 }
 

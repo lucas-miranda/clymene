@@ -3,11 +3,13 @@ use serde::{
     Serialize 
 };
 
-use flexi_logger::LogSpecBuilder;
-
 use crate::{
     common::Verbosity,
-    settings::ProcessorConfig
+    log::Logger,
+    settings::{
+        ConfigLoggerStatus,
+        ProcessorConfig
+    }
 };
 
 #[derive(Default, Serialize, Deserialize)]
@@ -20,9 +22,13 @@ pub struct DataConfig {
 }
 
 impl ProcessorConfig for DataConfig {
-    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
-        if self.is_verbose() {
-            builder.module("raven::processors::data", log::LevelFilter::Trace);
+    fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus) {
+        let logger_status = ConfigLoggerStatus {
+            verbose: self.is_verbose() || parent_logger_status.verbose
+        };
+
+        if logger_status.verbose {
+            logger.register_module("processors::data", true);
         }
     }
 }

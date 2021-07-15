@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use flexi_logger::LogSpecBuilder;
-
 use serde::{ 
     Deserialize, 
     Serialize 
@@ -9,13 +7,15 @@ use serde::{
 
 use crate::{
     common::Verbosity,
+    log::Logger,
     settings::{
         AsepriteConfig,
+        ConfigLoggerStatus,
         ProcessorConfig
     }
 };
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ImageConfig {
     #[serde(default)]
     pub verbose: bool,
@@ -26,24 +26,46 @@ pub struct ImageConfig {
     #[serde(skip)]
     pub output_path: PathBuf,
 
+    #[serde(default = "ImageConfig::default_display")]
+    pub display: DisplayKind,
+
     #[serde(default)]
     pub aseprite: AsepriteConfig
 }
 
 impl ImageConfig {
+    pub fn default_display() -> DisplayKind {
+        DisplayKind::Simple
+    }
+
     pub fn source_path(&self) -> PathBuf {
         PathBuf::from(&self.input_path)
     }
 }
 
+impl Default for ImageConfig {
+    fn default() -> Self {
+        Self {
+            verbose: false,
+            input_path: String::default(),
+            output_path: PathBuf::default(),
+            display: DisplayKind::Simple,
+            aseprite: AsepriteConfig::default()
+        }
+    }
+}
+
 impl ProcessorConfig for ImageConfig {
-    fn configure_logger(&self, builder: &mut LogSpecBuilder) {
-        if self.is_verbose() {
-            builder.module("raven::processors::image", log::LevelFilter::Trace);
-            return;
+    fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus) {
+        let logger_status = ConfigLoggerStatus {
+            verbose: self.is_verbose() || parent_logger_status.verbose
+        };
+
+        if logger_status.verbose {
+            logger.register_module("processors::image", true);
         }
 
-        self.aseprite.configure_logger(builder);
+        self.aseprite.configure_logger(logger, &logger_status);
     }
 }
 
@@ -55,4 +77,12 @@ impl Verbosity for ImageConfig {
     fn is_verbose(&self) -> bool {
         self.verbose
     }
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DisplayKind {
+    Simple,
+    List,
+    Detailed
 }

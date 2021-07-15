@@ -14,6 +14,10 @@ pub struct CustomPacker {
 }
 
 impl Packer for CustomPacker {
+    fn name(&self) -> &str {
+        "Custom"
+    }
+
     fn execute(&self, atlas_size: Size<u32>, graphic_sources: &mut Vec<&mut GraphicSource>) -> Option<()> {
         if atlas_size.width == 0 || atlas_size.height == 0 {
             return None;
@@ -48,7 +52,6 @@ impl Packer for CustomPacker {
             };
 
             let atlas_region = Rectangle::new(empty_space.x, empty_space.y, source.region.width, source.region.height);
-            log::trace!("Source region: {}, Target Atlas Region: {}, Atlas size: {}, Empty space: {}", source.region, atlas_region, a, empty_space);
 
             if empty_space.x + source.region.width > a.width {
                 panic!("Source not fit. Source region: {}, Target Atlas Region: {}, Atlas size: {}, Empty space: {}", source.region, atlas_region, a, empty_space);
@@ -58,13 +61,6 @@ impl Packer for CustomPacker {
                 panic!("Source not fit. Source region: {}, Target Atlas Region: {}, Atlas size: {}, Empty space: {}", source.region, atlas_region, a, empty_space);
             }
 
-            // space to the right
-            // 4 - 4 = 0 (rem width)
-            // [0], [1, 2, 3, 4]
-            //
-            // 1 + 4 = 5
-            // 5 > 5? 
-            //
             let space_right_side = if empty_space.width > source.region.width {
                 Some(Rectangle::new(
                     atlas_region.right(), 
@@ -104,22 +100,10 @@ impl Packer for CustomPacker {
 
             // push spaces
             if let Some(space) = space_right_side {
-                log::trace!("- Right empty space: {}", space);
-
-                if space.x + space.width > a.width || space.y + space.height > a.height {
-                    panic!("Invalid right empty space. Space: {}", space);
-                }
-
                 empty_spaces.push(space);
             }
 
             if let Some(space) = space_bottom_side {
-                log::trace!("- Bottom empty space: {}", space);
-
-                if space.x + space.width > a.width || space.y + space.height > a.height {
-                    panic!("Invalid bottom empty space. Space: {}", space);
-                }
-
                 empty_spaces.push(space);
             }
 

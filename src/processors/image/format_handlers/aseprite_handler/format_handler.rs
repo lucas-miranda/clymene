@@ -19,12 +19,8 @@ use std::{
     process::Command
 };
 
-use log::{
-    error,
-    trace,
-    info,
-    warn
-};
+use colored::Colorize;
+use tree_decorator::decorator;
 
 use crate::{
     common::Verbosity,
@@ -76,28 +72,33 @@ impl FormatHandler {
         }
     }
 
+    /// Confirm config.aseprite.bin_path holds a valid aseprite bin path.
     fn verify_aseprite_bin(&self, config: &mut Config) -> ConfigStatus {
-        // confirm config.aseprite.bin_path holds a valid aseprite bin path
         let c = &mut config.image.aseprite;
 
         if !c.bin_path.is_empty() {
             match self.find_aseprite_bin_path(&c.bin_path) {
                 Some(pathbuf) => {
                     if pathbuf == PathBuf::from(&c.bin_path) {
-                        // doesn't need to do anything else
+                        // registered aseprite bin path at config
+                        // already is a valid one
+                        //
+                        // don't need to do anything else
+
+                        traceln!(entry: decorator::Entry::None, "Found at {}", c.bin_path.bold());
                         return ConfigStatus::NotModified;
                     }
 
                     c.bin_path = pathbuf.display().to_string();
-                    info!("Aseprite bin found at '{}'.", c.bin_path);
+                    infoln!("Found at {}", c.bin_path.bold());
                     return ConfigStatus::Modified;
                 },
                 None => {
-                    warn!("Can't find aseprite bin at '{}'.", c.bin_path);
+                    warnln!("Can't find bin at {}", c.bin_path.bold());
                 }
             };
         } else {
-            warn!("Aseprite bin path undefined.");
+            warnln!(entry: decorator::Entry::None, "Bin path not defined");
         }
 
         // get aseprite bin path
@@ -108,7 +109,7 @@ impl FormatHandler {
         let ase_filepath: PathBuf;
 
         'bin_search: loop {
-            trace!("> Please, enter Aseprite path: ");
+            info!("> Please, enter {} full path: ", "Aseprite".bold().cyan());
 
             match stdin.lock().read_line(&mut line_input) {
                 Ok(_bytes) => {
@@ -121,7 +122,7 @@ impl FormatHandler {
                         break 'bin_search;
                     }
 
-                    error!("> Aseprite not found at entered path");
+                    errorln!(entry: decorator::Entry::Double, "{} not found at provided path", "Aseprite".bold().cyan());
                 },
                 Err(e) => {
                     panic!("{}", e);
@@ -131,7 +132,7 @@ impl FormatHandler {
             line_input.clear();
         }
 
-        info!("|- Aseprite found!");
+        infoln!("{} {}", "Aseprite".green().bold(), "found!".green());
         c.bin_path = ase_filepath.display().to_string();
 
         ConfigStatus::Modified
@@ -156,10 +157,7 @@ impl FormatHandler {
         if metadata.is_file() {
             match pathbuf.file_name() {
                 Some(filename) => {
-                    let f = filename.to_str().unwrap();
-                    info!("aseprite filename: {}", f);
-
-                    if f.to_lowercase().eq(aseprite_executable_name) {
+                    if filename.to_str().unwrap().to_lowercase().eq(aseprite_executable_name) {
                         Some(pathbuf)
                     } else {
                         None
@@ -169,14 +167,14 @@ impl FormatHandler {
             }
         } else if metadata.is_dir() {
             match util::fs::find(
-                pathbuf, 
+                pathbuf,
                 &mut move |e: &DirEntry| {
                     aseprite_executable_name.eq(&e.file_name().to_str().unwrap().to_lowercase())
                 }
             ) {
                 Ok(entry) => entry.map(|found_entry| found_entry.path()),
                 Err(_) => None
-                }
+            }
         } else {
             None
         }
@@ -279,7 +277,7 @@ impl format_handlers::FormatHandler for FormatHandler {
     }
 
     fn process(&self, source_file_path: &Path, output_dir_path: &Path, config: &Config) -> Result<Graphic, Error> {
-        trace!("|| aseprite file => {}", source_file_path.display());
+        traceln!(entry: decorator::Entry::None, "Source filepath: {}", source_file_path.display().to_string().bold());
 
         // check if file is valid
         match source_file_path.metadata() {
@@ -310,7 +308,7 @@ impl format_handlers::FormatHandler for FormatHandler {
         }
 
         // verify output directory
-        trace!("|| output path => {}", output_dir_path.display());
+        traceln!(entry: decorator::Entry::None, "     Output dir: {}", output_dir_path.display().to_string().bold());
 
         match output_dir_path.metadata() {
             Ok(metadata) => {
@@ -325,8 +323,6 @@ impl format_handlers::FormatHandler for FormatHandler {
 
         // extract every frame (excluding empty ones)
         let frame_pathbuf = output_dir_path.join(FRAME_FILE_NAME_FORMAT);
-
-        trace!("|| frames path format => {}", frame_pathbuf.display());
 
         let output = Command::new(&config.image.aseprite.bin_path)
             .args(&[
@@ -355,7 +351,7 @@ impl format_handlers::FormatHandler for FormatHandler {
         // generate data
         let data_pathbuf = output_dir_path.join(DATA_FILE_NAME);
 
-        trace!("|| data path => {}", data_pathbuf.display());
+        traceln!(entry: decorator::Entry::None, "  Data filepath: {}", data_pathbuf.display().to_string().bold());
 
         let output = Command::new(&config.image.aseprite.bin_path)
             .args(&[
@@ -444,7 +440,7 @@ impl format_handlers::FormatHandler for FormatHandler {
 
             for index in frame_tag_data.from..=frame_tag_data.to {
                 if index < 0 {
-                    error!("Skipping invalid index '{}'.", index);
+                    errorln!("Skipping invalid index '{}'.", index);
                     continue;
                 }
 
