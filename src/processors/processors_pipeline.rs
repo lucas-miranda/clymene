@@ -48,7 +48,7 @@ impl<'a> ProcessorsPipeline<'a> {
                   .unwrap();
         }
 
-        let mut state = State::new(config);
+        let mut state = State::new(config, args.force);
 
         for processor in &self.processors {
             processor.execute(&mut state);

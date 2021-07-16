@@ -250,29 +250,42 @@ impl Processor for CacheImporterProcessor {
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
         traceln!(entry: decorator::Entry::None; block, "At file {}", cache_pathbuf.display().to_string().bold());
-        let mut cache = match Cache::load_from_path(&cache_pathbuf, state.config.cache.images_path(), state.config.cache.atlas_path()) {
-            Ok(c) => {
-                if is_trace_enabled!() {
-                    close_tree_item!();
-                }
 
-                c
-            },
-            Err(e) => {
-                warnln!("Cache file not found at expected path");
-                match &e {
-                    cache::LoadError::FileNotFound(path) => {
-                        infoln!(block; last, "Creating a new one");
-                        let c = Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path());
+        let mut cache = if state.force {
+            infoln!(block; last, "Creating a new one (forced)");
+            let c = Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path());
 
-                        c.save_to_path(&path)
-                         .unwrap();
+            c.save_to_path(&cache_pathbuf)
+             .unwrap();
 
-                        infoln!(last, "{}", "Done".green());
+            infoln!(last, "{}", "Done".green());
 
-                        c
+            c
+        } else {
+            match Cache::load_from_path(&cache_pathbuf, state.config.cache.images_path(), state.config.cache.atlas_path()) {
+                Ok(c) => {
+                    if is_trace_enabled!() {
+                        close_tree_item!();
                     }
-                    _ => panic!("{}", e)
+
+                    c
+                },
+                Err(e) => {
+                    warnln!("Cache file not found at expected path");
+                    match &e {
+                        cache::LoadError::FileNotFound(path) => {
+                            infoln!(block; last, "Creating a new one");
+                            let c = Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path());
+
+                            c.save_to_path(&path)
+                             .unwrap();
+
+                            infoln!(last, "{}", "Done".green());
+
+                            c
+                        }
+                        _ => panic!("{}", e)
+                    }
                 }
             }
         };

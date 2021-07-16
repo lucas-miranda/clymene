@@ -249,46 +249,48 @@ impl<'a> Processor for ImageProcessor<'a> {
                     infoln!(block, "{}", location.display().to_string().bold().cyan());
                 }
 
-                // verify cache entry
-                match &state.cache {
-                    Some(cache) => {
-                        match cache.retrieve(&location, &source_metadata) {
-                            CacheStatus::Found(cache_entry) => {
-                                if let DisplayKind::Detailed = display_kind {
-                                    infoln!("Cache: {}", "Found".green());
-                                }
-
-                                if let Some(graphic) = cache_entry.retrieve_graphic(source_file, &cache.images_path) {
-                                    match display_kind {
-                                        DisplayKind::List => infoln!("{} {}", "*".bold().blue(), location.display().to_string().bold().cyan()),
-                                        DisplayKind::Detailed => infoln!(last, "{} {}", "*".blue().bold(), "Include".blue()),
-                                        _ => ()
+                if !state.force {
+                    // verify cache entry
+                    match &state.cache {
+                        Some(cache) => {
+                            match cache.retrieve(&location, &source_metadata) {
+                                CacheStatus::Found(cache_entry) => {
+                                    if let DisplayKind::Detailed = display_kind {
+                                        infoln!("Cache: {}", "Found".green());
                                     }
 
-                                    match graphic {
-                                        Graphic::Empty => (),
-                                        _ => output.graphics.push(graphic)
-                                    }
+                                    if let Some(graphic) = cache_entry.retrieve_graphic(source_file, &cache.images_path) {
+                                        match display_kind {
+                                            DisplayKind::List => infoln!("{} {}", "*".bold().blue(), location.display().to_string().bold().cyan()),
+                                            DisplayKind::Detailed => infoln!(last, "{} {}", "*".blue().bold(), "Include".blue()),
+                                            _ => ()
+                                        }
 
-                                    continue;
-                                } else {
-                                    panic!("Something went wrong. Cache was found, but it's graphic can't be retrieved.\nAt location '{}'", location.display())
-                                }
-                            },
-                            CacheStatus::NotFound => {
-                                if let DisplayKind::Detailed = display_kind {
-                                    infoln!("Cache: {}", "Not Found".red());
-                                }
-                            },
-                            CacheStatus::Outdated => {
-                                if let DisplayKind::Detailed = display_kind {
-                                    infoln!("Cache: {}", "Outdated".yellow());
+                                        match graphic {
+                                            Graphic::Empty => (),
+                                            _ => output.graphics.push(graphic)
+                                        }
+
+                                        continue;
+                                    } else {
+                                        panic!("Something went wrong. Cache was found, but it's graphic can't be retrieved.\nAt location '{}'", location.display())
+                                    }
+                                },
+                                CacheStatus::NotFound => {
+                                    if let DisplayKind::Detailed = display_kind {
+                                        infoln!("Cache: {}", "Not Found".red());
+                                    }
+                                },
+                                CacheStatus::Outdated => {
+                                    if let DisplayKind::Detailed = display_kind {
+                                        infoln!("Cache: {}", "Outdated".yellow());
+                                    }
                                 }
                             }
+                        },
+                        None => {
+                            panic!("Can't access cache. Isn't at valid state.");
                         }
-                    },
-                    None => {
-                        panic!("Can't access cache. Isn't at valid state.");
                     }
                 }
 

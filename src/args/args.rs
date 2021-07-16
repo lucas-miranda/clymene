@@ -8,7 +8,8 @@ pub struct Args {
     pub config_filepath: String,
     pub display: Option<DisplayKind>,
     pub verbose: bool,
-    pub debug: bool
+    pub debug: bool,
+    pub force: bool
 }
 
 
@@ -52,6 +53,7 @@ impl Args {
                     args.verbose = true;
                 },
                 "--force" | "-f" => {
+                    args.force = true;
                 },
                 "--debug" => {
                     args.debug = true;
@@ -89,7 +91,8 @@ impl Default for Args {
             config_filepath: DEFAULT_FILEPATH.to_owned(),
             display: None,
             verbose: false,
-            debug: false
+            debug: false,
+            force: false
         }
     }
 }
