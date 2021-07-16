@@ -50,11 +50,12 @@ pub struct CacheEntry {
 }
 
 impl CacheEntry {
-    pub fn retrieve_graphic<P: AsRef<Path>>(&self, source_path: P) -> Option<Graphic> {
+    pub fn retrieve_graphic<P: AsRef<Path>>(&self, source_path: &P, image_root_path: &P) -> Option<Graphic> {
+        let graphic_dir_path = image_root_path.as_ref().join(&self.location);
         let mut graphic_source_data_set = GraphicSourceDataSet::new();
         let dir_iter;
 
-        match fs::read_dir(&self.location) {
+        match fs::read_dir(&graphic_dir_path) {
             Ok(iter) => dir_iter = iter,
             Err(_) => return None
         };
@@ -130,7 +131,7 @@ impl CacheEntry {
             );
         }
 
-        let mut animation = match Animation::new(self.location.to_owned()) {
+        let mut animation = match Animation::new(source_path.as_ref().to_owned()) {
             Ok(anim) => anim,
             Err(_) => return None
         };

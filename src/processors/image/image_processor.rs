@@ -258,7 +258,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                                     infoln!("Cache: {}", "Found".green());
                                 }
 
-                                if let Some(graphic) = cache_entry.retrieve_graphic(&source_file) {
+                                if let Some(graphic) = cache_entry.retrieve_graphic(source_file, &cache.images_path) {
                                     match display_kind {
                                         DisplayKind::List => infoln!("{} {}", "*".bold().blue(), location.display().to_string().bold().cyan()),
                                         DisplayKind::Detailed => infoln!(last, "{} {}", "*".blue().bold(), "Include".blue()),
@@ -271,6 +271,8 @@ impl<'a> Processor for ImageProcessor<'a> {
                                     }
 
                                     continue;
+                                } else {
+                                    panic!("Something went wrong. Cache was found, but it's graphic can't be retrieved.\nAt location '{}'", location.display())
                                 }
                             },
                             CacheStatus::NotFound => {

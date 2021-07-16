@@ -250,7 +250,7 @@ impl Processor for CacheImporterProcessor {
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
         traceln!(entry: decorator::Entry::None; block, "At file {}", cache_pathbuf.display().to_string().bold());
-        let mut cache = match Cache::load_from_path(&cache_pathbuf) {
+        let mut cache = match Cache::load_from_path(&cache_pathbuf, state.config.cache.images_path(), state.config.cache.atlas_path()) {
             Ok(c) => {
                 if is_trace_enabled!() {
                     close_tree_item!();

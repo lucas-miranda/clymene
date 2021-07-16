@@ -66,17 +66,27 @@ impl Cache {
         "cache.json"
     }
 
-    pub fn load(file: &File) -> Result<Self, LoadError> {
+    pub fn load<P: Into<PathBuf>>(file: &File, images_path: P, atlas_output_path: P) -> Result<Self, LoadError> {
         let buf_reader = BufReader::new(file);
-        match serde_json::from_reader(buf_reader) {
-            Ok(c) => Ok(c),
+        match serde_json::from_reader::<_, Cache>(buf_reader) {
+            Ok(mut c) => {
+                c.images_path = images_path.into();
+                c.atlas_output_path = atlas_output_path.into();
+
+                // fill location field of every cache entry
+                for (location, cache_ref) in c.files.iter_mut() {
+                    cache_ref.get_mut().location = location.clone();
+                }
+
+                Ok(c)
+            },
             Err(serde_json_error) => Err(LoadError::Deserialize(serde_json_error))
         }
     }
 
-    pub fn load_from_path<P: AsRef<Path>>(filepath: P) -> Result<Self, LoadError> {
+    pub fn load_from_path<P: AsRef<Path>, T: Into<PathBuf>>(filepath: P, images_path: T, atlas_output_path: T) -> Result<Self, LoadError> {
         match OpenOptions::new().read(true).open(&filepath) {
-            Ok(file) => Self::load(&file),
+            Ok(file) => Self::load(&file, images_path, atlas_output_path),
             Err(e) => {
                 match e.kind() {
                     io::ErrorKind::NotFound => Err(LoadError::FileNotFound(filepath.as_ref().to_owned())),
