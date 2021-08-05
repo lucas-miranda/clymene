@@ -10,6 +10,7 @@ use colored::Colorize;
 use crate::{
     common::Verbosity,
     graphics::Graphic,
+    math::Rectangle,
     processors::{
         cache::Cache,
         ConfigStatus,
@@ -60,6 +61,9 @@ impl Processor for CacheExporterProcessor {
         let cache_dir_pathbuf = state.config.cache.root_path();
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
+        // TODO  move this operation to the end
+        //       it should be performed only when
+        //       everything else has succeeded
         if let Err(e) = fs::remove_file(&cache_pathbuf) {
             match e.kind() {
                 io::ErrorKind::NotFound => (),
@@ -168,8 +172,13 @@ impl Processor for CacheExporterProcessor {
                         data.frames.push(FrameData {
                             atlas_region: match &frame.graphic_source.atlas_region {
                                 Some(atlas_region) => atlas_region.clone(),
-                                None => panic!("Expected atlas region isn't defined at Frame '{}' from Animation '{}'", animation.source_path.display(), frame.graphic_source.path.display())
-                                                       
+                                None => {
+                                    if !frame.graphic_source.region.is_empty() {
+                                        errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", frame.graphic_source.path.display(), frame.graphic_source.region, animation.source_path.display());
+                                    }
+
+                                    Rectangle::default()
+                                },
                             },
                             duration: Some(frame.duration),
                             source_region: frame.graphic_source.region.clone()

@@ -49,7 +49,10 @@ pub struct Cache {
     pub images_path: PathBuf,
 
     #[serde(skip)]
-    pub atlas_output_path: PathBuf
+    pub atlas_output_path: PathBuf,
+
+    #[serde(skip)]
+    outdated: bool
 }
 
 impl Cache {
@@ -58,7 +61,8 @@ impl Cache {
             meta: CacheMetadata::default(),
             files: HashMap::new(),
             images_path,
-            atlas_output_path
+            atlas_output_path,
+            outdated: true
         }
     }
 
@@ -134,12 +138,6 @@ impl Cache {
         }
     }
 
-    /*
-    pub fn get<P: AsRef<Path> + Eq + Hash>(&self, location: P, source_metadata: &Metadata) -> Option<&RefCell<CacheEntry>> {
-        self.files.get(location.as_ref())
-    }
-    */
-
     pub fn register<P: AsRef<Path> + Eq + Hash>(&mut self, location: P, metadata: &Metadata, data: GraphicData) -> Result<(), Error> {
         let modtime = metadata.modified().unwrap();
 
@@ -153,5 +151,29 @@ impl Cache {
         );
 
         Ok(())
+    }
+
+    pub fn is_outdated(&self) -> bool {
+        self.outdated
+    }
+
+    pub fn is_updated(&self) -> bool {
+        !self.outdated
+    }
+
+    pub fn mark_as_outdated(&mut self) {
+        if self.is_outdated() {
+            return;
+        }
+
+        self.outdated = true;
+    }
+
+    pub fn mark_as_updated(&mut self) {
+        if self.is_updated() {
+            return;
+        }
+
+        self.outdated = false;
     }
 }

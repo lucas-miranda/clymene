@@ -252,7 +252,7 @@ impl Processor for CacheImporterProcessor {
         traceln!(entry: decorator::Entry::None; block, "At file {}", cache_pathbuf.display().to_string().bold());
 
         let mut cache = if state.force {
-            infoln!(block; last, "Creating a new one (forced)");
+            infoln!(block, "Creating a new one (forced)");
             let c = Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path());
 
             c.save_to_path(&cache_pathbuf)
@@ -272,7 +272,7 @@ impl Processor for CacheImporterProcessor {
                 },
                 Err(e) => {
                     warnln!("Cache file not found at expected path");
-                    match &e {
+                    let c = match &e {
                         cache::LoadError::FileNotFound(path) => {
                             infoln!(block; last, "Creating a new one");
                             let c = Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path());
@@ -285,7 +285,11 @@ impl Processor for CacheImporterProcessor {
                             c
                         }
                         _ => panic!("{}", e)
-                    }
+                    };
+
+                    //infoln!(last, "{}", "Done".green());
+
+                    c
                 }
             }
         };
@@ -387,8 +391,8 @@ impl Processor for CacheImporterProcessor {
             }
         }
 
-        state.cache.replace(cache);
         infoln!(last, "{}", "Done".green());
+        state.cache.replace(cache);
     }
 }
 

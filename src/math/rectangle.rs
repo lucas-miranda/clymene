@@ -65,6 +65,10 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
     pub fn bottom(&self) -> T {
         self.y + self.height
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.width.is_zero() && self.height.is_zero()
+    }
 }
 
 impl<T: Unsigned + NumCast + PartialOrd + Copy> Rectangle<T> {

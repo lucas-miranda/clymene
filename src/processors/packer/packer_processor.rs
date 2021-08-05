@@ -1,7 +1,8 @@
 use std::{
     fs,
     io,
-    iter
+    iter,
+    path::PathBuf
 };
 
 use colored::Colorize;
@@ -22,9 +23,11 @@ use crate::{
     },
     math::Size,
     processors::{
+        cache::CacheStatus,
         ConfigStatus,
         packer::{
             CustomPacker,
+            Error,
             Packer
         },
         Processor,
@@ -49,6 +52,54 @@ impl PackerProcessor {
             verbose: false,
             packer: None
         }
+    }
+
+    fn should_generate(&self, state: &State) -> Result<bool, Error> {
+        if let Some(cache) = &state.cache {
+            // verify if exists files at output path
+            let output_file_name = self.output_file_path(&state.config);
+            match output_file_name.metadata() {
+                Ok(metadata) => {
+                    if !metadata.is_file() {
+                        traceln!(entry: decorator::Entry::None, "Expected output file {} isn't a file", output_file_name.display().to_string().bold());
+                        return Err(Error::OutputFilepathAlreadyInUse(output_file_name));
+                    }
+                },
+                Err(e) => {
+                    if let Some(parent_path) = output_file_name.parent() {
+                        if !parent_path.exists() {
+                            return Err(Error::InvalidOutputDirectoryPath(parent_path.to_owned()));
+                        }
+                    }
+
+                    if let io::ErrorKind::NotFound = e.kind() {
+                        traceln!(entry: decorator::Entry::None, "Output file {} doesn't seems to exists", output_file_name.display().to_string().bold());
+                        return Ok(true);
+                    }
+
+                    return Err(Error::IO(e));
+                }
+            }
+
+            // check if cache still is updated
+            if cache.is_updated() {
+                return Ok(false);
+            }
+        }
+
+        Ok(true)
+    }
+
+    fn output_file_path(&self, config: &Config) -> PathBuf {
+        config.cache
+              .atlas_path()
+              .join(
+                  if config.output_name.is_empty() {
+                      format!("{}.png", Config::default_output_name())
+                  } else {
+                      format!("{}.png", config.output_name)
+                  }
+              )
     }
 
     fn calculate_optimal_atlas_size(size: u32) -> u32 {
@@ -98,6 +149,21 @@ impl Processor for PackerProcessor {
         match &self.packer {
             Some(packer) => {
                 infoln!(block, "Packing");
+
+                if state.force {
+                    infoln!(dashed, "Force Generate");
+                } else {
+                    infoln!(block, "Checking");
+
+                    if !self.should_generate(&state).unwrap() {
+                        infoln!(last, "{}", "Already Updated".green());
+                        infoln!(last, "{}", "Done".green());
+                        return;
+                    } else {
+                        infoln!(last, "{}", "Need Update".blue());
+                    }
+                }
+
                 infoln!(block, "Calculating");
                 traceln!(entry: decorator::Entry::None, "With atlas size {}x{}", state.config.packer.atlas_size, state.config.packer.atlas_size);
 
@@ -170,14 +236,7 @@ impl Processor for PackerProcessor {
                     }
                 }
 
-                let output_atlas_path = {
-                    if state.config.output_name.is_empty() {
-                        atlas_dir_path.join(format!("{}.png", Config::default_output_name()))
-                    } else {
-                        atlas_dir_path.join(format!("{}.png", state.config.output_name))
-                    }
-                };
-
+                let output_atlas_path = self.output_file_path(&state.config);
                 infoln!("Exporting to file {}", output_atlas_path.display().to_string().bold());
                 image_buffer.save_with_format(output_atlas_path, image::ImageFormat::Png).unwrap();
 

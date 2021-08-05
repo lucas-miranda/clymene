@@ -565,7 +565,7 @@ dependencies = [
 [[package]]
 name = "tree_decorator"
 version = "0.1.2"
-source = "git+https://github.com/lucas-miranda/tree_decorator#98550a014da33f8235813293c02cddf8e34b4221"
+source = "git+https://github.com/lucas-miranda/tree_decorator#082705a57427c72d0f10aeda629585b710555c45"
 dependencies = [
  "log",
 ]

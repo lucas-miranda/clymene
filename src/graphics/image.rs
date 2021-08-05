@@ -1,6 +1,9 @@
 use std::{
     ffi::OsString,
-    path::PathBuf
+    path::{
+        Path,
+        PathBuf
+    }
 };
 
 use crate::{
@@ -61,6 +64,13 @@ impl Image {
             source_path,
             graphic_source
         })
+    }
+
+    pub fn location(&self, source_root_directory: &Path) -> Option<PathBuf> {
+        match self.source_path.strip_prefix(&source_root_directory) {
+            Ok(path) => Some(path.with_extension("")),
+            Err(_) => None
+        }
     }
 }
 

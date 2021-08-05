@@ -86,6 +86,7 @@ impl CacheEntry {
                 };
 
                 let source_region: Rectangle<u32>;
+                let atlas_region: Option<Rectangle<u32>>;
 
                 match self.data.frames.get(frame_index as usize) {
                     Some(frame_data) => {
@@ -95,16 +96,32 @@ impl CacheEntry {
                             frame_data.source_region.width,
                             frame_data.source_region.height
                         ).unwrap_or_else(Rectangle::default);
+
+                        atlas_region = if !frame_data.atlas_region.is_empty() {
+                            Some(Rectangle::with(
+                                frame_data.atlas_region.x,
+                                frame_data.atlas_region.y,
+                                frame_data.atlas_region.width,
+                                frame_data.atlas_region.height
+                            ).unwrap_or_else(Rectangle::default))
+                        } else {
+                            None
+                        };
+
                     },
                     None => {
-                        //dimensions = Size::default();
                         source_region = Rectangle::default();
+                        atlas_region = None;
                     }
                 }
 
                 graphic_source_data_set.sources.push(
                     GraphicSourceData {
-                        source: GraphicSource::new(path, source_region),
+                        source: GraphicSource {
+                            atlas_region,
+                            path, 
+                            region: source_region
+                        },
                         frame_index
                     }
                 );

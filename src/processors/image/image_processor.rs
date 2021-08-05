@@ -251,7 +251,7 @@ impl<'a> Processor for ImageProcessor<'a> {
 
                 if !state.force {
                     // verify cache entry
-                    match &state.cache {
+                    match &mut state.cache {
                         Some(cache) => {
                             match cache.retrieve(&location, &source_metadata) {
                                 CacheStatus::Found(cache_entry) => {
@@ -287,11 +287,15 @@ impl<'a> Processor for ImageProcessor<'a> {
                                     }
                                 }
                             }
+
+                            cache.mark_as_outdated();
                         },
                         None => {
                             panic!("Can't access cache. Isn't at valid state.");
                         }
                     }
+                } else {
+                    infoln!("Cache: {}", "Force Skip".bright_red());
                 }
 
                 // prepare output path

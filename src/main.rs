@@ -99,7 +99,6 @@ fn main() {
     };
 
     config.configure_logger(&mut logger, &logger_status);
-
     if logger.is_verbose() {
         config.image.display = settings::DisplayKind::Detailed;
     }
