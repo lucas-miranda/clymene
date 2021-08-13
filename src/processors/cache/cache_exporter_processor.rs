@@ -2,7 +2,10 @@ use std::{
     cmp::Ordering,
     fs,
     io,
-    path::Path
+    path::{ 
+        Path,
+        PathBuf
+    }
 };
 
 use colored::Colorize;
@@ -12,7 +15,10 @@ use crate::{
     graphics::Graphic,
     math::Rectangle,
     processors::{
-        cache::Cache,
+        cache::{
+            self,
+            Cache
+        },
         ConfigStatus,
         data::{
             GraphicData,
@@ -39,40 +45,23 @@ impl CacheExporterProcessor {
             verbose: false
         }
     }
-}
 
-impl Processor for CacheExporterProcessor {
-    fn name(&self) -> &str {
-        "Cache Exporter"
-    }
-
-    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
-        &config.cache
-    }
-
-    fn setup(&mut self, _config: &mut Config) -> ConfigStatus {
-        ConfigStatus::NotModified
-    }
-
-    fn execute(&self, state: &mut State) {
-        infoln!(block, "Cache result");
-        infoln!("Preparing to update entries");
-
-        let cache_dir_pathbuf = state.config.cache.root_path();
-        let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
-
-        // TODO  move this operation to the end
-        //       it should be performed only when
-        //       everything else has succeeded
-        if let Err(e) = fs::remove_file(&cache_pathbuf) {
-            match e.kind() {
-                io::ErrorKind::NotFound => (),
-                _ => panic!("Can't remove cache file at '{}': {}", cache_pathbuf.display(), e)
-            }
-        } else {
-            traceln!("Removed old cache file at {}", cache_pathbuf.display().to_string().bold());
+    fn backup(&self, cache_path: &Path) -> Result<Option<PathBuf>, io::Error> {
+        if !cache_path.is_file() {
+            traceln!("No need to backup, there is no cache.json file");
+            return Ok(None);
         }
 
+        let mut backup_filename = cache_path.file_name().unwrap().to_owned();
+        backup_filename.push(".backup");
+        let backup_cache_path = cache_path.with_file_name(backup_filename);
+        fs::rename(cache_path, &backup_cache_path)?;
+        traceln!("Backup previous cache.json to {}", backup_cache_path.display().to_string().bold());
+
+        Ok(Some(backup_cache_path))
+    }
+
+    fn cache(&self, state: &mut State, cache_path: &Path) -> Result<(), cache::SaveError> {
         let cache = if let Some(c) = &mut state.cache {
             c
         } else {
@@ -209,9 +198,86 @@ impl Processor for CacheExporterProcessor {
 
         // write cache to file
         infoln!("Writing to file");
-        traceln!("At {}", cache_pathbuf.display().to_string().bold());
+        traceln!("At {}", cache_path.display().to_string().bold());
 
-        cache.save_to_path(&cache_pathbuf).unwrap();
+        cache.save_to_path(&cache_path).unwrap();
+
+        Ok(())
+    }
+}
+
+impl Processor for CacheExporterProcessor {
+    fn name(&self) -> &str {
+        "Cache Exporter"
+    }
+
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
+        &config.cache
+    }
+
+    fn setup(&mut self, _config: &mut Config) -> ConfigStatus {
+        ConfigStatus::NotModified
+    }
+
+    fn execute(&self, state: &mut State) {
+        infoln!(block, "Cache result");
+        infoln!("Preparing to update entries");
+
+        let cache_dir_pathbuf = state.config.cache.root_path();
+        let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
+
+        let backup_path = match self.backup(cache_pathbuf.as_path()) {
+            Ok(p) => p,
+            Err(e) => {
+                match e.kind() {
+                    io::ErrorKind::NotFound => (),
+                    _ => panic!("Can't backup cache file at '{}': {}", cache_pathbuf.display(), e)
+                }
+
+                None
+            }
+        };
+
+        match self.cache(state, cache_pathbuf.as_path()) {
+            Ok(()) => {
+                if let Some(p) = backup_path {
+                    // remove backup
+                    if let Err(e) = fs::remove_file(&p) {
+                        match e.kind() {
+                            io::ErrorKind::NotFound => (),
+                            _ => panic!("Can't remove backup cache file at '{}': {}", p.display(), e)
+                        }
+                    } else {
+                        traceln!("Removed old cache file at {}", p.display().to_string().bold());
+                    }
+                }
+            },
+            Err(e) => {
+                if let Some(p) = backup_path {
+                    // return previous version
+                    
+                    // remove failed cache file
+                    if let Err(e) = fs::remove_file(&cache_pathbuf) {
+                        match e.kind() {
+                            io::ErrorKind::NotFound => (),
+                            _ => panic!("Can't remove backup cache file at '{}': {}", p.display(), e)
+                        }
+                    } else {
+                        traceln!("Removing try to cache file at {}", p.display().to_string().bold());
+                        traceln!("Because of error: {}", e);
+                    }
+
+                    // return backup to previous state
+                    let original_filename = p.file_name().unwrap()
+                                             .to_str().unwrap()
+                                             .strip_suffix(".backup").unwrap();
+
+                    let original_path = p.with_file_name(original_filename);
+                    
+                    fs::rename(p, original_path).expect("Failed to rename backup files");
+                }
+            }
+        }
 
         infoln!(last, "{}", "Done".green());
     }
