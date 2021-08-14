@@ -147,8 +147,14 @@ impl<'a> Processor for ImageProcessor<'a> {
 
         // sort files by it's extension
         let mut source_files_by_extension: HashMap<OsString, Vec<PathBuf>> = HashMap::new();
-        source_files_by_extension.insert(OsString::default(), Vec::new());
-        let default_ext = OsString::default();
+
+        source_files_by_extension.extend(
+            self.format_handlers
+                .iter()
+                .map(|h| h.extensions())
+                .flatten()
+                .map(|ext| (OsString::from(ext), Vec::new()))
+        );
 
         let source_path = PathBuf::from(&state.config.image.input_path);
         util::fs::for_every_file(
@@ -156,28 +162,12 @@ impl<'a> Processor for ImageProcessor<'a> {
             &mut |entry: &DirEntry| {
                 let path_buf = entry.path();
 
-                let source_files = match path_buf.extension() {
-                    Some(ext) => {
-                        let ext_osstring = ext.to_os_string();
-
-                        match source_files_by_extension.get_mut(&ext_osstring) {
-                            Some(files) => {
-                                files
-                            },
-                            None => {
-                                source_files_by_extension.insert(ext.to_os_string(), Vec::new());
-                                source_files_by_extension.get_mut(&ext_osstring)
-                                                         .unwrap()
-                            }
-                        }
-                    },
-                    None => {
-                        source_files_by_extension.get_mut(&default_ext)
-                                                 .unwrap()
+                if let Some(ext) = path_buf.extension() {
+                    let ext_osstring = ext.to_os_string();
+                    if let Some(source_files) = source_files_by_extension.get_mut(&ext_osstring) {
+                        source_files.push(path_buf.as_path().to_owned());
                     }
-                };
-
-                source_files.push(path_buf.as_path().to_owned());
+                }
             }
         ).unwrap();
 
@@ -187,19 +177,29 @@ impl<'a> Processor for ImageProcessor<'a> {
         // progress bar
         let mut file_count = 0;
 
-        for source_files in source_files_by_extension.values() {
+        infoln!(block, "File Types");
+        for (ext, source_files) in source_files_by_extension.iter() {
+            infoln!("{}  {} files", ext.as_os_str().to_str().unwrap_or("???").bold(), source_files.len());
             file_count += source_files.len();
         }
+
+        infoln!(entry: decorator::Entry::None, "Found {} files", file_count);
+        infoln!(last, "{}", "Done".green());
 
         let bar_length = 20;
 
         if let DisplayKind::Simple = display_kind {
             info!(
-                "[{}]  0/{}  0%", 
-                " ".repeat(bar_length),
+                "0/{} [{}] 0%   {}  {}  ", 
                 file_count,
+                " ".repeat(bar_length),
+                "0".blue(),
+                "0".red()
             );
         }
+
+        let mut succeeded_files = 0;
+        let mut failed_files = 0;
 
         for format_handler in &self.format_handlers {
             let source_files = format_handler.extensions()
@@ -216,7 +216,9 @@ impl<'a> Processor for ImageProcessor<'a> {
 
                     print!("\r");
                     info!(
-                        "[{}{}]  {}/{}  {:.2}%           ", 
+                        "{}/{} [{}{}] {:.2}%   {}  {}             ", 
+                        file_index,
+                        file_count,
                         "=".repeat(completed_bar_length),
                         {
                             if completed_bar_length > 0 && completed_bar_length < bar_length {
@@ -227,9 +229,9 @@ impl<'a> Processor for ImageProcessor<'a> {
                                 " ".repeat(bar_length - completed_bar_length)
                             }
                         },
-                        file_index,
-                        file_count,
-                        completed_percentage * 100f32
+                        completed_percentage * 100f32,
+                        succeeded_files.to_string().blue(),
+                        failed_files.to_string().red()
                     );
                 }
 
@@ -241,6 +243,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                         location = path.with_extension("");
                     },
                     Err(_) => {
+                        failed_files += 1;
                         continue;
                     }
                 }
@@ -271,6 +274,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                                             _ => output.graphics.push(graphic)
                                         }
 
+                                        succeeded_files += 1;
                                         continue;
                                     } else {
                                         panic!("Something went wrong. Cache was found, but it's graphic can't be retrieved.\nAt location '{}'", location.display())
@@ -350,6 +354,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                                     _ => ()
                                 }
 
+                                succeeded_files += 1;
                                 continue;
                             },
                             _ => output.graphics.push(processed_file)
@@ -360,8 +365,12 @@ impl<'a> Processor for ImageProcessor<'a> {
                             DisplayKind::Detailed => infoln!(last, "{} {}", "+".green().bold(), "Include".green()),
                             _ => ()
                         }
+
+                        succeeded_files += 1;
                     },
                     Err(e) => {
+                        failed_files += 1;
+
                         match display_kind {
                             DisplayKind::List => infoln!("{} {}", "x".red().bold(), location.display().to_string().bold().cyan()),
                             DisplayKind::Detailed => {
@@ -378,10 +387,12 @@ impl<'a> Processor for ImageProcessor<'a> {
         if let DisplayKind::Simple = display_kind {
             print!("\r");
             infoln!(
-                "[{}]  {}/{}  100%           ", 
-                "=".repeat(bar_length),
+                "{}/{} [{}] 100%   {}  {}           ", 
                 file_count,
-                file_count
+                file_count,
+                "=".repeat(bar_length),
+                succeeded_files.to_string().blue(),
+                failed_files.to_string().red()
             );
         }
 
