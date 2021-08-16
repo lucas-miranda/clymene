@@ -30,12 +30,4 @@ impl CacheMetadata {
             )
         }
     }
-
-    /*
-    pub fn new() -> CacheMetadata {
-        CacheMetadata {
-            version: env!("CARGO_PKG_VERSION").to_owned()
-        }
-    }
-    */
 }

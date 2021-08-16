@@ -12,7 +12,13 @@ use colored::Colorize;
 
 use crate::{
     common::Verbosity,
-    graphics::Graphic,
+    graphics::{
+        animation::{
+            Frame,
+            Track
+        },
+        Graphic
+    },
     math::Rectangle,
     processors::{
         cache::{
@@ -105,73 +111,31 @@ impl CacheExporterProcessor {
 
                     // extract data
                     for track in &animation.tracks {
-                        // prepare indices
-                        // try to group ranges together
-                        let mut indices = Vec::new();
-                        let mut index_range_start: Option<&u32> = None;
-                        let mut index_range_end: Option<&u32> = None;
-
-                        for index in &track.frame_indices {
-                            match index_range_end {
-                                Some(end_index) => {
-                                    if *index == end_index + 1 {
-                                        index_range_end = Some(index);
-                                    } else {
-                                        let from = *index_range_start.expect("Undefined range start.");
-                                        let to = *index_range_end.expect("Undefined range end.");
-
-                                        match to.cmp(&from) {
-                                            Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
-                                            Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
-                                            _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
-                                        }
-
-                                        index_range_start = Some(index);
-                                        index_range_end = Some(index);
-                                    }
-                                },
-                                None => {
-                                    index_range_start = Some(index);
-                                    index_range_end = Some(index);
-                                }
-                            }
-                        }
-
-                        // handle remaining indices
-                        if let Some(from) = index_range_start {
-                            let from = *from;
-                            let to = *index_range_end.expect("Undefined range end.");
-
-                            match to.cmp(&from) {
-                                Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
-                                Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
-                                _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
-                            }
-                        }
-
                         data.tracks.push(
                             TrackData {
                                 label: track.label.clone(),
-                                indices 
+                                indices: self.prepare_indices(&track)
                             }
                         );
                     }
 
                     for frame in &animation.frames {
-                        data.frames.push(FrameData {
-                            atlas_region: match &frame.graphic_source.atlas_region {
-                                Some(atlas_region) => atlas_region.clone(),
-                                None => {
-                                    if !frame.graphic_source.region.is_empty() {
-                                        errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", frame.graphic_source.path.display(), frame.graphic_source.region, animation.source_path.display());
-                                    }
+                        data.frames.push(        
+                            FrameData {
+                                atlas_region: match &frame.graphic_source.atlas_region {
+                                    Some(atlas_region) => atlas_region.clone(),
+                                    None => {
+                                        if !frame.graphic_source.region.is_empty() {
+                                            errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", frame.graphic_source.path.display(), frame.graphic_source.region, animation.source_path.display());
+                                        }
 
-                                    Rectangle::default()
+                                        Rectangle::default()
+                                    },
                                 },
-                            },
-                            duration: Some(frame.duration),
-                            source_region: frame.graphic_source.region.clone()
-                        });
+                                duration: Some(frame.duration),
+                                source_region: frame.graphic_source.region.clone()
+                            }
+                        );
                     }
 
                     cache_images_path.join(&location)
@@ -203,6 +167,53 @@ impl CacheExporterProcessor {
         cache.save_to_path(&cache_path).unwrap();
 
         Ok(())
+    }
+
+    fn prepare_indices(&self, track: &Track) -> Vec<FrameIndicesData> {
+        // try to group ranges together
+        let mut indices = Vec::new();
+        let mut index_range_start: Option<&u32> = None;
+        let mut index_range_end: Option<&u32> = None;
+
+        for index in &track.frame_indices {
+            match index_range_end {
+                Some(end_index) => {
+                    if *index == end_index + 1 {
+                        index_range_end = Some(index);
+                    } else {
+                        let from = *index_range_start.expect("Undefined range start.");
+                        let to = *index_range_end.expect("Undefined range end.");
+
+                        match to.cmp(&from) {
+                            Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
+                            Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
+                            _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
+                        }
+
+                        index_range_start = Some(index);
+                        index_range_end = Some(index);
+                    }
+                },
+                None => {
+                    index_range_start = Some(index);
+                    index_range_end = Some(index);
+                }
+            }
+        }
+
+        // handle remaining indices
+        if let Some(from) = index_range_start {
+            let from = *from;
+            let to = *index_range_end.expect("Undefined range end.");
+
+            match to.cmp(&from) {
+                Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
+                Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
+                _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
+            }
+        }
+
+        indices
     }
 }
 

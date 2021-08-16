@@ -26,7 +26,7 @@ impl DataProcessor {
             prettify_output: false
         }
     }
-    }
+}
 
 impl Processor for DataProcessor {
     fn name(&self) -> &str {
@@ -51,7 +51,6 @@ impl Processor for DataProcessor {
             None => panic!("Cache isn't available.")
         };
 
-        //let cache_images_path = state.config.cache.images_path();
         infoln!(block, "Gathering graphics' data entries");
 
         for entry in cache.files.values() {
@@ -63,53 +62,6 @@ impl Processor for DataProcessor {
                     panic!("File stem not found at location '{}'", entry.borrow().location.display());
                 }
             }
-
-            /*
-            let cache_entry_path = cache_images_path.join(&entry.borrow().location);
-
-            // try to find entry's data file
-            let dir_iter = match fs::read_dir(&cache_entry_path) {
-                Ok(iter) => iter,
-                Err(e) => {
-                    log::error!("Can't read directory '{}', when looking for data file: {}", cache_entry_path.display(), e);
-                    continue;
-                }
-            };
-
-            let mut data_path = None;
-            for dir_entry in dir_iter {
-                match dir_entry {
-                    Ok(dir_entry) => {
-                        if !dir_entry.metadata().unwrap().is_file() {
-                            continue;
-                        }
-
-                        let path = dir_entry.path();
-                        let stem = match path.file_stem() {
-                            Some(stem) => stem,
-                            None => {
-                                log::error!("Can't extract file stem from '{}'.", dir_entry.path().display());
-                                continue;
-                            }
-                        };
-
-                        if stem == CACHE_ENTRY_DATA_FILENAME {
-                            // found
-                            data_path = Some(path.to_owned());
-                            break;
-                        }
-                    },
-                    Err(e) => log::error!("Can't read directory entry:\n{}", e)
-                }
-            }
-
-            match data_path {
-                Some(path) => {
-                    // use this data file at path
-                },
-                None => log::error!("Data file not found at entry '{}'", entry.borrow().location.display())
-            }
-            */
         }
 
         infoln!(last, "{}", "Done".green());

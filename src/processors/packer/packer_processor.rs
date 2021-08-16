@@ -23,10 +23,9 @@ use crate::{
     },
     math::Size,
     processors::{
-        cache::CacheStatus,
         ConfigStatus,
         packer::{
-            CustomPacker,
+            ColumnTightPacker,
             Error,
             Packer
         },
@@ -90,6 +89,38 @@ impl PackerProcessor {
         Ok(true)
     }
 
+    fn generate_image(&self, output_path: PathBuf, width: u32, height: u32, graphic_sources: &Vec<&mut GraphicSource>) -> Result<(), image::ImageError> {
+        let mut image_buffer = image::ImageBuffer::from_pixel(
+            width, 
+            height,
+            image::Rgba([0u8; 4])
+        );
+
+        for graphic_source in graphic_sources {
+            let image = image::open(&graphic_source.path)?;
+
+            match &graphic_source.atlas_region {
+                Some(atlas_region) => {
+                    image_buffer.copy_from(
+                        &image.view(
+                            graphic_source.region.x, 
+                            graphic_source.region.y, 
+                            graphic_source.region.width, 
+                            graphic_source.region.height
+                        ), 
+                        atlas_region.x, 
+                        atlas_region.y
+                    ).unwrap();
+                },
+                None => {
+                    warnln!("Atlas region isn't defined from graphic source at '{}'", graphic_source.path.display());
+                }
+            }
+        }
+
+        image_buffer.save_with_format(output_path, image::ImageFormat::Png)
+    }
+
     fn output_file_path(&self, config: &Config) -> PathBuf {
         config.cache
               .atlas_path()
@@ -140,7 +171,7 @@ impl Processor for PackerProcessor {
         }
 
         // TODO  make a better way to select packer
-        self.packer = Some(Box::new(CustomPacker::new()));
+        self.packer = Some(Box::new(ColumnTightPacker::new()));
 
         config_status
     }
@@ -207,38 +238,14 @@ impl Processor for PackerProcessor {
                 }
 
                 // generate atlas file
-
-                let mut image_buffer = image::ImageBuffer::from_pixel(
+                let output_path = self.output_file_path(&state.config);
+                infoln!("Exporting to file {}", output_path.display().to_string().bold());
+                self.generate_image(
+                    output_path, 
                     state.config.packer.atlas_size, 
-                    state.config.packer.atlas_size,
-                    image::Rgba([0u8; 4])
-                );
-
-                for graphic_source in graphic_sources {
-                    let image = image::open(&graphic_source.path).unwrap();
-
-                    match &graphic_source.atlas_region {
-                        Some(atlas_region) => {
-                            image_buffer.copy_from(
-                                &image.view(
-                                    graphic_source.region.x, 
-                                    graphic_source.region.y, 
-                                    graphic_source.region.width, 
-                                    graphic_source.region.height
-                                ), 
-                                atlas_region.x, 
-                                atlas_region.y
-                            ).unwrap();
-                        },
-                        None => {
-                            warnln!("Atlas region isn't defined from graphic source at '{}'", graphic_source.path.display());
-                        }
-                    }
-                }
-
-                let output_atlas_path = self.output_file_path(&state.config);
-                infoln!("Exporting to file {}", output_atlas_path.display().to_string().bold());
-                image_buffer.save_with_format(output_atlas_path, image::ImageFormat::Png).unwrap();
+                    state.config.packer.atlas_size, 
+                    &graphic_sources
+                ).unwrap();
 
                 infoln!(last, "{}", "Done".green());
             },

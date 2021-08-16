@@ -50,10 +50,7 @@ pub fn logger<'a>() -> &'a Option<log::Logger> {
 //
 
 fn main() {
-    println!(" ┌───────────┐");
-    println!(" │  {}  │", env!("CARGO_PKG_NAME").bold().magenta());
-    println!(" │   v{}  │", env!("CARGO_PKG_VERSION").bold());
-    println!(" └───────────┘");
+    display_header();
 
     // TODO  parse_env should provides an error, when parsing failed
     let args = Args::parse_env();
@@ -68,7 +65,44 @@ fn main() {
         println!("With config file at {}", args.config_filepath.bold());
     }
 
-    let mut config = Config::load_from_path(&args.config_filepath)
+    let mut config = load_or_create_config(&args);
+
+    // args display option has higher priority
+    if let Some(display) = args.display {
+        config.image.display = display;
+    }
+
+    // configure logger
+    configure_logger(&mut config, logger);
+
+    // tree decorator
+    DecoratorBuilder::with(StandardDecorator::new(2))
+                     .build();
+
+    //
+
+    let mut image_processor = ImageProcessor::new();
+    image_processor.register_handler(aseprite_handler::FormatHandler::new());
+
+    ProcessorsPipeline::new()
+                       .enqueue(ConfigProcessor::new())             // ensure essential config are working and prepare it to be at valid state
+                       .enqueue(CacheImporterProcessor::new())      // import cache entries and prepares them to the next steps
+                       .enqueue(image_processor)                    // handle source images to be at expected format
+                       .enqueue(PackerProcessor::new())             // retrieve every image and packs into a single atlas
+                       .enqueue(CacheExporterProcessor::new())      // exports cache entries into file format again (to be reusable in next usage)
+                       .enqueue(DataProcessor::new())               // get every data from previous steps and packs it together into a nicer format
+                       .start(&mut config, &args);
+}
+
+fn display_header() {
+    println!(" ┌───────────┐");
+    println!(" │  {}  │", env!("CARGO_PKG_NAME").bold().magenta());
+    println!(" │   v{}  │", env!("CARGO_PKG_VERSION").bold());
+    println!(" └───────────┘");
+}
+
+fn load_or_create_config(args: &Args) -> Config {
+    Config::load_from_path(&args.config_filepath)
        .unwrap_or_else(|e| {
             match e {
                 settings::LoadError::Deserialize(de_err) => {
@@ -86,14 +120,10 @@ fn main() {
                     c
                 }
             }
-        });
+        })
+}
 
-    // args display option has higher priority
-    if let Some(display) = args.display {
-        config.image.display = display;
-    }
-
-    // configure logger
+fn configure_logger(config: &mut Config, mut logger: log::Logger) {
     let logger_status = settings::ConfigLoggerStatus {
         verbose: logger.is_verbose()
     };
@@ -106,20 +136,4 @@ fn main() {
     unsafe {
         LOGGER = Some(logger);
     }
-
-    // tree decorator
-    DecoratorBuilder::with(StandardDecorator::new(2))
-                     .build();
-
-    let mut image_processor = ImageProcessor::new();
-    image_processor.register_handler(aseprite_handler::FormatHandler::new());
-
-    ProcessorsPipeline::new()
-                       .enqueue(ConfigProcessor::new())             // ensure essential config are working and prepare it to be at valid state
-                       .enqueue(CacheImporterProcessor::new())      // import cache entries and prepares them to the next steps
-                       .enqueue(image_processor)                    // handle source images to be at expected format
-                       .enqueue(PackerProcessor::new())             // retrieve every image and packs into a single atlas
-                       .enqueue(CacheExporterProcessor::new())      // exports cache entries into file format again (to be reusable in next usage)
-                       .enqueue(DataProcessor::new())               // get every data from previous steps and packs it together into a nicer format
-                       .start(&mut config, &args);
 }

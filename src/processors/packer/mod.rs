@@ -1,5 +1,5 @@
-mod custom_packer;
-pub use custom_packer::CustomPacker;
+mod column_tight_packer;
+pub use column_tight_packer::ColumnTightPacker;
 
 mod error;
 pub use error::Error;

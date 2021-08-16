@@ -10,10 +10,10 @@ use crate::{
     processors::packer::Packer
 };
 
-pub struct CustomPacker {
+pub struct ColumnTightPacker {
 }
 
-impl Packer for CustomPacker {
+impl Packer for ColumnTightPacker {
     fn name(&self) -> &str {
         "Custom"
     }
@@ -121,7 +121,7 @@ impl Packer for CustomPacker {
     }
 }
 
-impl CustomPacker {
+impl ColumnTightPacker {
     pub fn new() -> Self {
         Self {
         }

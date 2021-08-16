@@ -6,7 +6,10 @@ use std::{
         DirEntry
     },
     io,
-    path::PathBuf
+    path::{
+        Path,
+        PathBuf
+    }
 };
 
 use colored::Colorize;
@@ -16,7 +19,10 @@ use crate::{
     common::Verbosity,
     graphics::Graphic,
     processors::{
-        cache::CacheStatus,
+        cache::{
+            Cache,
+            CacheStatus
+        },
         ConfigStatus,
         image::format_handlers::FormatHandler,
         Processor,
@@ -29,6 +35,8 @@ use crate::{
     },
     util
 };
+
+static PROGRESS_BAR_LENGTH: usize = 20;
 
 pub struct ImageProcessor<'a> {
     verbose: bool,
@@ -46,6 +54,137 @@ impl<'a> ImageProcessor<'a> {
     pub fn register_handler<H: 'a + FormatHandler>(&mut self, handler: H) -> &mut Self {
         self.format_handlers.push(Box::new(handler));
         self
+    }
+
+    fn retrieve_source_files_by_extension(&self, source_path: &Path) -> HashMap<OsString, Vec<PathBuf>> {
+        // sort files by it's extension
+        let mut source_files_by_extension = self
+            .format_handlers
+            .iter()
+            .map(|h| h.extensions())
+            .flatten()
+            .map(|ext| (OsString::from(ext), Vec::new()))
+            .collect::<HashMap<OsString, Vec<PathBuf>>>();
+
+        // register source files
+        util::fs::for_every_file(
+            source_path,
+            &mut |entry: &DirEntry| {
+                let path_buf = entry.path();
+
+                if let Some(ext) = path_buf.extension() {
+                    let ext_osstring = ext.to_os_string();
+                    if let Some(source_files) = source_files_by_extension.get_mut(&ext_osstring) {
+                        source_files.push(path_buf.as_path().to_owned());
+                    }
+                }
+            }
+        ).unwrap();
+
+        source_files_by_extension
+    }
+
+    fn retrieve_from_cache(&self, location: &Path, source_filepath: &Path, cache: &mut Cache, display_kind: &DisplayKind) -> Option<Graphic> {
+        let source_metadata = source_filepath.metadata().unwrap();
+
+        match cache.retrieve(&location, &source_metadata) {
+            CacheStatus::Found(cache_entry) => {
+                if let DisplayKind::Detailed = display_kind {
+                    infoln!("Cache: {}", "Found".green());
+                }
+
+                if let Some(graphic) = cache_entry.retrieve_graphic(source_filepath, &cache.images_path) {
+                    match display_kind {
+                        DisplayKind::List => infoln!("{} {}", "*".bold().blue(), location.display().to_string().bold().cyan()),
+                        DisplayKind::Detailed => infoln!(last, "{} {}", "*".blue().bold(), "Include".blue()),
+                        _ => ()
+                    }
+
+                    if let Graphic::Empty = graphic {
+                        return None;
+                    }
+
+                    return Some(graphic);
+                } else {
+                    panic!("Something went wrong. Cache was found, but it's graphic can't be retrieved.\nAt location '{}'", location.display())
+                }
+            },
+            CacheStatus::NotFound => {
+                if let DisplayKind::Detailed = display_kind {
+                    infoln!("Cache: {}", "Not Found".red());
+                }
+            },
+            CacheStatus::Outdated => {
+                if let DisplayKind::Detailed = display_kind {
+                    infoln!("Cache: {}", "Outdated".yellow());
+                }
+            }
+        }
+
+        cache.mark_as_outdated();
+        None
+    }
+
+    fn get_or_create_source_file_output_dir(&self, source_filepath: &Path, input_path: &str, images_path: &Path) -> PathBuf {
+        let output_path = match source_filepath.strip_prefix(input_path) {
+            Ok(p) => images_path.join(p.with_extension("")),
+            Err(e) => panic!("Can't strip prefix '{}' from source path '{}':\n{}", input_path, source_filepath.display(), e)
+        };
+
+        // ensure output directory, and it's intermediate ones, exists
+        match output_path.metadata() {
+            Ok(metadata) => {
+                if !metadata.is_dir() {
+                    panic!("Output path '{}' already exists and isn't a directory.", output_path.display());
+                }
+
+                // ensure it's empty
+                if !util::fs::is_dir_empty(&output_path).unwrap() {
+                    fs::remove_dir_all(&output_path).unwrap();
+
+                    let duration = std::time::Duration::from_millis(10u64);
+                    while output_path.exists() {
+                        std::thread::sleep(duration);
+                    }
+
+                    fs::create_dir(&output_path).unwrap();
+                }
+            },
+            Err(e) => {
+                match e.kind() {
+                    io::ErrorKind::NotFound => fs::create_dir_all(&output_path).unwrap(),
+                    _ => panic!("{}", e)
+                }
+            }
+        }
+
+        output_path
+    }
+
+    fn display_progress_bar(&self, file_index: usize, file_count: usize, succeeded_files: u32, failed_files: u32) {
+        // progress bar
+        let completed_percentage = (file_index as f32) / (file_count as f32);
+        let completed_bar_length = (completed_percentage * (PROGRESS_BAR_LENGTH as f32)).round() as usize;
+
+        print!("\r");
+        info!(
+            "{}/{} [{}{}] {:.2}%   {}  {}             ", 
+            file_index,
+            file_count,
+            "=".repeat(completed_bar_length),
+            {
+                if completed_bar_length > 0 && completed_bar_length < PROGRESS_BAR_LENGTH {
+                    let mut s = ">".to_owned();
+                    s.push_str(&" ".repeat(PROGRESS_BAR_LENGTH - completed_bar_length - 1));
+                    s
+                } else {
+                    " ".repeat(PROGRESS_BAR_LENGTH - completed_bar_length)
+                }
+            },
+            completed_percentage * 100f32,
+            succeeded_files.to_string().blue(),
+            failed_files.to_string().red()
+        );
     }
 }
 
@@ -87,8 +226,8 @@ impl<'a> Processor for ImageProcessor<'a> {
 
         match output_path.metadata() {
             Ok(_metadata) => {
-                infoln!(last, "{}", "Done".green());
                 config.image.output_path = output_path;
+                infoln!(last, "{}", "Done".green());
             },
             Err(e) => {
                 if let io::ErrorKind::NotFound = e.kind() {
@@ -145,31 +284,8 @@ impl<'a> Processor for ImageProcessor<'a> {
         traceln!(entry: decorator::Entry::None, "Source path: {}", state.config.image.input_path.bold());
         traceln!(entry: decorator::Entry::None, "Target path: {}", state.config.image.output_path.display().to_string().bold());
 
-        // sort files by it's extension
-        let mut source_files_by_extension: HashMap<OsString, Vec<PathBuf>> = HashMap::new();
-
-        source_files_by_extension.extend(
-            self.format_handlers
-                .iter()
-                .map(|h| h.extensions())
-                .flatten()
-                .map(|ext| (OsString::from(ext), Vec::new()))
-        );
-
         let source_path = PathBuf::from(&state.config.image.input_path);
-        util::fs::for_every_file(
-            &source_path,
-            &mut |entry: &DirEntry| {
-                let path_buf = entry.path();
-
-                if let Some(ext) = path_buf.extension() {
-                    let ext_osstring = ext.to_os_string();
-                    if let Some(source_files) = source_files_by_extension.get_mut(&ext_osstring) {
-                        source_files.push(path_buf.as_path().to_owned());
-                    }
-                }
-            }
-        ).unwrap();
+        let mut source_files_by_extension = self.retrieve_source_files_by_extension(&source_path);
 
         // process every format and collect it's graphic data (as image or animation)
         let output = &mut state.graphic_output;
@@ -186,62 +302,32 @@ impl<'a> Processor for ImageProcessor<'a> {
         infoln!(entry: decorator::Entry::None, "Found {} files", file_count);
         infoln!(last, "{}", "Done".green());
 
-        let bar_length = 20;
-
         if let DisplayKind::Simple = display_kind {
-            info!(
-                "0/{} [{}] 0%   {}  {}  ", 
-                file_count,
-                " ".repeat(bar_length),
-                "0".blue(),
-                "0".red()
-            );
+            info!("");
+            self.display_progress_bar(0, file_count, 0, 0);
         }
 
+        let cache_images_path = state.config.cache.images_path();
         let mut succeeded_files = 0;
         let mut failed_files = 0;
 
         for format_handler in &self.format_handlers {
-            let source_files = format_handler.extensions()
-                    .iter()
-                    .filter_map(|ext| source_files_by_extension.remove(&OsString::from(ext)))
-                    .flatten()
-                    .collect::<Vec<PathBuf>>();
+            let source_files = format_handler
+                .extensions()
+                .iter()
+                .filter_map(|ext| source_files_by_extension.remove(&OsString::from(ext)))
+                .flatten()
+                .collect::<Vec<PathBuf>>();
 
             for (file_index, source_file) in source_files.iter().enumerate() {
                 if let DisplayKind::Simple = display_kind {
-                    // progress bar
-                    let completed_percentage = (file_index as f32) / (source_files.len() as f32);
-                    let completed_bar_length = (completed_percentage * (bar_length as f32)).round() as usize;
-
-                    print!("\r");
-                    info!(
-                        "{}/{} [{}{}] {:.2}%   {}  {}             ", 
-                        file_index,
-                        file_count,
-                        "=".repeat(completed_bar_length),
-                        {
-                            if completed_bar_length > 0 && completed_bar_length < bar_length {
-                                let mut s = ">".to_owned();
-                                s.push_str(&" ".repeat(bar_length - completed_bar_length - 1));
-                                s
-                            } else {
-                                " ".repeat(bar_length - completed_bar_length)
-                            }
-                        },
-                        completed_percentage * 100f32,
-                        succeeded_files.to_string().blue(),
-                        failed_files.to_string().red()
-                    );
+                    self.display_progress_bar(file_index, file_count, succeeded_files, failed_files);
                 }
 
                 let location;
-                let source_metadata = source_file.metadata().unwrap();
 
                 match source_file.strip_prefix(&source_path) {
-                    Ok(path) => {
-                        location = path.with_extension("");
-                    },
+                    Ok(path) => location = path.with_extension(""),
                     Err(_) => {
                         failed_files += 1;
                         continue;
@@ -253,92 +339,21 @@ impl<'a> Processor for ImageProcessor<'a> {
                 }
 
                 if !state.force {
-                    // verify cache entry
                     match &mut state.cache {
-                        Some(cache) => {
-                            match cache.retrieve(&location, &source_metadata) {
-                                CacheStatus::Found(cache_entry) => {
-                                    if let DisplayKind::Detailed = display_kind {
-                                        infoln!("Cache: {}", "Found".green());
-                                    }
-
-                                    if let Some(graphic) = cache_entry.retrieve_graphic(source_file, &cache.images_path) {
-                                        match display_kind {
-                                            DisplayKind::List => infoln!("{} {}", "*".bold().blue(), location.display().to_string().bold().cyan()),
-                                            DisplayKind::Detailed => infoln!(last, "{} {}", "*".blue().bold(), "Include".blue()),
-                                            _ => ()
-                                        }
-
-                                        match graphic {
-                                            Graphic::Empty => (),
-                                            _ => output.graphics.push(graphic)
-                                        }
-
-                                        succeeded_files += 1;
-                                        continue;
-                                    } else {
-                                        panic!("Something went wrong. Cache was found, but it's graphic can't be retrieved.\nAt location '{}'", location.display())
-                                    }
-                                },
-                                CacheStatus::NotFound => {
-                                    if let DisplayKind::Detailed = display_kind {
-                                        infoln!("Cache: {}", "Not Found".red());
-                                    }
-                                },
-                                CacheStatus::Outdated => {
-                                    if let DisplayKind::Detailed = display_kind {
-                                        infoln!("Cache: {}", "Outdated".yellow());
-                                    }
-                                }
+                        Some(c) => {
+                            if let Some(graphic) = self.retrieve_from_cache(&location, &source_file, c, &display_kind) {
+                                output.graphics.push(graphic);
+                                succeeded_files += 1;
+                                continue;
                             }
-
-                            cache.mark_as_outdated();
                         },
-                        None => {
-                            panic!("Can't access cache. Isn't at valid state.");
-                        }
+                        None => panic!("Can't access cache. Isn't at valid state.")
                     }
                 } else {
                     infoln!("Cache: {}", "Force Skip".bright_red());
                 }
 
-                // prepare output path
-                let output_path = match source_file.strip_prefix(&state.config.image.input_path) {
-                    Ok(p) => {
-                        state.config
-                             .cache
-                             .images_path()
-                             .join(p.with_extension(""))
-                    },
-                    Err(e) => panic!("Can't strip prefix '{}' from source path '{}':\n{}", state.config.image.input_path, source_file.display(), e)
-                };
-
-                // ensure output directory, and it's intermediate ones, exists
-                match output_path.metadata() {
-                    Ok(metadata) => {
-                        if !metadata.is_dir() {
-                            panic!("Output path '{}' already exists and isn't a directory.", output_path.display());
-                        }
-
-                        // ensure it's empty
-                        if !util::fs::is_dir_empty(&output_path).unwrap() {
-                            fs::remove_dir_all(&output_path).unwrap();
-
-                            let duration = std::time::Duration::from_millis(10u64);
-                            while output_path.exists() {
-                                std::thread::sleep(duration);
-                            }
-
-                            fs::create_dir(&output_path).unwrap();
-                        }
-                    },
-                    Err(e) => {
-                        match e.kind() {
-                            io::ErrorKind::NotFound => fs::create_dir_all(&output_path).unwrap(),
-                            _ => panic!("{}", e)
-                        }
-                    }
-                }
+                let output_path = self.get_or_create_source_file_output_dir(&source_file, &state.config.image.input_path, &cache_images_path);
 
                 // process source file
                 match format_handler.process(source_file, &output_path, &state.config) {
@@ -385,15 +400,8 @@ impl<'a> Processor for ImageProcessor<'a> {
         }
 
         if let DisplayKind::Simple = display_kind {
-            print!("\r");
-            infoln!(
-                "{}/{} [{}] 100%   {}  {}           ", 
-                file_count,
-                file_count,
-                "=".repeat(bar_length),
-                succeeded_files.to_string().blue(),
-                failed_files.to_string().red()
-            );
+            self.display_progress_bar(file_count, file_count, succeeded_files, failed_files);
+            println!();
         }
 
         infoln!(last, "{}", "Done".green());

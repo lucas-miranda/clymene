@@ -47,19 +47,22 @@ impl Processor for ConfigProcessor {
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
-        let mut output_path = config.output_path.clone();
 
         infoln!(block, "Checking {} config", env!("CARGO_PKG_NAME").bold().magenta());
 
         traceln!(block, "Output path");
 
-        if output_path.is_empty() {
-            output_path = Config::default_output_path();
-            warnln!("Output directory path is empty, default value '{}' will be used.", output_path);
+        let output_path = if config.output_path.is_empty() {
+            let p = Config::default_output_path();
+            warnln!("Output directory path is empty, default value '{}' will be used.", p);
+            let path = PathBuf::from(&p);
+            config.output_path = p;
             config_status = ConfigStatus::Modified;
+            path
         } else {
-            traceln!("Using provided output directory path {}", output_path.bold());
-        }
+            traceln!("Using provided output directory path {}", config.output_path.bold());
+            PathBuf::from(&config.output_path)
+        };
 
         // handle output folder path
         let output_pathbuf = PathBuf::from(&output_path);
