@@ -350,7 +350,10 @@ impl<'a> Processor for ImageProcessor<'a> {
                         None => panic!("Can't access cache. Isn't at valid state.")
                     }
                 } else {
-                    infoln!("Cache: {}", "Force Skip".bright_red());
+                    match display_kind {
+                        DisplayKind::Simple => (),
+                        _ => infoln!("Cache: {}", "Force Skip".bright_red())
+                    }
                 }
 
                 let output_path = self.get_or_create_source_file_output_dir(&source_file, &state.config.image.input_path, &cache_images_path);

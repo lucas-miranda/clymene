@@ -170,17 +170,13 @@ impl CacheImporterProcessor {
 
         match Cache::load_from_path(&filepath, images_path.clone(), atlas_output_path.clone()) {
             Ok(c) => {
-                if is_trace_enabled!() {
-                    close_tree_item!();
-                }
-
                 c
             },
             Err(e) => {
                 warnln!("Cache file not found at expected path");
                 match &e {
                     cache::LoadError::FileNotFound(path) => {
-                        infoln!(block; last, "Creating a new one");
+                        infoln!(block, "Creating a new one");
                         let c = self.create_cache(&filepath, images_path, atlas_output_path);
                         infoln!(last, "{}", "Done".green());
                         c
@@ -309,7 +305,7 @@ impl Processor for CacheImporterProcessor {
         let cache_dir_pathbuf = state.config.cache.root_path();
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
-        traceln!(entry: decorator::Entry::None; block, "At file {}", cache_pathbuf.display().to_string().bold());
+        traceln!(entry: decorator::Entry::None, "At file {}", cache_pathbuf.display().to_string().bold());
 
         let mut cache = self.load_or_create_cache(&cache_pathbuf, &state.config.cache, state.force);
         let version = env!("CARGO_PKG_VERSION");
