@@ -82,7 +82,7 @@ fn main() {
     //
 
     let mut image_processor = ImageProcessor::new();
-    image_processor.register_handler(aseprite_handler::FormatHandler::new());
+    image_processor.register_handler(aseprite_handler::AsepriteFormatHandler::new(aseprite_handler::AsepriteProcessor::Command));
 
     ProcessorsPipeline::new()
                        .enqueue(ConfigProcessor::new())             // ensure essential config are working and prepare it to be at valid state

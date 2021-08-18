@@ -1,5 +1,8 @@
 mod format_handler;
-pub use format_handler::FormatHandler;
+pub use format_handler::{
+    FormatHandler,
+    FormatProcessor
+};
 
 mod error;
 pub use error::Error;

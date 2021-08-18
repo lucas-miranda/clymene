@@ -53,39 +53,11 @@ impl CacheEntry {
     pub fn retrieve_graphic(&self, source_path: &Path, image_root_path: &Path) -> Option<Graphic> {
         let graphic_dir_path = image_root_path.join(&self.location);
         let mut graphic_source_data_set = GraphicSourceDataSet::new();
-        let dir_iter;
-
-        match fs::read_dir(&graphic_dir_path) {
-            Ok(iter) => dir_iter = iter,
-            Err(_) => return None
-        };
 
         // collect files' paths
-        for entry in dir_iter.flatten() {
-            let path = entry.path();
-
-            if let Ok(metadata) = path.metadata() {
-                if !metadata.is_file() {
-                    continue;
-                }
-
-                let frame_index = match self.try_retrieve_frame_index(&path) {
-                    Some(index) => index,
-                    None => continue
-                };
-
-                let (source_region, atlas_region) = self.get_regions(frame_index);
-
-                graphic_source_data_set.sources.push(
-                    GraphicSourceData {
-                        source: GraphicSource {
-                            atlas_region,
-                            path, 
-                            region: source_region
-                        },
-                        frame_index
-                    }
-                );
+        for entry in fs::read_dir(&graphic_dir_path).unwrap().filter_map(|e| e.ok()) {
+            if let Ok(graphic_source_data) = GraphicSourceData::try_create(&entry.path(), &self.data.frames) {
+                graphic_source_data_set.sources.push(graphic_source_data)
             }
         }
 
