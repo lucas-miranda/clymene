@@ -16,7 +16,8 @@ use crate::{
 
 use super::{
     AsepriteProcessor,
-    CommandProcessor
+    CommandProcessor,
+    RawFileProcessor
 };
 
 pub struct AsepriteFormatHandler {
@@ -28,10 +29,10 @@ impl AsepriteFormatHandler {
     pub fn new(processor: AsepriteProcessor) -> Self {
         Self {
             verbose: false,
-            processor: Box::new(match processor {
-                AsepriteProcessor::Command => CommandProcessor::default(),
-                AsepriteProcessor::RawFile => CommandProcessor::default()
-            })
+            processor: match processor {
+                AsepriteProcessor::Command => Box::new(CommandProcessor::default()),
+                AsepriteProcessor::RawFile => Box::new(RawFileProcessor::default())
+            }
         }
     }
 }

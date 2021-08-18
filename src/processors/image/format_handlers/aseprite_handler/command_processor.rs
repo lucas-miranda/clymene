@@ -33,7 +33,6 @@ use crate::{
     },
     math::Size,
     processors::{
-        data,
         image::{
             format_handlers::{
                 aseprite_handler::data::{
@@ -56,7 +55,6 @@ use crate::{
 };
 
 const ASEPRITE_FILE_MAGIC_NUMBER: [u8; 2] = [ 0xE0, 0xA5 ];
-const FRAME_FILE_NAME_EXTENSION: &str = "png";
 const FRAME_FILE_NAME_FORMAT: &str = "{frame}.png";
 const DATA_FILE_NAME: &str = "data.json";
 

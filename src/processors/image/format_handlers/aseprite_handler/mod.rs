@@ -7,6 +7,9 @@ pub mod data;
 mod format_handler;
 pub use format_handler::AsepriteFormatHandler;
 
+mod raw_file_processor;
+use raw_file_processor::RawFileProcessor;
+
 pub enum AsepriteProcessor {
     Command,
     RawFile
