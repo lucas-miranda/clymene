@@ -13,10 +13,7 @@ use colored::Colorize;
 use crate::{
     common::Verbosity,
     graphics::{
-        animation::{
-            Frame,
-            Track
-        },
+        animation::Track,
         Graphic
     },
     math::Rectangle,
@@ -178,9 +175,7 @@ impl CacheExporterProcessor {
         for index in &track.frame_indices {
             match index_range_end {
                 Some(end_index) => {
-                    if *index == end_index + 1 {
-                        index_range_end = Some(index);
-                    } else {
+                    if *index != end_index + 1 {
                         let from = *index_range_start.expect("Undefined range start.");
                         let to = *index_range_end.expect("Undefined range end.");
 
@@ -191,14 +186,14 @@ impl CacheExporterProcessor {
                         }
 
                         index_range_start = Some(index);
-                        index_range_end = Some(index);
                     }
                 },
                 None => {
                     index_range_start = Some(index);
-                    index_range_end = Some(index);
                 }
             }
+
+            index_range_end = Some(index);
         }
 
         // handle remaining indices

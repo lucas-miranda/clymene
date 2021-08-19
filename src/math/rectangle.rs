@@ -46,10 +46,6 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
         ))
     }
 
-    pub fn try_size<S: Unsigned + NumCast + PartialOrd + Copy>(&self) -> Option<Size<S>> {
-        Size::with(self.width, self.height)
-    }
-
     pub fn left(&self) -> T {
         self.x
     }

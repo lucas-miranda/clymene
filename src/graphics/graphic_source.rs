@@ -15,13 +15,3 @@ pub struct GraphicSource {
     /// Exact region at original file.
     pub region: Rectangle<u32>,
 }
-
-impl GraphicSource {
-    pub fn new(path: PathBuf, region: Rectangle<u32>) -> Self {
-        Self {
-            atlas_region: None,
-            path,
-            region
-        }
-    }
-}

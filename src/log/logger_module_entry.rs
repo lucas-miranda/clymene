@@ -22,15 +22,15 @@ impl LoggerModuleEntry {
         self.submodules.insert(name.into(), entry);
     }
 
-    pub(super) fn get_submodule(&self, name: &String) -> Option<&LoggerModuleEntry> {
+    pub(super) fn get_submodule(&self, name: &str) -> Option<&LoggerModuleEntry> {
         self.submodules.get(name)
     }
 
-    pub(super) fn get_mut_submodule(&mut self, name: &String) -> Option<&mut LoggerModuleEntry> {
+    pub(super) fn get_mut_submodule(&mut self, name: &str) -> Option<&mut LoggerModuleEntry> {
         self.submodules.get_mut(name)
     }
 
-    pub(super) fn contains_submodule(&self, name: &String) -> bool {
+    pub(super) fn contains_submodule(&self, name: &str) -> bool {
         self.submodules.contains_key(name)
     }
 }

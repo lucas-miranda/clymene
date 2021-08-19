@@ -22,6 +22,5 @@ pub use data_processor::DataProcessor;
 mod error;
 pub use error::{
     Error,
-    LoadError,
     SaveError
 };

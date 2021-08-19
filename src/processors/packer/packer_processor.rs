@@ -89,7 +89,7 @@ impl PackerProcessor {
         Ok(true)
     }
 
-    fn generate_image(&self, output_path: PathBuf, width: u32, height: u32, graphic_sources: &Vec<&mut GraphicSource>) -> Result<(), image::ImageError> {
+    fn generate_image(&self, output_path: PathBuf, width: u32, height: u32, graphic_sources: &[&mut GraphicSource]) -> Result<(), image::ImageError> {
         let mut image_buffer = image::ImageBuffer::from_pixel(
             width, 
             height,
@@ -133,6 +133,7 @@ impl PackerProcessor {
               )
     }
 
+    /*
     fn calculate_optimal_atlas_size(size: u32) -> u32 {
         // round up to the next highest power of 2
         // ref: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
@@ -150,7 +151,7 @@ impl PackerProcessor {
 
         size + 1
     }
-
+    */
 }
 
 impl Processor for PackerProcessor {

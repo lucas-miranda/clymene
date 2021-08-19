@@ -15,24 +15,6 @@ pub fn is_dir_empty<P: AsRef<Path>>(dir: P) -> io::Result<bool> {
     Ok(true)
 }
 
-pub fn for_every_entry<P: AsRef<Path>, F: FnMut(&DirEntry)>(dir: P, callback: &mut F) -> io::Result<()> {
-    for dir_entry in fs::read_dir(dir)? {
-        let entry = dir_entry?;
-        let path = entry.path();
-
-        callback(&entry);
-
-        if path.is_dir() {
-            match for_every_file(&path, callback) {
-                Ok(()) => (),
-                Err(e) => return Err(e)
-            }
-        }
-    }
-
-    Ok(())
-}
-
 pub fn for_every_file<P: AsRef<Path>, F: FnMut(&DirEntry)>(dir: P, callback: &mut F) -> io::Result<()> {
     for dir_entry in fs::read_dir(dir)? {
         let entry = dir_entry?;

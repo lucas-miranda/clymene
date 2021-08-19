@@ -19,7 +19,6 @@ use crate::{
             Track
         },
         Graphic,
-        GraphicSource,
         Image
     },
     processors::{
@@ -31,8 +30,7 @@ use crate::{
             GraphicSourceData,
             GraphicSourceDataSet
         }
-    },
-    math::Rectangle
+    }
 };
 
 #[derive(Serialize, Deserialize)]
@@ -123,78 +121,4 @@ impl CacheEntry {
 
         Some(animation.into())
     }
-
-    fn try_retrieve_frame_index(&self, path: &Path) -> Option<u32> {
-        if let Some(stem) = path.file_stem() {
-            if let Some(stem_str) = stem.to_str() {
-                if let Ok(index) = stem_str.parse() {
-                    return Some(index)
-                }
-            }
-        }
-
-        None
-    }
-
-    fn get_regions(&self, frame_index: u32) -> (Rectangle<u32>, Option<Rectangle<u32>>) {
-        let source_region;
-        let atlas_region;
-
-        match self.data.frames.get(frame_index as usize) {
-            Some(frame_data) => {
-                source_region = Rectangle::with(
-                    frame_data.source_region.x,
-                    frame_data.source_region.y,
-                    frame_data.source_region.width,
-                    frame_data.source_region.height
-                ).unwrap_or_else(Rectangle::default);
-
-                atlas_region = if !frame_data.atlas_region.is_empty() {
-                    Some(Rectangle::with(
-                        frame_data.atlas_region.x,
-                        frame_data.atlas_region.y,
-                        frame_data.atlas_region.width,
-                        frame_data.atlas_region.height
-                    ).unwrap_or_else(Rectangle::default))
-                } else {
-                    None
-                };
-
-            },
-            None => {
-                source_region = Rectangle::default();
-                atlas_region = None;
-            }
-        }
-
-        (source_region, atlas_region)
-    }
-
-    /*
-    fn read_track_files(path: &PathBuf) -> Option<Vec<OsString>> {
-        let sub_dir_iter;
-        match fs::read_dir(&path) {
-            Ok(iter) => sub_dir_iter = iter,
-            Err(_) => return None
-        };
-
-        let mut frames = Vec::new();
-
-        for dir_entry in sub_dir_iter {
-            if let Ok(entry) = dir_entry {
-                if let Ok(metadata) = entry.metadata() {
-                    if metadata.is_file() {
-                        frames.push(entry.file_name())
-                    }
-                }
-            }
-        }
-
-        if !frames.is_empty() {
-            Some(frames)
-        } else {
-            None
-        }
-    }
-    */
 }

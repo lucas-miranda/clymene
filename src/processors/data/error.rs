@@ -5,21 +5,18 @@ use std::{
         Debug,
         Display,
         Formatter
-    },
-    path::PathBuf
+    }
 };
 
 #[derive(Debug)]
 pub enum Error {
-    Load(LoadError),
     Save(SaveError)
 }
 
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &self {
-            Error::Load(load_error) => Some(load_error),
-            Error::Save(save_error) => Some(save_error),
+            Error::Save(save_error) => Some(save_error)
         }
     }
 }
@@ -27,46 +24,10 @@ impl error::Error for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
-            Error::Load(load_error) => write!(f, "Error when loading an atlas data file: {}", load_error),
-            Error::Save(save_error) => write!(f, "Error when saving an atlas data file: {}", save_error),
+            Error::Save(save_error) => write!(f, "Error when saving an atlas data file: {}", save_error)
         }
     }
 }
-
-
-
-#[derive(Debug)]
-pub enum LoadError {
-    Deserialize(serde_json::error::Error),
-    FileNotFound(PathBuf)
-}
-
-impl error::Error for LoadError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        match &self {
-            LoadError::Deserialize(toml_error) => Some(toml_error),
-            LoadError::FileNotFound(_path) => None
-        }
-    }
-}
-
-impl Display for LoadError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "An error occured when trying to load a atlas data file:")?;
-
-        match &self {
-            LoadError::Deserialize(toml_error) => write!(f, "Error when deserializing from a toml file => {}", toml_error),
-            LoadError::FileNotFound(path) => write!(f, "File not found at '{}'", path.display())
-        }
-    }
-}
-
-impl From<LoadError> for Error {
-    fn from(error: LoadError) -> Self {
-        Error::Load(error)
-    }
-}
-
 
 
 #[derive(Debug)]

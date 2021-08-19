@@ -87,7 +87,7 @@ impl CacheImporterProcessor {
         cache_dir_pathbuf
     }
 
-    fn get_or_create_cache_identifier(&self, config_identifier: &String, cache_dir: &Path) -> String {
+    fn get_or_create_cache_identifier(&self, config_identifier: &str, cache_dir: &Path) -> String {
         let generate_identifier;
 
         if config_identifier.is_empty() {
@@ -147,7 +147,7 @@ impl CacheImporterProcessor {
             return identifier;
         }
 
-        config_identifier.clone()
+        config_identifier.to_owned()
     }
 
     fn create_cache(&self, filepath: &Path, images_path: PathBuf, atlas_output_path: PathBuf) -> Cache {
@@ -175,7 +175,7 @@ impl CacheImporterProcessor {
             Err(e) => {
                 warnln!("Cache file not found at expected path");
                 match &e {
-                    cache::LoadError::FileNotFound(path) => {
+                    cache::LoadError::FileNotFound(_path) => {
                         infoln!(block, "Creating a new one");
                         let c = self.create_cache(&filepath, images_path, atlas_output_path);
                         infoln!(last, "{}", "Done".green());

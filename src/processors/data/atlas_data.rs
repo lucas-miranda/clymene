@@ -5,8 +5,6 @@ use std::{
         OpenOptions
     },
     io::{
-        self,
-        BufReader,
         BufWriter,
         Write
     },
@@ -20,7 +18,6 @@ use serde::{
 
 use super::{
     GraphicData,
-    LoadError,
     MetaData,
     SaveError
 };
@@ -36,26 +33,6 @@ impl AtlasData {
         Self {
             graphics: HashMap::new(),
             meta: MetaData::new()
-        }
-    }
-
-    pub fn load(file: &File) -> Result<Self, LoadError> {
-        let buf_reader = BufReader::new(file);
-        match serde_json::from_reader(buf_reader) {
-            Ok(c) => Ok(c),
-            Err(serde_json_error) => Err(LoadError::Deserialize(serde_json_error))
-        }
-    }
-
-    pub fn load_from_path<P: AsRef<Path>>(filepath: P) -> Result<Self, LoadError> {
-        match OpenOptions::new().read(true).open(&filepath) {
-            Ok(file) => Self::load(&file),
-            Err(e) => {
-                match e.kind() {
-                    io::ErrorKind::NotFound => Err(LoadError::FileNotFound(filepath.as_ref().to_owned())),
-                    _ => panic!("{}", e)
-                }
-            }
         }
     }
 

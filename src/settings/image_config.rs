@@ -37,10 +37,6 @@ impl ImageConfig {
     pub fn default_display() -> DisplayKind {
         DisplayKind::Simple
     }
-
-    pub fn source_path(&self) -> PathBuf {
-        PathBuf::from(&self.input_path)
-    }
 }
 
 impl Default for ImageConfig {

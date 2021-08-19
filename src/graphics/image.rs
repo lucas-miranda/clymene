@@ -1,18 +1,12 @@
 use std::{
     ffi::OsString,
-    path::{
-        Path,
-        PathBuf
-    }
+    path::PathBuf
 };
 
-use crate::{
-    graphics::{
-        Error,
-        Graphic,
-        GraphicSource
-    },
-    math::Rectangle
+use crate::graphics::{
+    Error,
+    Graphic,
+    GraphicSource
 };
 
 #[derive(Debug)]
@@ -28,27 +22,6 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new(path: PathBuf, source_path: PathBuf, source_region: Rectangle<u32>) -> Result<Self, Error> {
-        let metadata = source_path.metadata().unwrap();
-
-        if !metadata.is_file() {
-            return Err(Error::FileExpected(source_path));
-        }
-
-        let source_name = source_path.file_stem()
-                                     .ok_or_else(|| Error::FileExpected(source_path.clone()))?;
-
-        Ok(Self {
-            source_name: source_name.to_owned(),
-            source_path,
-            graphic_source: GraphicSource {
-                atlas_region: None,
-                path,
-                region: source_region
-            }
-        })
-    }
-
     pub fn with_graphic_source(graphic_source: GraphicSource, source_path: PathBuf) -> Result<Self, Error> {
         let metadata = source_path.metadata().unwrap();
 
@@ -64,13 +37,6 @@ impl Image {
             source_path,
             graphic_source
         })
-    }
-
-    pub fn location(&self, source_root_directory: &Path) -> Option<PathBuf> {
-        match self.source_path.strip_prefix(&source_root_directory) {
-            Ok(path) => Some(path.with_extension("")),
-            Err(_) => None
-        }
     }
 }
 
