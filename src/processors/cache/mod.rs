@@ -2,28 +2,13 @@ use std::{
     cell::RefCell,
     cmp::Eq,
     collections::HashMap,
-    fs::{
-        File,
-        Metadata,
-        OpenOptions
-    },
-    io::{
-        self,
-        BufReader,
-        BufWriter,
-        Write
-    },
+    fs::{File, Metadata, OpenOptions},
     hash::Hash,
-    path::{
-        Path,
-        PathBuf
-    }
+    io::{self, BufReader, BufWriter, Write},
+    path::{Path, PathBuf},
 };
 
-use serde::{ 
-    Serialize, 
-    Deserialize 
-};
+use serde::{Deserialize, Serialize};
 
 mod cache_entry;
 pub use cache_entry::CacheEntry;
@@ -41,11 +26,7 @@ mod cache_status;
 pub use cache_status::CacheStatus;
 
 mod error;
-pub use error::{
-    Error,
-    LoadError,
-    SaveError
-};
+pub use error::{Error, LoadError, SaveError};
 
 use crate::processors::data::GraphicData;
 
@@ -64,7 +45,7 @@ pub struct Cache {
     pub atlas_output_path: PathBuf,
 
     #[serde(skip)]
-    outdated: bool
+    outdated: bool,
 }
 
 impl Cache {
@@ -74,7 +55,7 @@ impl Cache {
             files: HashMap::new(),
             images_path,
             atlas_output_path,
-            outdated: true
+            outdated: true,
         }
     }
 
@@ -82,7 +63,11 @@ impl Cache {
         "cache.json"
     }
 
-    pub fn load<P: Into<PathBuf>>(file: &File, images_path: P, atlas_output_path: P) -> Result<Self, LoadError> {
+    pub fn load<P: Into<PathBuf>>(
+        file: &File,
+        images_path: P,
+        atlas_output_path: P,
+    ) -> Result<Self, LoadError> {
         let buf_reader = BufReader::new(file);
         match serde_json::from_reader::<_, Cache>(buf_reader) {
             Ok(mut c) => {
@@ -95,29 +80,30 @@ impl Cache {
                 }
 
                 Ok(c)
-            },
-            Err(serde_json_error) => Err(LoadError::Deserialize(serde_json_error))
+            }
+            Err(serde_json_error) => Err(LoadError::Deserialize(serde_json_error)),
         }
     }
 
-    pub fn load_from_path<P: AsRef<Path>, T: Into<PathBuf>>(filepath: P, images_path: T, atlas_output_path: T) -> Result<Self, LoadError> {
+    pub fn load_from_path<P: AsRef<Path>, T: Into<PathBuf>>(
+        filepath: P,
+        images_path: T,
+        atlas_output_path: T,
+    ) -> Result<Self, LoadError> {
         match OpenOptions::new().read(true).open(&filepath) {
             Ok(file) => Self::load(&file, images_path, atlas_output_path),
-            Err(e) => {
-                match e.kind() {
-                    io::ErrorKind::NotFound => Err(LoadError::FileNotFound(filepath.as_ref().to_owned())),
-                    _ => panic!("{}", e)
+            Err(e) => match e.kind() {
+                io::ErrorKind::NotFound => {
+                    Err(LoadError::FileNotFound(filepath.as_ref().to_owned()))
                 }
-            }
+                _ => panic!("{}", e),
+            },
         }
     }
 
     pub fn save(&self, file: &mut File) -> Result<(), SaveError> {
         let mut buf_writer = BufWriter::new(file);
-
-        serde_json::to_writer(&mut buf_writer, &self)
-                   .map_err(SaveError::Serialize)?;
-
+        serde_json::to_writer(&mut buf_writer, &self).map_err(SaveError::Serialize)?;
         buf_writer.flush().unwrap();
 
         Ok(())
@@ -125,16 +111,20 @@ impl Cache {
 
     pub fn save_to_path<P: AsRef<Path>>(&self, filepath: P) -> Result<(), SaveError> {
         let mut file = OpenOptions::new()
-                                   .write(true)
-                                   .append(false)
-                                   .create(true)
-                                   .open(filepath)
-                                   .unwrap();
+            .write(true)
+            .append(false)
+            .create(true)
+            .open(filepath)
+            .unwrap();
 
         self.save(&mut file)
     }
 
-    pub fn retrieve<'r, P: AsRef<Path> + Eq + Hash>(&'r self, location: P, source_metadata: &Metadata) -> CacheStatus<'r> {
+    pub fn retrieve<'r, P: AsRef<Path> + Eq + Hash>(
+        &'r self,
+        location: P,
+        source_metadata: &Metadata,
+    ) -> CacheStatus<'r> {
         let source_modtime = source_metadata.modified().unwrap();
 
         match self.files.get(location.as_ref()) {
@@ -145,21 +135,26 @@ impl Cache {
                 } else {
                     CacheStatus::Outdated
                 }
-            },
-            None => CacheStatus::NotFound
+            }
+            None => CacheStatus::NotFound,
         }
     }
 
-    pub fn register<P: AsRef<Path> + Eq + Hash>(&mut self, location: P, metadata: &Metadata, data: GraphicData) -> Result<(), Error> {
+    pub fn register<P: AsRef<Path> + Eq + Hash>(
+        &mut self,
+        location: P,
+        metadata: &Metadata,
+        data: GraphicData,
+    ) -> Result<(), Error> {
         let modtime = metadata.modified().unwrap();
 
         self.files.insert(
-            location.as_ref().to_owned(), 
+            location.as_ref().to_owned(),
             RefCell::new(CacheEntry {
                 modtime,
                 data,
-                location: location.as_ref().to_owned()
-            })
+                location: location.as_ref().to_owned(),
+            }),
         );
 
         Ok(())

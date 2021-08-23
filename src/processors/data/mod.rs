@@ -20,7 +20,4 @@ mod data_processor;
 pub use data_processor::DataProcessor;
 
 mod error;
-pub use error::{
-    Error,
-    SaveError
-};
+pub use error::{Error, SaveError};

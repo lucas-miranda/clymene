@@ -1,7 +1,4 @@
-use std::{
-    ffi::OsString,
-    path::PathBuf
-};
+use std::{ffi::OsString, path::PathBuf};
 
 mod frame;
 pub use frame::Frame;
@@ -9,12 +6,7 @@ pub use frame::Frame;
 mod track;
 pub use track::Track;
 
-
-use crate::graphics::{
-    Error,
-    Graphic,
-    GraphicSource
-};
+use crate::graphics::{Error, Graphic, GraphicSource};
 
 #[derive(Debug)]
 pub struct Animation {
@@ -26,7 +18,7 @@ pub struct Animation {
 
     pub indices: Vec<u32>,
     pub frames: Vec<Frame>,
-    pub tracks: Vec<Track>
+    pub tracks: Vec<Track>,
 }
 
 impl Animation {
@@ -37,25 +29,24 @@ impl Animation {
             return Err(Error::FileExpected(source_path));
         }
 
-        let source_name = source_path.file_stem()
-                                     .ok_or_else(|| Error::FileExpected(source_path.clone()))?;
+        let source_name = source_path
+            .file_stem()
+            .ok_or_else(|| Error::FileExpected(source_path.clone()))?;
 
         Ok(Self {
             source_name: source_name.to_owned(),
             source_path,
             indices: Vec::new(),
             frames: Vec::new(),
-            tracks: Vec::new()
+            tracks: Vec::new(),
         })
     }
 
     pub fn push_frame(&mut self, graphic_source: GraphicSource, duration: u32) {
-        self.frames.push(
-            Frame {
-                graphic_source,
-                duration
-            }
-        );
+        self.frames.push(Frame {
+            graphic_source,
+            duration,
+        });
     }
 
     pub fn push_track(&mut self, track: Track) {

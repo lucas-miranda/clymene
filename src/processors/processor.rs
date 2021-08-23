@@ -1,13 +1,7 @@
 use crate::{
     common::Verbosity,
-    processors::{
-        ConfigStatus,
-        State
-    },
-    settings::{
-        Config,
-        ProcessorConfig
-    }
+    processors::{ConfigStatus, State},
+    settings::{Config, ProcessorConfig},
 };
 
 pub trait Processor: Verbosity {

@@ -1,16 +1,13 @@
 use crate::{
-    processors::{
-        cache::Cache,
-        image::GraphicOutput
-    },
-    settings::Config
+    processors::{cache::Cache, image::GraphicOutput},
+    settings::Config,
 };
 
 pub struct State<'a> {
     pub config: &'a mut Config,
     pub cache: Option<Cache>,
     pub graphic_output: GraphicOutput,
-    pub force: bool
+    pub force: bool,
 }
 
 impl<'a> State<'a> {
@@ -19,7 +16,7 @@ impl<'a> State<'a> {
             config,
             cache: None,
             graphic_output: GraphicOutput::new(),
-            force
+            force,
         }
     }
 }

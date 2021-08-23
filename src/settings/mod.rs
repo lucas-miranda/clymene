@@ -14,10 +14,7 @@ mod packer_config;
 pub use packer_config::PackerConfig;
 
 mod image_config;
-pub use image_config::{
-    DisplayKind,
-    ImageConfig
-};
+pub use image_config::{DisplayKind, ImageConfig};
 
 mod data_config;
 pub use data_config::DataConfig;

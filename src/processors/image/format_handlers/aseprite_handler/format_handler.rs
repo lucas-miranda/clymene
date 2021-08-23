@@ -4,25 +4,17 @@ use crate::{
     common::Verbosity,
     graphics::Graphic,
     processors::{
-        image::format_handlers::{
-            Error,
-            FormatHandler,
-            FormatProcessor
-        },
-        ConfigStatus
+        image::format_handlers::{Error, FormatHandler, FormatProcessor},
+        ConfigStatus,
     },
-    settings::Config
+    settings::Config,
 };
 
-use super::{
-    AsepriteProcessor,
-    CommandProcessor,
-    RawFileProcessor
-};
+use super::{AsepriteProcessor, CommandProcessor, RawFileProcessor};
 
 pub struct AsepriteFormatHandler {
     verbose: bool,
-    processor: Box<dyn FormatProcessor>
+    processor: Box<dyn FormatProcessor>,
 }
 
 impl AsepriteFormatHandler {
@@ -31,8 +23,8 @@ impl AsepriteFormatHandler {
             verbose: false,
             processor: match processor {
                 AsepriteProcessor::Command => Box::new(CommandProcessor::default()),
-                AsepriteProcessor::RawFile => Box::new(RawFileProcessor::default())
-            }
+                AsepriteProcessor::RawFile => Box::new(RawFileProcessor::default()),
+            },
         }
     }
 }
@@ -43,7 +35,7 @@ impl FormatHandler for AsepriteFormatHandler {
     }
 
     fn extensions(&self) -> &[&str] {
-        &[ "ase", "aseprite" ]
+        &["ase", "aseprite"]
     }
 }
 
@@ -52,8 +44,14 @@ impl FormatProcessor for AsepriteFormatHandler {
         self.processor.setup(config)
     }
 
-    fn process(&self, source_file_path: &Path, output_dir_path: &Path, config: &Config) -> Result<Graphic, Error> {
-        self.processor.process(source_file_path, output_dir_path, config)
+    fn process(
+        &self,
+        source_file_path: &Path,
+        output_dir_path: &Path,
+        config: &Config,
+    ) -> Result<Graphic, Error> {
+        self.processor
+            .process(source_file_path, output_dir_path, config)
     }
 }
 

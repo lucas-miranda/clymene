@@ -1,26 +1,22 @@
 use std::{
     error,
-    fmt::{
-        self,
-        Debug,
-        Display,
-        Formatter
-    },
+    fmt::{self, Debug, Display, Formatter},
     io,
-    path::Path
+    path::Path,
 };
 
-use crate::graphics::GraphicSource;
-use crate::math::Rectangle;
-use crate::processors::data::FrameData;
+use crate::{graphics::GraphicSource, math::Rectangle, processors::data::FrameData};
 
 pub struct GraphicSourceData {
     pub source: GraphicSource,
-    pub frame_index: u32
+    pub frame_index: u32,
 }
 
 impl GraphicSourceData {
-    pub fn try_create(path: &Path, frames_data: &[FrameData]) -> Result<Self, GraphicSourceDataError> {
+    pub fn try_create(
+        path: &Path,
+        frames_data: &[FrameData],
+    ) -> Result<Self, GraphicSourceDataError> {
         let metadata = path.metadata().map_err(GraphicSourceDataError::from)?;
 
         if !metadata.is_file() {
@@ -29,7 +25,7 @@ impl GraphicSourceData {
 
         let frame_index = match try_retrieve_frame_index(&path) {
             Some(index) => index,
-            None => return Err(GraphicSourceDataError::FrameIndexNotFound)
+            None => return Err(GraphicSourceDataError::FrameIndexNotFound),
         };
 
         let (source_region, atlas_region) = get_regions(frame_index, frames_data);
@@ -38,9 +34,9 @@ impl GraphicSourceData {
             source: GraphicSource {
                 atlas_region,
                 path: path.to_owned(),
-                region: source_region
+                region: source_region,
             },
-            frame_index
+            frame_index,
         })
     }
 }
@@ -49,7 +45,7 @@ fn try_retrieve_frame_index(path: &Path) -> Option<u32> {
     if let Some(stem) = path.file_stem() {
         if let Some(stem_str) = stem.to_str() {
             if let Ok(index) = stem_str.parse() {
-                return Some(index)
+                return Some(index);
             }
         }
     }
@@ -57,7 +53,10 @@ fn try_retrieve_frame_index(path: &Path) -> Option<u32> {
     None
 }
 
-fn get_regions(frame_index: u32, frames_data: &[FrameData]) -> (Rectangle<u32>, Option<Rectangle<u32>>) {
+fn get_regions(
+    frame_index: u32,
+    frames_data: &[FrameData],
+) -> (Rectangle<u32>, Option<Rectangle<u32>>) {
     let source_region;
     let atlas_region;
 
@@ -67,21 +66,24 @@ fn get_regions(frame_index: u32, frames_data: &[FrameData]) -> (Rectangle<u32>, 
                 frame_data.source_region.x,
                 frame_data.source_region.y,
                 frame_data.source_region.width,
-                frame_data.source_region.height
-            ).unwrap_or_else(Rectangle::default);
+                frame_data.source_region.height,
+            )
+            .unwrap_or_else(Rectangle::default);
 
             atlas_region = if !frame_data.atlas_region.is_empty() {
-                Some(Rectangle::with(
-                    frame_data.atlas_region.x,
-                    frame_data.atlas_region.y,
-                    frame_data.atlas_region.width,
-                    frame_data.atlas_region.height
-                ).unwrap_or_else(Rectangle::default))
+                Some(
+                    Rectangle::with(
+                        frame_data.atlas_region.x,
+                        frame_data.atlas_region.y,
+                        frame_data.atlas_region.width,
+                        frame_data.atlas_region.height,
+                    )
+                    .unwrap_or_else(Rectangle::default),
+                )
             } else {
                 None
             };
-
-        },
+        }
         None => {
             source_region = Rectangle::default();
             atlas_region = None;
@@ -91,19 +93,18 @@ fn get_regions(frame_index: u32, frames_data: &[FrameData]) -> (Rectangle<u32>, 
     (source_region, atlas_region)
 }
 
-
 #[derive(Debug)]
 pub enum GraphicSourceDataError {
     IO(io::Error),
     FileExpected,
-    FrameIndexNotFound
+    FrameIndexNotFound,
 }
 
 impl error::Error for GraphicSourceDataError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &self {
             GraphicSourceDataError::IO(io_error) => Some(io_error),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -113,7 +114,7 @@ impl Display for GraphicSourceDataError {
         match &self {
             GraphicSourceDataError::IO(io_error) => write!(f, "IO Error: {}", io_error),
             GraphicSourceDataError::FileExpected => write!(f, "File expected"),
-            GraphicSourceDataError::FrameIndexNotFound => write!(f, "Frame index was not found")
+            GraphicSourceDataError::FrameIndexNotFound => write!(f, "Frame index was not found"),
         }
     }
 }

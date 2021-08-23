@@ -1,36 +1,20 @@
 use std::{
     fs,
-    path::{
-        Path,
-        PathBuf,
-    },
-    time::SystemTime
+    path::{Path, PathBuf},
+    time::SystemTime,
 };
 
-use serde::{ 
-    Deserialize,
-    Serialize
-};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     graphics::{
-        animation::{
-            Animation,
-            Track
-        },
-        Graphic,
-        Image
+        animation::{Animation, Track},
+        Graphic, Image,
     },
     processors::{
-        data::{
-            FrameIndicesData,
-            GraphicData,
-        },
-        image::{
-            GraphicSourceData,
-            GraphicSourceDataSet
-        }
-    }
+        data::{FrameIndicesData, GraphicData},
+        image::{GraphicSourceData, GraphicSourceDataSet},
+    },
 };
 
 #[derive(Serialize, Deserialize)]
@@ -53,13 +37,20 @@ impl CacheEntry {
         let mut graphic_source_data_set = GraphicSourceDataSet::new();
 
         // collect files' paths
-        for entry in fs::read_dir(&graphic_dir_path).unwrap().filter_map(|e| e.ok()) {
-            if let Ok(graphic_source_data) = GraphicSourceData::try_create(&entry.path(), &self.data.frames) {
+        for entry in fs::read_dir(&graphic_dir_path)
+            .unwrap()
+            .filter_map(|e| e.ok())
+        {
+            if let Ok(graphic_source_data) =
+                GraphicSourceData::try_create(&entry.path(), &self.data.frames)
+            {
                 graphic_source_data_set.sources.push(graphic_source_data)
             }
         }
 
-        graphic_source_data_set.sources.sort_unstable_by(|a, b| a.frame_index.cmp(&b.frame_index));
+        graphic_source_data_set
+            .sources
+            .sort_unstable_by(|a, b| a.frame_index.cmp(&b.frame_index));
 
         // build graphic
 
@@ -72,16 +63,16 @@ impl CacheEntry {
             return Some(
                 Image::with_graphic_source(
                     graphic_source_data_set.sources.remove(0).source,
-                    source_path.to_owned()
+                    source_path.to_owned(),
                 )
                 .unwrap()
-                .into()
+                .into(),
             );
         }
 
         let mut animation = match Animation::new(source_path.to_owned()) {
             Ok(anim) => anim,
-            Err(_) => return None
+            Err(_) => return None,
         };
 
         // register source images
@@ -106,7 +97,7 @@ impl CacheEntry {
                 match index_entry {
                     FrameIndicesData::Value(index) => {
                         track.frame_indices.push(*index);
-                    },
+                    }
                     FrameIndicesData::Range { from, to } => {
                         for index in (*from)..=(*to) {
                             track.frame_indices.push(index);

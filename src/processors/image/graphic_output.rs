@@ -1,7 +1,7 @@
 use crate::graphics::Graphic;
 
 pub struct GraphicOutput {
-    pub graphics: Vec<Graphic>
+    pub graphics: Vec<Graphic>,
 }
 
 impl GraphicOutput {

@@ -1,12 +1,7 @@
 use std::{
     error,
-    fmt::{
-        self,
-        Debug,
-        Display,
-        Formatter
-    },
-    path::PathBuf
+    fmt::{self, Debug, Display, Formatter},
+    path::PathBuf,
 };
 
 #[derive(Debug)]
@@ -14,7 +9,7 @@ pub enum Error {
     Load(LoadError),
     Save(SaveError),
     DirectoryExpected(PathBuf),
-    InvalidVersion { version: String, expected: String }
+    InvalidVersion { version: String, expected: String },
 }
 
 impl error::Error for Error {
@@ -23,7 +18,7 @@ impl error::Error for Error {
             Error::Load(load_error) => Some(load_error),
             Error::Save(save_error) => Some(save_error),
             Error::DirectoryExpected(_path) => None,
-            Error::InvalidVersion { .. } => None
+            Error::InvalidVersion { .. } => None,
         }
     }
 }
@@ -33,25 +28,29 @@ impl Display for Error {
         match &self {
             Error::Load(load_error) => write!(f, "Error when loading a cache file: {}", load_error),
             Error::Save(save_error) => write!(f, "Error when saving a cache file: {}", save_error),
-            Error::DirectoryExpected(path) => write!(f, "Directory expected at path '{}'", path.display()),
-            Error::InvalidVersion { version, expected } => write!(f, "Invalid cache version '{}', expected version '{}'", version, expected)
+            Error::DirectoryExpected(path) => {
+                write!(f, "Directory expected at path '{}'", path.display())
+            }
+            Error::InvalidVersion { version, expected } => write!(
+                f,
+                "Invalid cache version '{}', expected version '{}'",
+                version, expected
+            ),
         }
     }
 }
 
-
-
 #[derive(Debug)]
 pub enum LoadError {
     Deserialize(serde_json::error::Error),
-    FileNotFound(PathBuf)
+    FileNotFound(PathBuf),
 }
 
 impl error::Error for LoadError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &self {
             LoadError::Deserialize(toml_error) => Some(toml_error),
-            LoadError::FileNotFound(_path) => None
+            LoadError::FileNotFound(_path) => None,
         }
     }
 }
@@ -61,8 +60,12 @@ impl Display for LoadError {
         write!(f, "An error occured when trying to load a config file:")?;
 
         match &self {
-            LoadError::Deserialize(toml_error) => write!(f, "Error when deserializing from a toml file => {}", toml_error),
-            LoadError::FileNotFound(path) => write!(f, "File not found at '{}'", path.display())
+            LoadError::Deserialize(toml_error) => write!(
+                f,
+                "Error when deserializing from a toml file => {}",
+                toml_error
+            ),
+            LoadError::FileNotFound(path) => write!(f, "File not found at '{}'", path.display()),
         }
     }
 }
@@ -73,16 +76,15 @@ impl From<LoadError> for Error {
     }
 }
 
-
 #[derive(Debug)]
 pub enum SaveError {
-    Serialize(serde_json::error::Error)
+    Serialize(serde_json::error::Error),
 }
 
 impl error::Error for SaveError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &self {
-            SaveError::Serialize(json_error) => Some(json_error)
+            SaveError::Serialize(json_error) => Some(json_error),
         }
     }
 }
@@ -92,7 +94,11 @@ impl Display for SaveError {
         write!(f, "An error occured when trying to save a config file:")?;
 
         match &self {
-            SaveError::Serialize(json_error) => write!(f, "Error when serializing into a json file => {}", json_error)
+            SaveError::Serialize(json_error) => write!(
+                f,
+                "Error when serializing into a json file => {}",
+                json_error
+            ),
         }
     }
 }

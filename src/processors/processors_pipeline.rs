@@ -2,22 +2,18 @@ use std::vec::Vec;
 
 use crate::{
     args::Args,
-    processors::{
-        ConfigStatus,
-        Processor,
-        State
-    },
-    settings::Config
+    processors::{ConfigStatus, Processor, State},
+    settings::Config,
 };
 
 pub struct ProcessorsPipeline<'a> {
-    processors: Vec<Box<dyn Processor + 'a>>
+    processors: Vec<Box<dyn Processor + 'a>>,
 }
 
 impl<'a> ProcessorsPipeline<'a> {
     pub fn new() -> Self {
         Self {
-            processors: Vec::new()
+            processors: Vec::new(),
         }
     }
 
@@ -36,7 +32,7 @@ impl<'a> ProcessorsPipeline<'a> {
                     // if it's modified
                     match &config_status {
                         ConfigStatus::NotModified => config_status = ConfigStatus::Modified,
-                        ConfigStatus::Modified => ()
+                        ConfigStatus::Modified => (),
                     }
                 }
             }
@@ -44,8 +40,7 @@ impl<'a> ProcessorsPipeline<'a> {
 
         if let ConfigStatus::Modified = config_status {
             // config was modified, we need to save it to keep updated
-            config.save_to_path(&args.config_filepath)
-                  .unwrap();
+            config.save_to_path(&args.config_filepath).unwrap();
         }
 
         let mut state = State::new(config, args.force);

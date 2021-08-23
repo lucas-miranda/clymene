@@ -3,14 +3,14 @@ use std::collections::HashMap;
 #[derive(Default)]
 pub struct LoggerModuleEntry {
     pub(super) verbose: bool,
-    submodules: HashMap<String, LoggerModuleEntry>
+    submodules: HashMap<String, LoggerModuleEntry>,
 }
 
 impl LoggerModuleEntry {
     pub fn new(verbose: bool) -> Self {
         Self {
             verbose,
-            submodules: HashMap::new()
+            submodules: HashMap::new(),
         }
     }
 
@@ -18,7 +18,11 @@ impl LoggerModuleEntry {
         self.verbose
     }
 
-    pub(super) fn register_submodule<T: Into<String>>(&mut self, name: T, entry: LoggerModuleEntry) {
+    pub(super) fn register_submodule<T: Into<String>>(
+        &mut self,
+        name: T,
+        entry: LoggerModuleEntry,
+    ) {
         self.submodules.insert(name.into(), entry);
     }
 

@@ -1,11 +1,6 @@
 use std::{
     error,
-    fmt::{
-        self,
-        Debug,
-        Display,
-        Formatter
-    }
+    fmt::{self, Debug, Display, Formatter},
 };
 
 #[derive(Debug)]
@@ -24,7 +19,11 @@ impl error::Error for FormatHandlerError {
 impl Display for FormatHandlerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
-            FormatHandlerError::Deserialize(json_error) => write!(f, "Error when deserializing from a json file => {}", json_error)
+            FormatHandlerError::Deserialize(json_error) => write!(
+                f,
+                "Error when deserializing from a json file => {}",
+                json_error
+            ),
         }
     }
 }

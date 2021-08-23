@@ -1,5 +1,4 @@
-
 pub enum ConfigStatus {
     NotModified,
-    Modified
+    Modified,
 }

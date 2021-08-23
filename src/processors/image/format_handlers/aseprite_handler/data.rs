@@ -1,8 +1,4 @@
-use std::{
-    fs::OpenOptions,
-    path::Path,
-    io::BufReader
-};
+use std::{fs::OpenOptions, io::BufReader, path::Path};
 
 use serde::Deserialize;
 
@@ -11,7 +7,7 @@ use crate::processors::image::format_handlers::FormatHandlerError;
 #[derive(Deserialize)]
 pub struct Data {
     pub frames: Vec<FrameData>,
-    pub meta: MetaData
+    pub meta: MetaData,
 }
 
 #[derive(Deserialize)]
@@ -25,7 +21,7 @@ pub struct MetaData {
     pub frame_tags: Vec<FrameTagData>,
 
     #[serde(default)]
-    pub slices: Vec<SliceData>
+    pub slices: Vec<SliceData>,
 }
 
 #[derive(Deserialize)]
@@ -36,7 +32,7 @@ pub struct SliceData {
     #[serde(default)]
     pub data: String,
 
-    pub keys: Vec<SliceKeyData>
+    pub keys: Vec<SliceKeyData>,
 }
 
 #[derive(Deserialize)]
@@ -45,7 +41,7 @@ pub struct SliceKeyData {
     pub bounds: BoundsData,
 
     #[serde(default)]
-    pub pivot: PositionData
+    pub pivot: PositionData,
 }
 
 #[derive(Deserialize)]
@@ -53,7 +49,7 @@ pub struct FrameTagData {
     pub name: String,
     pub from: i16,
     pub to: i16,
-    pub direction: String
+    pub direction: String,
 }
 
 #[derive(Deserialize)]
@@ -65,7 +61,7 @@ pub struct FrameData {
     pub trimmed: bool,
     pub sprite_source_size: BoundsData,
     pub source_size: SizeData,
-    pub duration: i16
+    pub duration: i16,
 }
 
 #[derive(Deserialize)]
@@ -73,31 +69,27 @@ pub struct BoundsData {
     pub x: i16,
     pub y: i16,
     pub w: i16,
-    pub h: i16
+    pub h: i16,
 }
 
 #[derive(Default, Deserialize)]
 pub struct PositionData {
     pub x: i16,
-    pub y: i16
+    pub y: i16,
 }
 
 #[derive(Deserialize)]
 pub struct SizeData {
     pub w: i16,
-    pub h: i16
+    pub h: i16,
 }
 
 impl Data {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, FormatHandlerError> {
-        let data_file = OpenOptions::new()
-                                    .read(true)
-                                    .open(path)
-                                    .unwrap();
-
+        let data_file = OpenOptions::new().read(true).open(path).unwrap();
         let buf_reader = BufReader::new(data_file);
-        let aseprite_animation_data: Self = serde_json::from_reader(buf_reader)
-                                                       .map_err(FormatHandlerError::Deserialize)?;
+        let aseprite_animation_data: Self =
+            serde_json::from_reader(buf_reader).map_err(FormatHandlerError::Deserialize)?;
 
         Ok(aseprite_animation_data)
     }

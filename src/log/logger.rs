@@ -6,7 +6,7 @@ use super::LoggerModuleEntry;
 pub struct Logger {
     modules: HashMap<String, LoggerModuleEntry>,
     verbose: bool,
-    debug: bool
+    debug: bool,
 }
 
 impl Logger {
@@ -29,7 +29,11 @@ impl Logger {
     pub fn register_module<T: Into<String>>(&mut self, name: T, verbose: bool) {
         let mut submodule: Option<&mut LoggerModuleEntry> = None;
 
-        for section_name in name.into().trim_start_matches(format!("{}::", env!("CARGO_PKG_NAME")).as_str()).split("::") {
+        for section_name in name
+            .into()
+            .trim_start_matches(format!("{}::", env!("CARGO_PKG_NAME")).as_str())
+            .split("::")
+        {
             let section_name_owned = section_name.to_owned();
 
             submodule = match submodule {
@@ -40,16 +44,16 @@ impl Logger {
                         m.register_submodule(section_name, LoggerModuleEntry::default());
                         Some(m.get_mut_submodule(&section_name_owned).unwrap())
                     }
-                },
-                None => {
-                    Some(match self.modules.get_mut(&section_name_owned) {
-                        Some(module) => module,
-                        None => {
-                            self.modules.insert(section_name_owned.clone(), LoggerModuleEntry::default());
-                            self.modules.get_mut(&section_name_owned).unwrap()
-                        }
-                    })
                 }
+                None => Some(match self.modules.get_mut(&section_name_owned) {
+                    Some(module) => module,
+                    None => {
+                        self.modules
+                            .insert(section_name_owned.clone(), LoggerModuleEntry::default());
+
+                        self.modules.get_mut(&section_name_owned).unwrap()
+                    }
+                }),
             };
         }
 
@@ -61,12 +65,16 @@ impl Logger {
     pub fn get_module<T: Into<String>>(&self, name: T) -> Option<&LoggerModuleEntry> {
         let mut submodule: Option<&LoggerModuleEntry> = None;
 
-        for section_name in name.into().trim_start_matches(format!("{}::", env!("CARGO_PKG_NAME")).as_str()).split("::") {
+        for section_name in name
+            .into()
+            .trim_start_matches(format!("{}::", env!("CARGO_PKG_NAME")).as_str())
+            .split("::")
+        {
             let section_name_owned = section_name.to_owned();
 
             submodule = match submodule {
                 Some(m) => m.get_submodule(&section_name_owned),
-                None => self.modules.get(&section_name_owned)
+                None => self.modules.get(&section_name_owned),
             };
 
             if submodule.is_none() {
@@ -84,12 +92,16 @@ impl Logger {
 
         let mut submodule: Option<&LoggerModuleEntry> = None;
 
-        for section_name in name.into().trim_start_matches(format!("{}::", env!("CARGO_PKG_NAME")).as_str()).split("::") {
+        for section_name in name
+            .into()
+            .trim_start_matches(format!("{}::", env!("CARGO_PKG_NAME")).as_str())
+            .split("::")
+        {
             let section_name_owned = section_name.to_owned();
 
             submodule = match submodule {
                 Some(m) => m.get_submodule(&section_name_owned),
-                None => self.modules.get(&section_name_owned)
+                None => self.modules.get(&section_name_owned),
             };
 
             match submodule {
@@ -97,8 +109,8 @@ impl Logger {
                     if m.is_verbose() {
                         return true;
                     }
-                },
-                None => break
+                }
+                None => break,
             }
         }
 

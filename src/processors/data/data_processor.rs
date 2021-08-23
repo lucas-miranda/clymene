@@ -2,28 +2,20 @@ use colored::Colorize;
 
 use crate::{
     common::Verbosity,
-    processors::{
-        ConfigStatus,
-        data::AtlasData,
-        Processor,
-        State
-    },
-    settings::{
-        Config,
-        ProcessorConfig
-    }
+    processors::{data::AtlasData, ConfigStatus, Processor, State},
+    settings::{Config, ProcessorConfig},
 };
 
 pub struct DataProcessor {
     verbose: bool,
-    prettify_output: bool
+    prettify_output: bool,
 }
 
 impl DataProcessor {
     pub fn new() -> Self {
         Self {
             verbose: false,
-            prettify_output: false
+            prettify_output: false,
         }
     }
 }
@@ -48,7 +40,7 @@ impl Processor for DataProcessor {
 
         let cache = match &state.cache {
             Some(c) => c,
-            None => panic!("Cache isn't available.")
+            None => panic!("Cache isn't available."),
         };
 
         infoln!(block, "Gathering graphics' data entries");
@@ -56,27 +48,32 @@ impl Processor for DataProcessor {
         for entry in cache.files.values() {
             match entry.borrow().location.file_stem() {
                 Some(location_stem) => {
-                    atlas_data.graphics.insert(location_stem.to_str().unwrap().to_owned(), entry.borrow().data.clone());
-                },
+                    atlas_data.graphics.insert(
+                        location_stem.to_str().unwrap().to_owned(),
+                        entry.borrow().data.clone(),
+                    );
+                }
                 None => {
-                    panic!("File stem not found at location '{}'", entry.borrow().location.display());
+                    panic!(
+                        "File stem not found at location '{}'",
+                        entry.borrow().location.display()
+                    );
                 }
             }
         }
 
         infoln!(last, "{}", "Done".green());
 
-        let output_atlas_data_path = state
-            .config
-            .cache
-            .atlas_path()
-            .join(
-               if state.config.output_name.is_empty() {
-                   format!("{}.data.json", Config::default_output_name())
-               } else {
-                   format!("{}.data.json", state.config.output_name)
-               }
-            );
+        let output_atlas_data_path =
+            state
+                .config
+                .cache
+                .atlas_path()
+                .join(if state.config.output_name.is_empty() {
+                    format!("{}.data.json", Config::default_output_name())
+                } else {
+                    format!("{}.data.json", state.config.output_name)
+                });
 
         if self.prettify_output {
             infoln!("Exporting prettified data to file");
@@ -87,7 +84,9 @@ impl Processor for DataProcessor {
         traceln!("At {}", output_atlas_data_path.display().to_string().bold());
 
         if self.prettify_output {
-            atlas_data.save_pretty_to_path(output_atlas_data_path).unwrap();
+            atlas_data
+                .save_pretty_to_path(output_atlas_data_path)
+                .unwrap();
         } else {
             atlas_data.save_to_path(output_atlas_data_path).unwrap();
         }

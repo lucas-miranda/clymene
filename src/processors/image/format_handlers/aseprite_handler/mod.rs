@@ -1,4 +1,3 @@
-
 mod command_processor;
 use command_processor::CommandProcessor;
 
@@ -13,5 +12,5 @@ use raw_file_processor::RawFileProcessor;
 #[allow(dead_code)]
 pub enum AsepriteProcessor {
     Command,
-    RawFile
+    RawFile,
 }

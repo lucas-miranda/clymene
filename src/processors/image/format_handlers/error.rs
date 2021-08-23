@@ -1,18 +1,10 @@
 use std::{
     error,
-    fmt::{
-        self,
-        Debug,
-        Display,
-        Formatter
-    },
-    path::PathBuf
+    fmt::{self, Debug, Display, Formatter},
+    path::PathBuf,
 };
 
-use crate::processors::image::{
-    self,
-    format_handlers::FormatHandlerError
-} ;
+use crate::processors::image::{self, format_handlers::FormatHandlerError};
 
 #[derive(Debug)]
 pub enum Error {
@@ -42,12 +34,18 @@ impl Display for Error {
             Error::DirectoryExpected => write!(f, "Directory expected at path."),
             Error::WrongFileType => write!(f, "Wrong file type."),
             Error::ExternalProgramFail(stderr) => {
-                let msg = std::str::from_utf8(stderr)
-                                   .unwrap_or("Can't display, malformed message.");
+                let msg =
+                    std::str::from_utf8(stderr).unwrap_or("Can't display, malformed message.");
 
-                write!(f, "An external program call has failed. Collected err:\n{}", msg)
-            },
-            Error::FormatHandlerFailed(handler_error) => write!(f, "Format handler has failed: {}", handler_error)
+                write!(
+                    f,
+                    "An external program call has failed. Collected err:\n{}",
+                    msg
+                )
+            }
+            Error::FormatHandlerFailed(handler_error) => {
+                write!(f, "Format handler has failed: {}", handler_error)
+            }
         }
     }
 }

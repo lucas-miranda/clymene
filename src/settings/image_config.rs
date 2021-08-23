@@ -1,18 +1,11 @@
 use std::path::PathBuf;
 
-use serde::{ 
-    Deserialize, 
-    Serialize 
-};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Verbosity,
     log::Logger,
-    settings::{
-        AsepriteConfig,
-        ConfigLoggerStatus,
-        ProcessorConfig
-    }
+    settings::{AsepriteConfig, ConfigLoggerStatus, ProcessorConfig},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -30,7 +23,7 @@ pub struct ImageConfig {
     pub display: DisplayKind,
 
     #[serde(default)]
-    pub aseprite: AsepriteConfig
+    pub aseprite: AsepriteConfig,
 }
 
 impl ImageConfig {
@@ -46,7 +39,7 @@ impl Default for ImageConfig {
             input_path: String::default(),
             output_path: PathBuf::default(),
             display: DisplayKind::Simple,
-            aseprite: AsepriteConfig::default()
+            aseprite: AsepriteConfig::default(),
         }
     }
 }
@@ -54,7 +47,7 @@ impl Default for ImageConfig {
 impl ProcessorConfig for ImageConfig {
     fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus) {
         let logger_status = ConfigLoggerStatus {
-            verbose: self.is_verbose() || parent_logger_status.verbose
+            verbose: self.is_verbose() || parent_logger_status.verbose,
         };
 
         if logger_status.verbose {
@@ -80,5 +73,5 @@ impl Verbosity for ImageConfig {
 pub enum DisplayKind {
     Simple,
     List,
-    Detailed
+    Detailed,
 }

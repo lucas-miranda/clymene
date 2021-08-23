@@ -1,17 +1,11 @@
 use std::path::PathBuf;
 
-use serde::{ 
-    Deserialize, 
-    Serialize 
-};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Verbosity,
     log::Logger,
-    settings::{
-        ConfigLoggerStatus,
-        ProcessorConfig
-    }
+    settings::{ConfigLoggerStatus, ProcessorConfig},
 };
 
 const IMAGES_FOLDER_NAME: &str = "images";
@@ -32,7 +26,7 @@ pub struct CacheConfig {
 impl ProcessorConfig for CacheConfig {
     fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus) {
         let logger_status = ConfigLoggerStatus {
-            verbose: self.is_verbose() || parent_logger_status.verbose
+            verbose: self.is_verbose() || parent_logger_status.verbose,
         };
 
         if logger_status.verbose {

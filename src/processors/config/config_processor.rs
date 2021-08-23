@@ -1,38 +1,21 @@
-use std::{
-    fs,
-    io,
-    path::PathBuf
-};
+use std::{fs, io, path::PathBuf};
 
 use colored::Colorize;
-
-use tree_decorator::{
-    close_tree_item,
-    decorator
-};
+use tree_decorator::{close_tree_item, decorator};
 
 use crate::{
     common::Verbosity,
-    processors::{
-        ConfigStatus,
-        Processor,
-        State
-    },
-    settings::{
-        Config,
-        ProcessorConfig
-    }
+    processors::{ConfigStatus, Processor, State},
+    settings::{Config, ProcessorConfig},
 };
 
 pub struct ConfigProcessor {
-    verbose: bool
+    verbose: bool,
 }
 
 impl ConfigProcessor {
     pub fn new() -> Self {
-        ConfigProcessor {
-            verbose: false
-        }
+        ConfigProcessor { verbose: false }
     }
 }
 
@@ -48,19 +31,29 @@ impl Processor for ConfigProcessor {
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
 
-        infoln!(block, "Checking {} config", env!("CARGO_PKG_NAME").bold().magenta());
+        infoln!(
+            block,
+            "Checking {} config",
+            env!("CARGO_PKG_NAME").bold().magenta()
+        );
 
         traceln!(block, "Output path");
 
         let output_path = if config.output_path.is_empty() {
             let p = Config::default_output_path();
-            warnln!("Output directory path is empty, default value '{}' will be used.", p);
+            warnln!(
+                "Output directory path is empty, default value '{}' will be used.",
+                p
+            );
             let path = PathBuf::from(&p);
             config.output_path = p;
             config_status = ConfigStatus::Modified;
             path
         } else {
-            traceln!("Using provided output directory path {}", config.output_path.bold());
+            traceln!(
+                "Using provided output directory path {}",
+                config.output_path.bold()
+            );
             PathBuf::from(&config.output_path)
         };
 
@@ -70,16 +63,26 @@ impl Processor for ConfigProcessor {
         match output_pathbuf.metadata() {
             Ok(metadata) => {
                 if !metadata.is_dir() {
-                    panic!("Expected a directory at output path '{}'.", output_pathbuf.display());
+                    panic!(
+                        "Expected a directory at output path '{}'.",
+                        output_pathbuf.display()
+                    );
                 } else {
                     traceln!(last, "{}", "Found".green());
                 }
-            },
+            }
             Err(io_error) => {
                 match &io_error.kind() {
                     io::ErrorKind::NotFound => {
-                        warnln!(block, "Output directory path {} doesn't seems to exist", output_pathbuf.display().to_string().bold());
-                        infoln!(entry: decorator::Entry::None, "It'll be created right now...");
+                        warnln!(
+                            block,
+                            "Output directory path {} doesn't seems to exist",
+                            output_pathbuf.display().to_string().bold()
+                        );
+                        infoln!(
+                            entry: decorator::Entry::None,
+                            "It'll be created right now..."
+                        );
 
                         fs::create_dir_all(&output_pathbuf).unwrap();
 
@@ -89,7 +92,7 @@ impl Processor for ConfigProcessor {
                         }
 
                         infoln!(last, "{}", "Done".green());
-                    },
+                    }
                     _ => {
                         panic!("{}", io_error);
                     }

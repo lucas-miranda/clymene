@@ -1,4 +1,3 @@
-
 pub struct ConfigLoggerStatus {
-    pub verbose: bool
+    pub verbose: bool,
 }

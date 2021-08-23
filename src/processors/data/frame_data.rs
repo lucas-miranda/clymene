@@ -1,20 +1,14 @@
 use std::convert::TryInto;
 
-use serde::{
-    Deserialize,
-    Serialize
-};
+use serde::{Deserialize, Serialize};
 
-use crate::{
-    processors::image::format_handlers::aseprite_handler,
-    math::Rectangle
-};
+use crate::{math::Rectangle, processors::image::format_handlers::aseprite_handler};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct FrameData {
     pub atlas_region: Rectangle<u32>,
     pub duration: Option<u32>,
-    pub source_region: Rectangle<u32>
+    pub source_region: Rectangle<u32>,
 }
 
 impl From<&aseprite_handler::data::FrameData> for FrameData {
@@ -24,15 +18,16 @@ impl From<&aseprite_handler::data::FrameData> for FrameData {
             duration: {
                 match aseprite_frame_data.duration {
                     0 => None,
-                    d => d.try_into().ok()
+                    d => d.try_into().ok(),
                 }
             },
             source_region: Rectangle::with(
                 aseprite_frame_data.sprite_source_size.x,
                 aseprite_frame_data.sprite_source_size.y,
                 aseprite_frame_data.sprite_source_size.w,
-                aseprite_frame_data.sprite_source_size.h
-            ).unwrap_or_else(Rectangle::default)
+                aseprite_frame_data.sprite_source_size.h,
+            )
+            .unwrap_or_else(Rectangle::default),
         }
     }
 }

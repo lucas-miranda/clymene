@@ -1,22 +1,9 @@
 use std::{
     ffi::OsStr,
-    fs::{
-        self,
-        DirEntry,
-        OpenOptions
-    },
-    io::{
-        self,
-        BufRead,
-        Read,
-        Seek,
-        SeekFrom
-    },
-    path::{
-        Path,
-        PathBuf
-    },
-    process::Command
+    fs::{self, DirEntry, OpenOptions},
+    io::{self, BufRead, Read, Seek, SeekFrom},
+    path::{Path, PathBuf},
+    process::Command,
 };
 
 use colored::Colorize;
@@ -24,43 +11,30 @@ use tree_decorator::decorator;
 
 use crate::{
     graphics::{
-        animation::{
-            Animation,
-            Track
-        },
-        Graphic,
-        Image
+        animation::{Animation, Track},
+        Graphic, Image,
     },
     math::Size,
     processors::{
         image::{
             format_handlers::{
-                aseprite_handler::data::{
-                    Data,
-                    FrameData
-                },
-                Error,
-                FormatProcessor
+                aseprite_handler::data::{Data, FrameData},
+                Error, FormatProcessor,
             },
-            GraphicSourceData,
-            GraphicSourceDataSet
+            GraphicSourceData, GraphicSourceDataSet,
         },
-        ConfigStatus
+        ConfigStatus,
     },
-    settings::{
-        AsepriteConfig,
-        Config
-    },
-    util
+    settings::{AsepriteConfig, Config},
+    util,
 };
 
-const ASEPRITE_FILE_MAGIC_NUMBER: [u8; 2] = [ 0xE0, 0xA5 ];
+const ASEPRITE_FILE_MAGIC_NUMBER: [u8; 2] = [0xE0, 0xA5];
 const FRAME_FILE_NAME_FORMAT: &str = "{frame}.png";
 const DATA_FILE_NAME: &str = "data.json";
 
 #[derive(Default)]
-pub struct CommandProcessor {
-}
+pub struct CommandProcessor {}
 
 impl CommandProcessor {
     fn ensure_bin_exists(&self, c: &mut AsepriteConfig) -> ConfigStatus {
@@ -73,14 +47,18 @@ impl CommandProcessor {
                         //
                         // don't need to do anything else
 
-                        traceln!(entry: decorator::Entry::None, "Found at {}", c.bin_path.bold());
+                        traceln!(
+                            entry: decorator::Entry::None,
+                            "Found at {}",
+                            c.bin_path.bold()
+                        );
                         return ConfigStatus::NotModified;
                     }
 
                     c.bin_path = pathbuf.display().to_string();
                     infoln!("Found at {}", c.bin_path.bold());
                     return ConfigStatus::Modified;
-                },
+                }
                 None => {
                     warnln!("Can't find bin at {}", c.bin_path.bold());
                 }
@@ -116,23 +94,25 @@ impl CommandProcessor {
         if metadata.is_file() {
             match pathbuf.file_name() {
                 Some(filename) => {
-                    if filename.to_str().unwrap().to_lowercase().eq(aseprite_executable_name) {
+                    if filename
+                        .to_str()
+                        .unwrap()
+                        .to_lowercase()
+                        .eq(aseprite_executable_name)
+                    {
                         Some(pathbuf)
                     } else {
                         None
                     }
-                },
-                None => None
+                }
+                None => None,
             }
         } else if metadata.is_dir() {
-            match util::fs::find(
-                pathbuf,
-                &mut move |e: &DirEntry| {
-                    aseprite_executable_name.eq(&e.file_name().to_str().unwrap().to_lowercase())
-                }
-            ) {
+            match util::fs::find(pathbuf, &mut move |e: &DirEntry| {
+                aseprite_executable_name.eq(&e.file_name().to_str().unwrap().to_lowercase())
+            }) {
                 Ok(entry) => entry.map(|found_entry| found_entry.path()),
-                Err(_) => None
+                Err(_) => None,
             }
         } else {
             None
@@ -159,8 +139,12 @@ impl CommandProcessor {
                         break 'bin_search;
                     }
 
-                    errorln!(entry: decorator::Entry::Double, "{} not found at provided path", "Aseprite".bold().cyan());
-                },
+                    errorln!(
+                        entry: decorator::Entry::Double,
+                        "{} not found at provided path",
+                        "Aseprite".bold().cyan()
+                    );
+                }
                 Err(e) => {
                     panic!("{}", e);
                 }
@@ -181,9 +165,9 @@ impl CommandProcessor {
 
                 // check magic number section
                 let mut file = OpenOptions::new()
-                                           .read(true)
-                                           .open(&source_file_path)
-                                           .unwrap();
+                    .read(true)
+                    .open(&source_file_path)
+                    .unwrap();
 
                 file.seek(SeekFrom::Start(4)).unwrap(); // seek to magic number
 
@@ -194,21 +178,27 @@ impl CommandProcessor {
                     // magic number doesn't match
                     return Err(Error::WrongFileType);
                 }
-            },
+            }
             Err(e) => {
                 panic!("{}", e)
             }
         }
-        
+
         Ok(())
     }
 
-    fn find_graphic_sources(&self, images_folder_path: &Path, frames_data: &[FrameData]) -> GraphicSourceDataSet {
+    fn find_graphic_sources(
+        &self,
+        images_folder_path: &Path,
+        frames_data: &[FrameData],
+    ) -> GraphicSourceDataSet {
         let dimensions = {
             let mut d = None;
 
             for frame_data in frames_data.iter() {
-                if let Some(frame_dimensions) = Size::with(frame_data.source_size.w, frame_data.source_size.h) {
+                if let Some(frame_dimensions) =
+                    Size::with(frame_data.source_size.w, frame_data.source_size.h)
+                {
                     d = Some(frame_dimensions);
                     break;
                 }
@@ -219,18 +209,23 @@ impl CommandProcessor {
 
         let mut data_set = GraphicSourceDataSet {
             sources: Vec::new(),
-            dimensions
+            dimensions,
         };
 
         let frames: Vec<_> = frames_data.iter().map(|f| f.into()).collect();
 
-        for entry in fs::read_dir(images_folder_path).unwrap().filter_map(|e| e.ok()) {
+        for entry in fs::read_dir(images_folder_path)
+            .unwrap()
+            .filter_map(|e| e.ok())
+        {
             if let Ok(graphic_source_data) = GraphicSourceData::try_create(&entry.path(), &frames) {
                 data_set.sources.push(graphic_source_data);
             }
         }
 
-        data_set.sources.sort_unstable_by(|a, b| a.frame_index.cmp(&b.frame_index));
+        data_set
+            .sources
+            .sort_unstable_by(|a, b| a.frame_index.cmp(&b.frame_index));
 
         data_set
     }
@@ -247,13 +242,26 @@ impl FormatProcessor for CommandProcessor {
         Ok(config_status)
     }
 
-    fn process(&self, source_file_path: &Path, output_dir_path: &Path, config: &Config) -> Result<Graphic, Error> {
-        traceln!(entry: decorator::Entry::None, "Source filepath: {}", source_file_path.display().to_string().bold());
+    fn process(
+        &self,
+        source_file_path: &Path,
+        output_dir_path: &Path,
+        config: &Config,
+    ) -> Result<Graphic, Error> {
+        traceln!(
+            entry: decorator::Entry::None,
+            "Source filepath: {}",
+            source_file_path.display().to_string().bold()
+        );
 
         self.validate_file(source_file_path)?;
 
         // verify output directory
-        traceln!(entry: decorator::Entry::None, "Output dir: {}", output_dir_path.display().to_string().bold());
+        traceln!(
+            entry: decorator::Entry::None,
+            "Output dir: {}",
+            output_dir_path.display().to_string().bold()
+        );
 
         if !output_dir_path.is_dir() {
             return Err(Error::DirectoryExpected);
@@ -263,19 +271,16 @@ impl FormatProcessor for CommandProcessor {
         let output = Command::new(&config.image.aseprite.bin_path)
             .args(&[
                 // batch, do not start UI
-                OsStr::new("-b"), 
-                
+                OsStr::new("-b"),
                 // skip empty frames
-                OsStr::new("--ignore-empty"), 
-
+                OsStr::new("--ignore-empty"),
                 // trim empty space
                 //OsStr::new("--trim"), // removed since it doesn't work at all when exporting images
-
                 // .ase/.aseprite file path
-                source_file_path.as_os_str(), 
-
+                source_file_path.as_os_str(),
                 // save every frame as
-                OsStr::new("--save-as"), output_dir_path.join(FRAME_FILE_NAME_FORMAT).as_os_str()
+                OsStr::new("--save-as"),
+                output_dir_path.join(FRAME_FILE_NAME_FORMAT).as_os_str(),
             ])
             .output()
             .unwrap();
@@ -287,27 +292,28 @@ impl FormatProcessor for CommandProcessor {
         // generate data
         let data_pathbuf = output_dir_path.join(DATA_FILE_NAME);
 
-        traceln!(entry: decorator::Entry::None, "  Data filepath: {}", data_pathbuf.display().to_string().bold());
+        traceln!(
+            entry: decorator::Entry::None,
+            "  Data filepath: {}",
+            data_pathbuf.display().to_string().bold()
+        );
 
         let output = Command::new(&config.image.aseprite.bin_path)
             .args(&[
                 // batch, do not start UI
-                OsStr::new("-b"), 
-
+                OsStr::new("-b"),
                 // .ase/.aseprite file path
-                source_file_path.as_os_str(), 
-
+                source_file_path.as_os_str(),
                 // save .json data as
-                OsStr::new("--data"), data_pathbuf.as_os_str(), 
-
+                OsStr::new("--data"),
+                data_pathbuf.as_os_str(),
                 // json format (hash or array)
-                OsStr::new("--format"), OsStr::new("json-array"), 
-
+                OsStr::new("--format"),
+                OsStr::new("json-array"),
                 // show tags data
                 OsStr::new("--list-tags"),
-
                 // trim empty space
-                OsStr::new("--trim") 
+                OsStr::new("--trim"),
             ])
             .output()
             .unwrap();
@@ -317,47 +323,49 @@ impl FormatProcessor for CommandProcessor {
         }
 
         // process generated images and data
-        let aseprite_data = Data::from_file(&data_pathbuf)
-                                 .map_err::<Error, _>(|e| e.into())?;
+        let aseprite_data = Data::from_file(&data_pathbuf).map_err::<Error, _>(|e| e.into())?;
 
         // retrieve source images
-        let mut graphic_sources_set = self.find_graphic_sources(&output_dir_path, &aseprite_data.frames);
+        let mut graphic_sources_set =
+            self.find_graphic_sources(&output_dir_path, &aseprite_data.frames);
 
         if graphic_sources_set.sources.is_empty() {
             return Ok(Graphic::Empty);
         }
 
-        if graphic_sources_set.sources.len() == 1 && aseprite_data.meta.frame_tags.is_empty() && aseprite_data.meta.slices.is_empty() {
+        if graphic_sources_set.sources.len() == 1
+            && aseprite_data.meta.frame_tags.is_empty()
+            && aseprite_data.meta.slices.is_empty()
+        {
             // single image
-            return Ok(
-                Image::with_graphic_source(
-                    graphic_sources_set.sources.remove(0).source,
-                    source_file_path.to_owned()
-                )
-                .unwrap()
-                .into()
-            );
+            return Ok(Image::with_graphic_source(
+                graphic_sources_set.sources.remove(0).source,
+                source_file_path.to_owned(),
+            )
+            .unwrap()
+            .into());
         }
 
-        let mut animation = Animation::new(source_file_path.to_owned())
-                                      .map_err::<Error, _>(|e| e.into())?;
+        let mut animation =
+            Animation::new(source_file_path.to_owned()).map_err::<Error, _>(|e| e.into())?;
 
         // register source images
         for (frame_index, source_data) in graphic_sources_set.sources.drain(..).enumerate() {
             match aseprite_data.frames.get(frame_index) {
                 Some(frame_data) => {
-                    animation.push_frame(
-                        source_data.source, 
-                        {
-                            if frame_data.duration < 0 {
-                                0u32
-                            } else {
-                                frame_data.duration as u32
-                            }
+                    animation.push_frame(source_data.source, {
+                        if frame_data.duration < 0 {
+                            0u32
+                        } else {
+                            frame_data.duration as u32
                         }
-                    );
-                },
-                None => panic!("Expected frame {} not found. At aseprite data file '{}'.", frame_index, data_pathbuf.display())
+                    });
+                }
+                None => panic!(
+                    "Expected frame {} not found. At aseprite data file '{}'.",
+                    frame_index,
+                    data_pathbuf.display()
+                ),
             }
         }
 

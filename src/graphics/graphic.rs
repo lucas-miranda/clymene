@@ -1,10 +1,7 @@
-use crate::graphics::{
-    animation::Animation,
-    Image
-};
+use crate::graphics::{animation::Animation, Image};
 
 pub enum Graphic {
     Empty,
     Image(Image),
-    Animation(Animation)
+    Animation(Animation),
 }

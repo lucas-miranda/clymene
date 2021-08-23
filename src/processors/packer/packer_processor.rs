@@ -1,55 +1,34 @@
-use std::{
-    fs,
-    io,
-    iter,
-    path::PathBuf
-};
+use std::{fs, io, iter, path::PathBuf};
 
 use colored::Colorize;
 
-use image::{
-    self,
-    GenericImage,
-    GenericImageView
-};
+use image::{self, GenericImage, GenericImageView};
 
 use tree_decorator::decorator;
 
 use crate::{
     common::Verbosity,
-    graphics::{
-        Graphic,
-        GraphicSource
-    },
+    graphics::{Graphic, GraphicSource},
     math::Size,
     processors::{
-        ConfigStatus,
-        packer::{
-            ColumnTightPacker,
-            Error,
-            Packer
-        },
-        Processor,
-        State
+        packer::{ColumnTightPacker, Error, Packer},
+        ConfigStatus, Processor, State,
     },
-    settings::{
-        Config,
-        ProcessorConfig
-    }
+    settings::{Config, ProcessorConfig},
 };
 
 const DEFAULT_ATLAS_SIZE: u32 = 1024;
 
 pub struct PackerProcessor {
     verbose: bool,
-    packer: Option<Box<dyn Packer>>
+    packer: Option<Box<dyn Packer>>,
 }
 
 impl PackerProcessor {
     pub fn new() -> Self {
         PackerProcessor {
             verbose: false,
-            packer: None
+            packer: None,
         }
     }
 
@@ -60,10 +39,14 @@ impl PackerProcessor {
             match output_file_name.metadata() {
                 Ok(metadata) => {
                     if !metadata.is_file() {
-                        traceln!(entry: decorator::Entry::None, "Expected output file {} isn't a file", output_file_name.display().to_string().bold());
+                        traceln!(
+                            entry: decorator::Entry::None,
+                            "Expected output file {} isn't a file",
+                            output_file_name.display().to_string().bold()
+                        );
                         return Err(Error::OutputFilepathAlreadyInUse(output_file_name));
                     }
-                },
+                }
                 Err(e) => {
                     if let Some(parent_path) = output_file_name.parent() {
                         if !parent_path.exists() {
@@ -72,7 +55,11 @@ impl PackerProcessor {
                     }
 
                     if let io::ErrorKind::NotFound = e.kind() {
-                        traceln!(entry: decorator::Entry::None, "Output file {} doesn't seems to exists", output_file_name.display().to_string().bold());
+                        traceln!(
+                            entry: decorator::Entry::None,
+                            "Output file {} doesn't seems to exists",
+                            output_file_name.display().to_string().bold()
+                        );
                         return Ok(true);
                     }
 
@@ -89,31 +76,38 @@ impl PackerProcessor {
         Ok(true)
     }
 
-    fn generate_image(&self, output_path: PathBuf, width: u32, height: u32, graphic_sources: &[&mut GraphicSource]) -> Result<(), image::ImageError> {
-        let mut image_buffer = image::ImageBuffer::from_pixel(
-            width, 
-            height,
-            image::Rgba([0u8; 4])
-        );
+    fn generate_image(
+        &self,
+        output_path: PathBuf,
+        width: u32,
+        height: u32,
+        graphic_sources: &[&mut GraphicSource],
+    ) -> Result<(), image::ImageError> {
+        let mut image_buffer = image::ImageBuffer::from_pixel(width, height, image::Rgba([0u8; 4]));
 
         for graphic_source in graphic_sources {
             let image = image::open(&graphic_source.path)?;
 
             match &graphic_source.atlas_region {
                 Some(atlas_region) => {
-                    image_buffer.copy_from(
-                        &image.view(
-                            graphic_source.region.x, 
-                            graphic_source.region.y, 
-                            graphic_source.region.width, 
-                            graphic_source.region.height
-                        ), 
-                        atlas_region.x, 
-                        atlas_region.y
-                    ).unwrap();
-                },
+                    image_buffer
+                        .copy_from(
+                            &image.view(
+                                graphic_source.region.x,
+                                graphic_source.region.y,
+                                graphic_source.region.width,
+                                graphic_source.region.height,
+                            ),
+                            atlas_region.x,
+                            atlas_region.y,
+                        )
+                        .unwrap();
+                }
                 None => {
-                    warnln!("Atlas region isn't defined from graphic source at '{}'", graphic_source.path.display());
+                    warnln!(
+                        "Atlas region isn't defined from graphic source at '{}'",
+                        graphic_source.path.display()
+                    );
                 }
             }
         }
@@ -122,15 +116,14 @@ impl PackerProcessor {
     }
 
     fn output_file_path(&self, config: &Config) -> PathBuf {
-        config.cache
-              .atlas_path()
-              .join(
-                  if config.output_name.is_empty() {
-                      format!("{}.png", Config::default_output_name())
-                  } else {
-                      format!("{}.png", config.output_name)
-                  }
-              )
+        config
+            .cache
+            .atlas_path()
+            .join(if config.output_name.is_empty() {
+                format!("{}.png", Config::default_output_name())
+            } else {
+                format!("{}.png", config.output_name)
+            })
     }
 
     /*
@@ -197,59 +190,89 @@ impl Processor for PackerProcessor {
                 }
 
                 infoln!(block, "Calculating");
-                traceln!(entry: decorator::Entry::None, "With atlas size {}x{}", state.config.packer.atlas_size, state.config.packer.atlas_size);
+                traceln!(
+                    entry: decorator::Entry::None,
+                    "With atlas size {}x{}",
+                    state.config.packer.atlas_size,
+                    state.config.packer.atlas_size
+                );
 
-                let mut graphic_sources = state.graphic_output.graphics
-                                               .iter_mut()
-                                               .filter_map(|g| -> Option<Box<dyn Iterator<Item = &mut GraphicSource>>> {
-                                                   match g {
-                                                       Graphic::Image(img) => Some(Box::new(iter::once(&mut img.graphic_source))),
-                                                       Graphic::Animation(anim) => Some(Box::new(anim.frames.iter_mut().map(|f| &mut f.graphic_source))),
-                                                       Graphic::Empty => None
-                                                   }
-                                               })
-                                               .flatten()
-                                               .collect::<Vec<&mut GraphicSource>>();
+                let mut graphic_sources = state
+                    .graphic_output
+                    .graphics
+                    .iter_mut()
+                    .filter_map(
+                        |g| -> Option<Box<dyn Iterator<Item = &mut GraphicSource>>> {
+                            match g {
+                                Graphic::Image(img) => {
+                                    Some(Box::new(iter::once(&mut img.graphic_source)))
+                                }
+                                Graphic::Animation(anim) => Some(Box::new(
+                                    anim.frames.iter_mut().map(|f| &mut f.graphic_source),
+                                )),
+                                Graphic::Empty => None,
+                            }
+                        },
+                    )
+                    .flatten()
+                    .collect::<Vec<&mut GraphicSource>>();
 
                 traceln!("Using {} packer", packer.name().bold());
-                packer.execute(Size::new(state.config.packer.atlas_size, state.config.packer.atlas_size), &mut graphic_sources);
+                packer.execute(
+                    Size::new(
+                        state.config.packer.atlas_size,
+                        state.config.packer.atlas_size,
+                    ),
+                    &mut graphic_sources,
+                );
 
                 infoln!(last, "{}", "Done".green());
                 infoln!("Generating output");
 
                 let atlas_dir_path = state.config.cache.atlas_path();
-                traceln!(entry: decorator::Entry::None, "With output path {}", atlas_dir_path.display().to_string().bold());
+                traceln!(
+                    entry: decorator::Entry::None,
+                    "With output path {}",
+                    atlas_dir_path.display().to_string().bold()
+                );
 
                 // ensure atlas directory path is valid
                 match atlas_dir_path.metadata() {
                     Ok(metadata) => {
                         if !metadata.is_dir() {
-                            panic!("Atlas output path '{}' is already in use.", atlas_dir_path.display());
-                        }
-                    },
-                    Err(e) => {
-                        match e.kind() {
-                            io::ErrorKind::NotFound => {
-                                traceln!("Creating output directory");
-                                fs::create_dir(&atlas_dir_path).unwrap();
-                            },
-                            _ => panic!("{}", e)
+                            panic!(
+                                "Atlas output path '{}' is already in use.",
+                                atlas_dir_path.display()
+                            );
                         }
                     }
+                    Err(e) => match e.kind() {
+                        io::ErrorKind::NotFound => {
+                            traceln!("Creating output directory");
+                            fs::create_dir(&atlas_dir_path).unwrap();
+                        }
+                        _ => panic!("{}", e),
+                    },
                 }
 
                 // generate atlas file
                 let output_path = self.output_file_path(&state.config);
-                infoln!("Exporting to file {}", output_path.display().to_string().bold());
+
+                infoln!(
+                    "Exporting to file {}",
+                    output_path.display().to_string().bold()
+                );
+
                 self.generate_image(
-                    output_path, 
-                    state.config.packer.atlas_size, 
-                    state.config.packer.atlas_size, 
-                    &graphic_sources
-                ).unwrap();
+                    output_path,
+                    state.config.packer.atlas_size,
+                    state.config.packer.atlas_size,
+                    &graphic_sources,
+                )
+                .unwrap();
 
                 infoln!(last, "{}", "Done".green());
-            },
+            }
             None => {
                 warnln!("There is no packer defined");
             }

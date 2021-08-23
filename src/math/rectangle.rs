@@ -1,21 +1,12 @@
-use std::{
-    cmp::PartialOrd,
-    fmt
-};
+use std::{cmp::PartialOrd, fmt};
 
 use num_traits::{
-    cast::{
-        cast,
-        NumCast
-    },
+    cast::{cast, NumCast},
+    sign::Unsigned,
     Num,
-    sign::Unsigned
 };
 
-use serde::{
-    Deserialize,
-    Serialize
-};
+use serde::{Deserialize, Serialize};
 
 use super::Size;
 
@@ -24,7 +15,7 @@ pub struct Rectangle<T: Num + NumCast + PartialOrd + Copy> {
     pub x: T,
     pub y: T,
     pub width: T,
-    pub height: T
+    pub height: T,
 }
 
 impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
@@ -33,16 +24,21 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
             x,
             y,
             width,
-            height
+            height,
         }
     }
 
-    pub fn with<S: Num + NumCast + PartialOrd + Copy>(x: S, y: S, width: S, height: S) -> Option<Self> {
+    pub fn with<S: Num + NumCast + PartialOrd + Copy>(
+        x: S,
+        y: S,
+        width: S,
+        height: S,
+    ) -> Option<Self> {
         Some(Self::new(
-            cast::<S, T>(x)?, 
-            cast::<S, T>(y)?, 
-            cast::<S, T>(width)?, 
-            cast::<S, T>(height)?
+            cast::<S, T>(x)?,
+            cast::<S, T>(y)?,
+            cast::<S, T>(width)?,
+            cast::<S, T>(height)?,
         ))
     }
 

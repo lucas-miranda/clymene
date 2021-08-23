@@ -1,52 +1,30 @@
 use std::{
     cmp::Ordering,
-    fs,
-    io,
-    path::{ 
-        Path,
-        PathBuf
-    }
+    fs, io,
+    path::{Path, PathBuf},
 };
 
 use colored::Colorize;
 
 use crate::{
     common::Verbosity,
-    graphics::{
-        animation::Track,
-        Graphic
-    },
+    graphics::{animation::Track, Graphic},
     math::Rectangle,
     processors::{
-        cache::{
-            self,
-            Cache
-        },
-        ConfigStatus,
-        data::{
-            GraphicData,
-            FrameData,
-            FrameIndicesData,
-            TrackData
-        },
-        Processor,
-        State
+        cache::{self, Cache},
+        data::{FrameData, FrameIndicesData, GraphicData, TrackData},
+        ConfigStatus, Processor, State,
     },
-    settings::{
-        Config,
-        ProcessorConfig
-    }
+    settings::{Config, ProcessorConfig},
 };
 
 pub struct CacheExporterProcessor {
-    verbose: bool
+    verbose: bool,
 }
 
 impl CacheExporterProcessor {
     pub fn new() -> Self {
-        Self {
-            verbose: false
-        }
+        Self { verbose: false }
     }
 
     fn backup(&self, cache_path: &Path) -> Result<Option<PathBuf>, io::Error> {
@@ -59,7 +37,10 @@ impl CacheExporterProcessor {
         backup_filename.push(".backup");
         let backup_cache_path = cache_path.with_file_name(backup_filename);
         fs::rename(cache_path, &backup_cache_path)?;
-        traceln!("Backup previous cache.json to {}", backup_cache_path.display().to_string().bold());
+        traceln!(
+            "Backup previous cache.json to {}",
+            backup_cache_path.display().to_string().bold()
+        );
 
         Ok(Some(backup_cache_path))
     }
@@ -69,7 +50,10 @@ impl CacheExporterProcessor {
             c
         } else {
             infoln!("Initializing cache");
-            state.cache = Some(Cache::new(state.config.cache.images_path(), state.config.cache.atlas_path()));
+            state.cache = Some(Cache::new(
+                state.config.cache.images_path(),
+                state.config.cache.atlas_path(),
+            ));
             state.cache.as_mut().unwrap()
         };
 
@@ -86,38 +70,45 @@ impl CacheExporterProcessor {
             let graphic_cache_dir_path = match g {
                 Graphic::Image(image) => {
                     source_path = image.source_path.with_extension("");
-                    location = source_path.strip_prefix(&state.config.image.input_path).unwrap();
+                    location = source_path
+                        .strip_prefix(&state.config.image.input_path)
+                        .unwrap();
+
                     source_metadata = image.source_path.metadata().unwrap();
 
                     // extract data
                     data.frames.push(FrameData {
                         atlas_region: match &image.graphic_source.atlas_region {
                             Some(atlas_region) => atlas_region.clone(),
-                            None => panic!("Expected atlas region isn't defined at Image '{}'", image.source_path.display())
+                            None => panic!(
+                                "Expected atlas region isn't defined at Image '{}'",
+                                image.source_path.display()
+                            ),
                         },
                         duration: None,
-                        source_region: image.graphic_source.region.clone()
+                        source_region: image.graphic_source.region.clone(),
                     });
 
                     cache_images_path.join(&location)
-                },
+                }
                 Graphic::Animation(animation) => {
                     source_path = animation.source_path.with_extension("");
-                    location = source_path.strip_prefix(&state.config.image.input_path).unwrap();
+                    location = source_path
+                        .strip_prefix(&state.config.image.input_path)
+                        .unwrap();
+
                     source_metadata = animation.source_path.metadata().unwrap();
 
                     // extract data
                     for track in &animation.tracks {
-                        data.tracks.push(
-                            TrackData {
-                                label: track.label.clone(),
-                                indices: self.prepare_indices(&track)
-                            }
-                        );
+                        data.tracks.push(TrackData {
+                            label: track.label.clone(),
+                            indices: self.prepare_indices(&track),
+                        });
                     }
 
                     for frame in &animation.frames {
-                        data.frames.push(        
+                        data.frames.push(
                             FrameData {
                                 atlas_region: match &frame.graphic_source.atlas_region {
                                     Some(atlas_region) => atlas_region.clone(),
@@ -136,8 +127,8 @@ impl CacheExporterProcessor {
                     }
 
                     cache_images_path.join(&location)
-                },
-                Graphic::Empty => continue
+                }
+                Graphic::Empty => continue,
             };
 
             // verify if directory really exists
@@ -145,12 +136,15 @@ impl CacheExporterProcessor {
             match graphic_cache_dir_path.metadata() {
                 Ok(metadata) => {
                     if metadata.is_dir() {
-                        cache.register(location, &source_metadata, data)
-                             .unwrap();
+                        cache.register(location, &source_metadata, data).unwrap();
                     }
-                },
+                }
                 Err(e) => {
-                    panic!("Trying to verify graphic's cache directory path '{}' metadata: {}", graphic_cache_dir_path.display(), e);
+                    panic!(
+                        "Trying to verify graphic's cache directory path '{}' metadata: {}",
+                        graphic_cache_dir_path.display(),
+                        e
+                    );
                 }
             }
         }
@@ -182,12 +176,12 @@ impl CacheExporterProcessor {
                         match to.cmp(&from) {
                             Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
                             Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
-                            _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
+                            _ => panic!("Malformed indices array. From: {}, To: {}", from, to),
                         }
 
                         index_range_start = Some(index);
                     }
-                },
+                }
                 None => {
                     index_range_start = Some(index);
                 }
@@ -204,7 +198,7 @@ impl CacheExporterProcessor {
             match to.cmp(&from) {
                 Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
                 Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
-                _ => panic!("Malformed indices array. From: {}, To: {}", from, to)
+                _ => panic!("Malformed indices array. From: {}, To: {}", from, to),
             }
         }
 
@@ -237,7 +231,11 @@ impl Processor for CacheExporterProcessor {
             Err(e) => {
                 match e.kind() {
                     io::ErrorKind::NotFound => (),
-                    _ => panic!("Can't backup cache file at '{}': {}", cache_pathbuf.display(), e)
+                    _ => panic!(
+                        "Can't backup cache file at '{}': {}",
+                        cache_pathbuf.display(),
+                        e
+                    ),
                 }
 
                 None
@@ -251,35 +249,49 @@ impl Processor for CacheExporterProcessor {
                     if let Err(e) = fs::remove_file(&p) {
                         match e.kind() {
                             io::ErrorKind::NotFound => (),
-                            _ => panic!("Can't remove backup cache file at '{}': {}", p.display(), e)
+                            _ => {
+                                panic!("Can't remove backup cache file at '{}': {}", p.display(), e)
+                            }
                         }
                     } else {
-                        traceln!("Removed old cache file at {}", p.display().to_string().bold());
+                        traceln!(
+                            "Removed old cache file at {}",
+                            p.display().to_string().bold()
+                        );
                     }
                 }
-            },
+            }
             Err(e) => {
                 if let Some(p) = backup_path {
                     // return previous version
-                    
+
                     // remove failed cache file
                     if let Err(e) = fs::remove_file(&cache_pathbuf) {
                         match e.kind() {
                             io::ErrorKind::NotFound => (),
-                            _ => panic!("Can't remove backup cache file at '{}': {}", p.display(), e)
+                            _ => {
+                                panic!("Can't remove backup cache file at '{}': {}", p.display(), e)
+                            }
                         }
                     } else {
-                        traceln!("Removing try to cache file at {}", p.display().to_string().bold());
+                        traceln!(
+                            "Removing try to cache file at {}",
+                            p.display().to_string().bold()
+                        );
                         traceln!("Because of error: {}", e);
                     }
 
                     // return backup to previous state
-                    let original_filename = p.file_name().unwrap()
-                                             .to_str().unwrap()
-                                             .strip_suffix(".backup").unwrap();
+                    let original_filename = p
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .strip_suffix(".backup")
+                        .unwrap();
 
                     let original_path = p.with_file_name(original_filename);
-                    
+
                     fs::rename(p, original_path).expect("Failed to rename backup files");
                 }
             }

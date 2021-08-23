@@ -1,16 +1,10 @@
-use std::{
-    cmp::PartialOrd,
-    fmt
-};
+use std::{cmp::PartialOrd, fmt};
 
 use num_traits::{
-    cast::{
-        cast,
-        NumCast
-    },
+    cast::{cast, NumCast},
     identities::zero,
+    sign::Unsigned,
     Num,
-    sign::Unsigned
 };
 
 use super::Rectangle;
@@ -18,15 +12,12 @@ use super::Rectangle;
 #[derive(Default, Clone, Debug)]
 pub struct Size<T: Unsigned + NumCast + PartialOrd + Copy> {
     pub width: T,
-    pub height: T
+    pub height: T,
 }
 
 impl<T: Unsigned + NumCast + PartialOrd + Copy> Size<T> {
     pub fn new(width: T, height: T) -> Self {
-        Self {
-            width,
-            height
-        }
+        Self { width, height }
     }
 
     pub fn with<S: Num + NumCast + PartialOrd + Copy>(width: S, height: S) -> Option<Self> {
