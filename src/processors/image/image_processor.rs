@@ -395,7 +395,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                 } else {
                     match display_kind {
                         DisplayKind::Simple => (),
-                        _ => infoln!("Cache: {}", "Force Skip".bright_red()),
+                        _ => infoln!("Cache: {}", "Skip (Force)".bright_red()),
                     }
                 }
 
