@@ -1,17 +1,14 @@
 pub mod cache;
 pub mod config;
+mod config_status;
 pub mod data;
 pub mod image;
 pub mod packer;
-
-mod config_status;
-pub use config_status::ConfigStatus;
-
 mod processor;
-pub use processor::Processor;
-
 mod processors_pipeline;
-pub use processors_pipeline::ProcessorsPipeline;
-
 mod state;
+
+pub use config_status::ConfigStatus;
+pub use processor::Processor;
+pub use processors_pipeline::ProcessorsPipeline;
 pub use state::State;

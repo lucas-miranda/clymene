@@ -1,16 +1,12 @@
-mod image_processor;
-pub use image_processor::ImageProcessor;
-
-mod graphic_output;
-pub use graphic_output::GraphicOutput;
-
-mod graphic_source_data;
-pub use graphic_source_data::{GraphicSourceData, GraphicSourceDataError};
-
-mod graphic_source_data_set;
-pub use graphic_source_data_set::GraphicSourceDataSet;
-
 mod error;
-pub use error::Error;
-
 pub mod format_handlers;
+mod graphic_output;
+mod graphic_source_data;
+mod graphic_source_data_set;
+mod image_processor;
+
+pub use error::Error;
+pub use graphic_output::GraphicOutput;
+pub use graphic_source_data::{GraphicSourceData, GraphicSourceDataError};
+pub use graphic_source_data_set::GraphicSourceDataSet;
+pub use image_processor::ImageProcessor;

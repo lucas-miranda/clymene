@@ -1,9 +1,9 @@
 use std::{ffi::OsString, path::PathBuf};
 
 mod frame;
-pub use frame::Frame;
-
 mod track;
+
+pub use frame::Frame;
 pub use track::Track;
 
 use crate::graphics::{Error, Graphic, GraphicSource};

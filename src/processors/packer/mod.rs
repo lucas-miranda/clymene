@@ -1,10 +1,9 @@
 mod column_tight_packer;
-pub use column_tight_packer::ColumnTightPacker;
-
 mod error;
-pub use error::Error;
-
 mod packer_processor;
+
+pub use column_tight_packer::ColumnTightPacker;
+pub use error::Error;
 pub use packer_processor::PackerProcessor;
 
 use crate::{graphics::GraphicSource, math::Size};

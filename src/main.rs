@@ -5,13 +5,14 @@ use tree_decorator::{DecoratorBuilder, StandardDecorator};
 mod log;
 
 mod args;
-use args::Args;
-
 mod common;
 mod graphics;
 mod math;
-
 mod processors;
+mod settings;
+mod util;
+
+use args::Args;
 use processors::{
     cache::{CacheExporterProcessor, CacheImporterProcessor},
     config::ConfigProcessor,
@@ -21,10 +22,7 @@ use processors::{
     ProcessorsPipeline,
 };
 
-mod settings;
 use settings::{Config, ProcessorConfig};
-
-mod util;
 
 static mut LOGGER: Option<log::Logger> = None;
 

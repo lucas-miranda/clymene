@@ -1,13 +1,10 @@
 pub mod animation;
-
 mod error;
-pub use error::Error;
-
 mod graphic;
-pub use graphic::Graphic;
-
-mod image;
-pub use crate::graphics::image::Image;
-
 mod graphic_source;
+mod image;
+
+pub use error::Error;
+pub use graphic::Graphic;
+pub use crate::graphics::image::Image;
 pub use graphic_source::GraphicSource;
