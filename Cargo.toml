@@ -7,7 +7,7 @@ license = "MIT"
 homepage = "https://github.com/lucas-miranda/clymene"
 repository = "https://github.com/lucas-miranda/clymene"
 readme = "README.md"
-keywords = ["aseprite", "atlas", "packer", "graphics"]
+keywords = ["atlas", "packer", "graphics", "aseprite"]
 edition = "2018"
 
 [dependencies]
@@ -21,9 +21,13 @@ colored = "^2.0.0"
 num-traits = "^0.2.14"
 image = "^0.23.14"
 tree_decorator = { git = "https://github.com/lucas-miranda/tree_decorator", version = "^0.1.2", features = ["no_log"] }
+asefile = "0.3.0"
 
 [profile.dev]
 opt-level = 0
+
+[profile.dev.package.asefile]
+opt-level = 3
 
 [profile.release]
 opt-level = 3

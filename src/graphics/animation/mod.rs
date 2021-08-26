@@ -6,7 +6,7 @@ mod track;
 pub use frame::Frame;
 pub use track::Track;
 
-use crate::graphics::{Error, Graphic, GraphicSource};
+use crate::graphics::{Error, GraphicSource};
 
 #[derive(Debug)]
 pub struct Animation {
@@ -51,11 +51,5 @@ impl Animation {
 
     pub fn push_track(&mut self, track: Track) {
         self.tracks.push(track);
-    }
-}
-
-impl From<Animation> for Graphic {
-    fn from(animation: Animation) -> Self {
-        Graphic::Animation(animation)
     }
 }

@@ -42,6 +42,15 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
         ))
     }
 
+    pub fn with_bounds(left: T, top: T, right: T, bottom: T) -> Self {
+        Self {
+            x: left,
+            y: top,
+            width: (right + T::one()) - left,
+            height: (bottom + T::one()) - top,
+        }
+    }
+
     pub fn left(&self) -> T {
         self.x
     }
@@ -56,6 +65,50 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
 
     pub fn bottom(&self) -> T {
         self.y + self.height
+    }
+
+    /*
+    pub fn inner_right(&self) -> T {
+        if self.width.is_zero() {
+            self.x
+        } else {
+            self.x + self.width - T::one()
+        }
+    }
+
+    pub fn inner_bottom(&self) -> T {
+        if self.height.is_zero() {
+            self.y
+        } else {
+            self.y + self.height - T::one()
+        }
+    }
+
+    pub fn bounds(&self) -> (T, T, T, T) {
+        (self.left(), self.top(), self.right(), self.bottom())
+    }
+    */
+
+    pub fn set_left(&mut self, left: T) {
+        let w = self.right() - left;
+        self.x = left;
+        self.width = w;
+    }
+
+    /*
+    pub fn set_top(&mut self, top: T) {
+        let h = self.bottom() - top;
+        self.y = top;
+        self.height = h;
+    }
+    */
+
+    pub fn set_right(&mut self, right: T) {
+        self.width = (right + T::one()) - self.x;
+    }
+
+    pub fn set_bottom(&mut self, bottom: T) {
+        self.height = (bottom + T::one()) - self.y;
     }
 
     pub fn is_empty(&self) -> bool {

@@ -65,7 +65,7 @@ fn main() {
 
     let mut image_processor = ImageProcessor::new();
     image_processor.register_handler(aseprite_handler::AsepriteFormatHandler::new(
-        aseprite_handler::AsepriteProcessor::Command,
+        aseprite_handler::AsepriteProcessor::RawFile,
     ));
 
     ProcessorsPipeline::new()

@@ -1,4 +1,4 @@
-use crate::graphics::{Error, Graphic, GraphicSource};
+use crate::graphics::{Error, GraphicSource};
 use std::{ffi::OsString, path::PathBuf};
 
 #[derive(Debug)]
@@ -33,11 +33,5 @@ impl Image {
             source_path,
             graphic_source,
         })
-    }
-}
-
-impl From<Image> for Graphic {
-    fn from(image: Image) -> Self {
-        Graphic::Image(image)
     }
 }

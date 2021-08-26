@@ -37,7 +37,7 @@ impl Packer for ColumnTightPacker {
                 let mut selected_space = None;
                 let size = source.region.size();
 
-                for space_index in 0..=empty_spaces.len() {
+                for space_index in 0..empty_spaces.len() {
                     if empty_spaces[space_index].fit_size(&size) {
                         selected_space = Some(empty_spaces.remove(space_index));
                         break;
