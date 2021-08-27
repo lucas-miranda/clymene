@@ -1,6 +1,5 @@
-use std::env;
-
 use crate::settings::DisplayKind;
+use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg};
 
 const DEFAULT_FILEPATH: &str = "config.toml";
 
@@ -13,68 +12,62 @@ pub struct Args {
 }
 
 impl Args {
-    pub fn parse_env() -> Args {
-        let mut args = Args::default();
-        let mut iter = env::args().collect::<Vec<String>>().into_iter().skip(1);
-        let mut i = 0;
+    pub fn load() -> Self {
+        let matches = app_from_crate!()
+            .arg(
+                Arg::with_name("config")
+                    .short("c")
+                    .long("config")
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .help("Uses a custom config toml file"),
+            )
+            .arg(
+                Arg::with_name("display")
+                    .short("d")
+                    .long("display")
+                    .takes_value(true)
+                    .possible_values(&["simple", "list", "detailed"])
+                    .case_insensitive(true)
+                    .help("Specifies file presentation kind"),
+            )
+            .arg(
+                Arg::with_name("verbose")
+                    .short("v")
+                    .long("verbose")
+                    .help("Gives additional info about execution"),
+            )
+            .arg(
+                Arg::with_name("debug")
+                    .long("debug")
+                    .help("Gives debug info, useful when tracking problems"),
+            )
+            .arg(
+                Arg::with_name("force")
+                    .short("f")
+                    .long("force")
+                    .help("Force generation of everything, effectively ignoring any cached data"),
+            )
+            .get_matches();
 
-        while let Some(arg) = iter.next() {
-            match arg.as_str() {
-                "--config" | "-c" => {
-                    let value = match iter.next() {
-                        Some(next_arg) => next_arg,
-                        None => panic!("Arg #{} => Config path value expected.", i),
-                    };
-
-                    args.config_filepath = value;
-                }
-                "--display" | "-d" => {
-                    let mut value = match iter.next() {
-                        Some(next_arg) => next_arg,
-                        None => panic!("Arg #{} => Display kind value expected. Accepted values are: simple, list or detailed.", i),
-                    };
-
-                    value.as_mut_str().make_ascii_lowercase();
-
-                    args.display = match value.as_str() {
-                        "simple" => Some(DisplayKind::Simple),
-                        "list" => Some(DisplayKind::List),
-                        "detailed" => Some(DisplayKind::Detailed),
-                        _ => None,
-                    };
-                }
-                "--verbose" => {
-                    args.verbose = true;
-                }
-                "--force" | "-f" => {
-                    args.force = true;
-                }
-                "--debug" => {
-                    args.debug = true;
-                }
-                _ => {}
-            }
-
-            i += 1;
-        }
-
-        /*
-        let args: Vec<String> = env::args().collect();
-        for i in 1..args.len() {
-            match args[i].as_str() {
-                "clear-cache" | "-cc" => {
-                    args_behaviors::clear_cache(&PathBuf::from(&config.clymene.cache_path))
+        Self {
+            config_filepath: matches
+                .value_of("config")
+                .unwrap_or(DEFAULT_FILEPATH)
+                .to_owned(),
+            display: match matches.value_of("display") {
+                Some(d) => match d {
+                    "simple" => Some(DisplayKind::Simple),
+                    "list" => Some(DisplayKind::List),
+                    "detailed" => Some(DisplayKind::Detailed),
+                    _ => None,
                 },
-                "verbose" | "-v" | "--verbose" => {
-                    verbose = true
-                },
-                _ => {
-                }
-            }
+                None => None,
+            },
+            verbose: matches.is_present("verbose"),
+            debug: matches.is_present("debug"),
+            force: matches.is_present("force"),
         }
-        */
-
-        args
     }
 }
 

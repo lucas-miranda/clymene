@@ -34,12 +34,10 @@ pub fn logger<'a>() -> &'a Option<log::Logger> {
 //
 
 fn main() {
-    let start_instant = Instant::now();
-    display_header();
-
-    // TODO  parse_env should provides an error, when parsing failed
-    let args = Args::parse_env();
+    let args = Args::load();
     let mut logger = log::Logger::default();
+
+    display_header();
 
     if args.debug {
         logger.debug(true);
@@ -65,6 +63,8 @@ fn main() {
 
     //
 
+    let processing_start_instant = Instant::now();
+
     let mut image_processor = ImageProcessor::new();
     image_processor.register_handler(aseprite_handler::AsepriteFormatHandler::new(
         aseprite_handler::AsepriteProcessor::RawFile,
@@ -88,7 +88,7 @@ fn main() {
     println!();
     infoln!(
         "Atlas generated in {:.3}s",
-        start_instant.elapsed().as_secs_f64()
+        processing_start_instant.elapsed().as_secs_f64()
     );
 }
 
