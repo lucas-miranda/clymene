@@ -1,5 +1,4 @@
 use colored::Colorize;
-use std::time::Instant;
 use tree_decorator::{DecoratorBuilder, StandardDecorator};
 
 #[macro_use]
@@ -63,7 +62,7 @@ fn main() {
 
     //
 
-    let processing_start_instant = Instant::now();
+    let processing_timer = util::Timer::start();
 
     let mut image_processor = ImageProcessor::new();
     image_processor.register_handler(aseprite_handler::AsepriteFormatHandler::new(
@@ -86,9 +85,11 @@ fn main() {
         .start(&mut config, &args);
 
     println!();
+    infoln!(block, "{}", "Atlas Completed".magenta().bold());
     infoln!(
-        "Atlas generated in {:.3}s",
-        processing_start_instant.elapsed().as_secs_f64()
+        last,
+        "Generated in {}s",
+        processing_timer.end_secs_str().bold()
     );
 }
 
@@ -97,6 +98,7 @@ fn display_header() {
     println!(" │  {}  │", env!("CARGO_PKG_NAME").bold().magenta());
     println!(" │   v{}  │", env!("CARGO_PKG_VERSION").bold());
     println!(" └───────────┘");
+    println!();
 }
 
 fn load_or_create_config(args: &Args) -> Config {

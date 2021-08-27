@@ -47,6 +47,7 @@ impl<'a> ProcessorsPipeline<'a> {
 
         for processor in &self.processors {
             processor.execute(&mut state);
+            println!();
         }
     }
 

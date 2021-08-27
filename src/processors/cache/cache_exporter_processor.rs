@@ -16,6 +16,7 @@ use crate::{
         ConfigStatus, Processor, State,
     },
     settings::{Config, ProcessorConfig},
+    util::Timer,
 };
 
 pub struct CacheExporterProcessor {
@@ -61,6 +62,7 @@ impl CacheExporterProcessor {
         let cache_images_path = state.config.cache.images_path();
 
         infoln!(block, "Registering generated graphics and data");
+        let timer = Timer::start();
         for g in state.graphic_output.graphics.iter() {
             let source_path;
             let location: &Path;
@@ -149,7 +151,7 @@ impl CacheExporterProcessor {
             }
         }
 
-        infoln!(last, "{}", "Done".green());
+        doneln_with_timer!(timer);
 
         // write cache to file
         infoln!("Writing to file");
@@ -221,6 +223,7 @@ impl Processor for CacheExporterProcessor {
 
     fn execute(&self, state: &mut State) {
         infoln!(block, "Cache result");
+        let total_timer = Timer::start();
         infoln!("Preparing to update entries");
 
         let cache_dir_pathbuf = state.config.cache.root_path();
@@ -297,7 +300,7 @@ impl Processor for CacheExporterProcessor {
             }
         }
 
-        infoln!(last, "{}", "Done".green());
+        doneln_with_timer!(total_timer);
     }
 }
 

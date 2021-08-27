@@ -18,7 +18,7 @@ use crate::{
         ConfigStatus, Processor, State,
     },
     settings::{Config, DisplayKind, ProcessorConfig},
-    util,
+    util::{self, Timer},
 };
 
 static PROGRESS_BAR_LENGTH: usize = 20;
@@ -228,7 +228,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                         input_pathbuf.display()
                     );
                 } else {
-                    infoln!(last, "{}", "Done".green());
+                    infoln!(last, "{}", "Ok".green());
                 }
             }
             Err(e) => {
@@ -251,7 +251,7 @@ impl<'a> Processor for ImageProcessor<'a> {
         match output_path.metadata() {
             Ok(_metadata) => {
                 config.image.output_path = output_path;
-                infoln!(last, "{}", "Done".green());
+                infoln!(last, "{}", "Ok".green());
             }
             Err(e) => {
                 if let io::ErrorKind::NotFound = e.kind() {
@@ -260,7 +260,7 @@ impl<'a> Processor for ImageProcessor<'a> {
 
                     fs::create_dir(&output_path).unwrap();
 
-                    infoln!(last, "{}", "Done".green());
+                    infoln!(last, "{}", "Ok".green());
                 } else {
                     panic!("{}", e);
                 }
@@ -270,6 +270,8 @@ impl<'a> Processor for ImageProcessor<'a> {
         let mut config_status = ConfigStatus::NotModified;
 
         infoln!(block, "Preparing format handlers");
+        let prepare_timer = Timer::start();
+
         for handler in &self.format_handlers {
             infoln!(block, "{}", handler.name().bold());
             match handler.setup(config) {
@@ -291,7 +293,8 @@ impl<'a> Processor for ImageProcessor<'a> {
                 }
             }
         }
-        infoln!(last, "{}", "Done".green());
+
+        doneln_with_timer!(prepare_timer);
 
         config_status
     }
@@ -335,8 +338,9 @@ impl<'a> Processor for ImageProcessor<'a> {
             file_count += source_files.len();
         }
 
-        infoln!(entry: decorator::Entry::None, "Found {} files", file_count);
-        infoln!(last, "{}", "Done".green());
+        infoln!(last; entry: decorator::Entry::Double, "Found {} files", file_count);
+
+        let source_files_handling_timer = Timer::start();
 
         if let DisplayKind::Simple = display_kind {
             info!("");
@@ -478,7 +482,7 @@ impl<'a> Processor for ImageProcessor<'a> {
             println!();
         }
 
-        infoln!(last, "{}", "Done".green());
+        doneln_with_timer!(source_files_handling_timer);
     }
 }
 

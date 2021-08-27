@@ -15,6 +15,7 @@ use crate::{
         ConfigStatus, Processor, State,
     },
     settings::{Config, ProcessorConfig},
+    util::Timer,
 };
 
 const DEFAULT_ATLAS_SIZE: u32 = 1024;
@@ -174,6 +175,7 @@ impl Processor for PackerProcessor {
         match &self.packer {
             Some(packer) => {
                 infoln!(block, "Packing");
+                let timer = Timer::start();
 
                 if state.force {
                     infoln!(dashed, "Force Generate");
@@ -271,7 +273,7 @@ impl Processor for PackerProcessor {
                 )
                 .unwrap();
 
-                infoln!(last, "{}", "Done".green());
+                doneln_with_timer!(timer);
             }
             None => {
                 warnln!("There is no packer defined");

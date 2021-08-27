@@ -91,7 +91,7 @@ impl Processor for ConfigProcessor {
                             std::thread::sleep(std::time::Duration::from_millis(10u64));
                         }
 
-                        infoln!(last, "{}", "Done".green());
+                        infoln!(last, "{}", "Ok".green());
                     }
                     _ => {
                         panic!("{}", io_error);
@@ -108,7 +108,7 @@ impl Processor for ConfigProcessor {
             config_status = ConfigStatus::Modified;
         }
 
-        infoln!(last, "{}", "Done".green());
+        infoln!(last, "{}", "Ok".green());
 
         config_status
     }

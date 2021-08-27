@@ -15,6 +15,7 @@ use crate::{
         ConfigStatus, Processor, State,
     },
     settings::{CacheConfig, Config, ProcessorConfig},
+    util::Timer,
 };
 
 pub struct CacheImporterProcessor {
@@ -297,13 +298,13 @@ impl Processor for CacheImporterProcessor {
                         cache_instance_path.display()
                     );
                 } else {
-                    infoln!(last, "{}", "Done".green());
+                    infoln!(last, "{}", "Ok".green());
                 }
             }
             Err(e) => {
                 if let io::ErrorKind::NotFound = e.kind() {
                     fs::create_dir(&cache_instance_path).unwrap();
-                    infoln!(last, "{}", "Done".green());
+                    infoln!(last, "{}", "Ok".green());
                 } else {
                     panic!(
                         "Failed to access cache instance directory metadata at '{}': {}",
@@ -324,6 +325,7 @@ impl Processor for CacheImporterProcessor {
 
     fn execute(&self, state: &mut State) {
         infoln!(block, "Checking cache version");
+        let total_timer = Timer::start();
 
         let cache_dir_pathbuf = state.config.cache.root_path();
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
@@ -351,6 +353,8 @@ impl Processor for CacheImporterProcessor {
                 // remove invalid cache entries
                 // checking if directory entry still exists
                 infoln!(block, "Removing invalid cache entries");
+                let removing_entries_timer = Timer::start();
+
                 cache.files.retain(|path, _entry| {
                     let cache_entry_path = cache_images_path.join(path);
                     match cache_entry_path.metadata() {
@@ -386,7 +390,7 @@ impl Processor for CacheImporterProcessor {
                     }
                 });
 
-                infoln!(last, "{}", "Done".green());
+                doneln_with_timer!(removing_entries_timer);
             }
             Err(e) => {
                 match &e {
@@ -449,7 +453,7 @@ impl Processor for CacheImporterProcessor {
             }
         }
 
-        infoln!(last, "{}", "Done".green());
+        doneln_with_timer!(total_timer);
         state.cache.replace(cache);
     }
 }

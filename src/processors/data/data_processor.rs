@@ -4,6 +4,7 @@ use crate::{
     common::Verbosity,
     processors::{data::AtlasData, ConfigStatus, Processor, State},
     settings::{Config, ProcessorConfig},
+    util::Timer,
 };
 
 pub struct DataProcessor {
@@ -36,6 +37,7 @@ impl Processor for DataProcessor {
 
     fn execute(&self, state: &mut State) {
         infoln!(block, "Processing data");
+        let total_timer = Timer::start();
         let mut atlas_data = AtlasData::new();
 
         let cache = match &state.cache {
@@ -44,6 +46,7 @@ impl Processor for DataProcessor {
         };
 
         infoln!(block, "Gathering graphics' data entries");
+        let gathering_graphics_timer = Timer::start();
 
         for entry in cache.files.values() {
             match entry.borrow().location.file_stem() {
@@ -62,7 +65,7 @@ impl Processor for DataProcessor {
             }
         }
 
-        infoln!(last, "{}", "Done".green());
+        doneln_with_timer!(gathering_graphics_timer);
 
         let output_atlas_data_path =
             state
@@ -91,7 +94,7 @@ impl Processor for DataProcessor {
             atlas_data.save_to_path(output_atlas_data_path).unwrap();
         }
 
-        infoln!(last, "{}", "Done".green());
+        doneln_with_timer!(total_timer)
     }
 }
 
