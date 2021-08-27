@@ -1,4 +1,5 @@
 use colored::Colorize;
+use std::time::Instant;
 use tree_decorator::{DecoratorBuilder, StandardDecorator};
 
 #[macro_use]
@@ -33,6 +34,7 @@ pub fn logger<'a>() -> &'a Option<log::Logger> {
 //
 
 fn main() {
+    let start_instant = Instant::now();
     display_header();
 
     // TODO  parse_env should provides an error, when parsing failed
@@ -82,6 +84,12 @@ fn main() {
         // get every data from previous steps and packs it together into a nicer format
         .enqueue(DataProcessor::new())
         .start(&mut config, &args);
+
+    println!();
+    infoln!(
+        "Atlas generated in {:.3}s",
+        start_instant.elapsed().as_secs_f64()
+    );
 }
 
 fn display_header() {

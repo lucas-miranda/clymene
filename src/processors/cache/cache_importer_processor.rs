@@ -212,7 +212,7 @@ impl CacheImporterProcessor {
 
         (0..HASH_LENGTH)
             .map(|_| {
-                let i = rng.gen_range(0, CHARSET.len());
+                let i = rng.gen_range(0..CHARSET.len());
                 CHARSET[i] as char
             })
             .collect::<String>()
