@@ -11,7 +11,7 @@ use crate::{
     graphics::{Graphic, GraphicSource},
     math::Size,
     processors::{
-        packer::{RowTightPacker, Error, Packer},
+        packer::{Error, Packer, RowTightPacker},
         ConfigStatus, Processor, State,
     },
     settings::{Config, ProcessorConfig},

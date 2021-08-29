@@ -1,8 +1,6 @@
-use std::cmp::Ordering;
-
 use crate::{
     graphics::GraphicSource,
-    math::{util, Rectangle, Size},
+    math::{Rectangle, Size},
     processors::packer::Packer,
 };
 
@@ -28,12 +26,12 @@ impl Packer for RowTightPacker {
             return None;
         }
 
-        let a = atlas_size.clone();
         let mut empty_spaces: Vec<Rectangle<u32>> = vec![atlas_size.into()];
 
         // sort by increasing order of their height and width
         graphic_sources.sort_unstable_by(|a, b| {
-            (*a).region.height
+            (*a).region
+                .height
                 .cmp(&(*b).region.height)
                 .then((*a).region.width.cmp(&(*b).region.width))
         });
@@ -48,13 +46,24 @@ impl Packer for RowTightPacker {
                 let size = source.region.size();
                 let mut best_fit: Option<SpaceFit> = None;
 
-                for (space_index, empty_space) in empty_spaces.iter().filter(|s| s.fit_size(&size)).enumerate() {
+                for (space_index, empty_space) in empty_spaces
+                    .iter()
+                    .filter(|s| s.fit_size(&size))
+                    .enumerate()
+                {
                     if let Some(best) = &mut best_fit {
                         let extra_width = empty_space.width - size.width;
                         let extra_height = empty_space.height - size.height;
 
                         // try to fit at most top-left valid empty space
-                        if empty_space.y.cmp(&best.y).then(empty_space.x.cmp(&best.x)).is_le() || extra_width == 0 || extra_height == 0 {
+                        if empty_space
+                            .y
+                            .cmp(&best.y)
+                            .then(empty_space.x.cmp(&best.x))
+                            .is_le()
+                            || extra_width == 0
+                            || extra_height == 0
+                        {
                             best.index = space_index;
                             best.y = empty_space.y;
                         }

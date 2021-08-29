@@ -1,10 +1,10 @@
-mod row_tight_packer;
 mod error;
 mod packer_processor;
+mod row_tight_packer;
 
-pub use row_tight_packer::RowTightPacker;
 pub use error::Error;
 pub use packer_processor::PackerProcessor;
+pub use row_tight_packer::RowTightPacker;
 
 use crate::{graphics::GraphicSource, math::Size};
 
