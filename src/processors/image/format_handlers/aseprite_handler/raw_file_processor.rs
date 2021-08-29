@@ -94,16 +94,17 @@ impl FormatProcessor for RawFileProcessor {
                                 if start < s.left() {
                                     s.set_left(start);
                                 }
+
+                                // only tries to update row if a pixel was found
+                                if row > s.bottom() {
+                                    s.set_bottom(row);
+                                }
                             }
 
                             if let Some(end) = end_column {
                                 if end > s.right() {
                                     s.set_right(end);
                                 }
-                            }
-
-                            if row > s.bottom() {
-                                s.set_bottom(row);
                             }
                         } else if let Some(start) = start_column {
                             source =

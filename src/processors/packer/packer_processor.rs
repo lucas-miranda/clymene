@@ -11,7 +11,7 @@ use crate::{
     graphics::{Graphic, GraphicSource},
     math::Size,
     processors::{
-        packer::{ColumnTightPacker, Error, Packer},
+        packer::{RowTightPacker, Error, Packer},
         ConfigStatus, Processor, State,
     },
     settings::{Config, ProcessorConfig},
@@ -166,7 +166,7 @@ impl Processor for PackerProcessor {
         }
 
         // TODO  make a better way to select packer
-        self.packer = Some(Box::new(ColumnTightPacker::new()));
+        self.packer = Some(Box::new(RowTightPacker::new()));
 
         config_status
     }

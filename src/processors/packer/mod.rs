@@ -1,8 +1,8 @@
-mod column_tight_packer;
+mod row_tight_packer;
 mod error;
 mod packer_processor;
 
-pub use column_tight_packer::ColumnTightPacker;
+pub use row_tight_packer::RowTightPacker;
 pub use error::Error;
 pub use packer_processor::PackerProcessor;
 
