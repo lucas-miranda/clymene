@@ -1,5 +1,5 @@
 use asefile::AsepriteFile;
-use image;
+use image::{self, buffer::EnumerateRows, Rgba};
 use std::path::Path;
 
 use crate::{
@@ -42,8 +42,20 @@ impl FormatProcessor for RawFileProcessor {
                     .unwrap();
 
                 let (w, h) = frame_image_buffer.dimensions();
-                let graphic_source =
-                    GraphicSource::new(frame_output_path, Rectangle::new(0, 0, w, h));
+
+                // ensure w and h isn't zero
+                if w == 0 || h == 0 {
+                    return Ok(Graphic::Empty);
+                }
+
+                let source = crop_empty_space(frame_image_buffer.enumerate_rows());
+
+                if source.is_empty() {
+                    return Ok(Graphic::Empty);
+                }
+
+                let graphic_source = GraphicSource::new(frame_output_path, source);
+
                 let image = Image::with_graphic_source(graphic_source, source_file_path.to_owned())
                     .unwrap();
 
@@ -70,57 +82,16 @@ impl FormatProcessor for RawFileProcessor {
                         continue;
                     }
 
-                    let mut source: Option<Rectangle<u32>> = None;
+                    let source = crop_empty_space(frame_image_buffer.enumerate_rows());
 
-                    for (row, row_pixels) in frame_image_buffer.enumerate_rows() {
-                        let mut start_column = None;
-                        let mut end_column = None;
-
-                        for (x, _y, px) in row_pixels {
-                            let alpha = px[3];
-
-                            // alpha must be at least 1% (0.01 * 255 ~= 3)
-                            if alpha >= 3u8 {
-                                if start_column.is_none() {
-                                    start_column = Some(x);
-                                }
-
-                                end_column = Some(x);
-                            }
-                        }
-
-                        if let Some(s) = &mut source {
-                            if let Some(start) = start_column {
-                                if start < s.left() {
-                                    s.set_left(start);
-                                }
-
-                                // only tries to update row if a pixel was found
-                                if row > s.bottom() {
-                                    s.set_bottom(row);
-                                }
-                            }
-
-                            if let Some(end) = end_column {
-                                if end > s.right() {
-                                    s.set_right(end);
-                                }
-                            }
-                        } else if let Some(start) = start_column {
-                            source =
-                                Some(Rectangle::with_bounds(start, row, end_column.unwrap(), row));
-                        }
+                    if source.is_empty() {
+                        continue;
                     }
 
-                    let graphic_source = GraphicSource::new(
-                        frame_output_path,
-                        match source {
-                            Some(s) => s,
-                            None => source.unwrap_or_else(Rectangle::default),
-                        },
-                    );
-
-                    animation.push_frame(graphic_source, frame.duration())
+                    animation.push_frame(
+                        GraphicSource::new(frame_output_path, source),
+                        frame.duration(),
+                    )
                 }
 
                 // tags
@@ -141,4 +112,49 @@ impl FormatProcessor for RawFileProcessor {
             }
         }
     }
+}
+
+fn crop_empty_space(rows: EnumerateRows<'_, Rgba<u8>>) -> Rectangle<u32> {
+    let mut source: Option<Rectangle<u32>> = None;
+
+    for (row, row_pixels) in rows {
+        let mut start_column = None;
+        let mut end_column = None;
+
+        for (x, _y, px) in row_pixels {
+            let alpha = px[3];
+
+            // alpha must be at least 1% (0.01 * 255 ~= 3)
+            if alpha >= 3u8 {
+                if start_column.is_none() {
+                    start_column = Some(x);
+                }
+
+                end_column = Some(x);
+            }
+        }
+
+        if let Some(s) = &mut source {
+            if let Some(start) = start_column {
+                if start < s.left() {
+                    s.set_left(start);
+                }
+
+                // only tries to update row if a pixel was found
+                if row > s.bottom() {
+                    s.set_bottom(row);
+                }
+            }
+
+            if let Some(end) = end_column {
+                if end > s.right() {
+                    s.set_right(end);
+                }
+            }
+        } else if let Some(start) = start_column {
+            source = Some(Rectangle::with_bounds(start, row, end_column.unwrap(), row));
+        }
+    }
+
+    source.unwrap_or_else(Rectangle::default)
 }
