@@ -109,14 +109,14 @@ impl CacheExporterProcessor {
                         });
                     }
 
-                    for frame in &animation.frames {
+                    for (index, frame) in animation.frames.iter().enumerate() {
                         data.frames.push(
                             FrameData {
                                 atlas_region: match &frame.graphic_source.atlas_region {
                                     Some(atlas_region) => atlas_region.clone(),
                                     None => {
                                         if !frame.graphic_source.region.is_empty() {
-                                            errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", frame.graphic_source.path.display(), frame.graphic_source.region, animation.source_path.display());
+                                            errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", index, frame.graphic_source.region, animation.source_path.display());
                                         }
 
                                         Rectangle::default()
@@ -139,6 +139,32 @@ impl CacheExporterProcessor {
                 Ok(metadata) => {
                     if metadata.is_dir() {
                         cache.register(location, &source_metadata, data).unwrap();
+
+                        // export images
+                        match g {
+                            Graphic::Image(image) => {
+                                let path = graphic_cache_dir_path.join("0.png");
+
+                                image
+                                    .graphic_source
+                                    .buffer
+                                    .save_with_format(&path, image::ImageFormat::Png)
+                                    .unwrap();
+                            }
+                            Graphic::Animation(anim) => {
+                                for (index, frame) in anim.frames.iter().enumerate() {
+                                    let path =
+                                        graphic_cache_dir_path.join(format!("{}.png", index));
+
+                                    frame
+                                        .graphic_source
+                                        .buffer
+                                        .save_with_format(&path, image::ImageFormat::Png)
+                                        .unwrap();
+                                }
+                            }
+                            Graphic::Empty => (),
+                        }
                     }
                 }
                 Err(e) => {

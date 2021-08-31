@@ -26,7 +26,7 @@ impl FormatProcessor for RawFileProcessor {
     fn process(
         &self,
         source_file_path: &Path,
-        output_dir_path: &Path,
+        _output_dir_path: &Path,
         _config: &Config,
     ) -> Result<Graphic, Error> {
         let ase = AsepriteFile::read_file(source_file_path).unwrap();
@@ -36,11 +36,6 @@ impl FormatProcessor for RawFileProcessor {
             0 => Ok(Graphic::Empty),
             1 => {
                 let frame_image_buffer = ase.frame(0).image();
-                let frame_output_path = output_dir_path.join("0.png");
-                frame_image_buffer
-                    .save_with_format(&frame_output_path, image::ImageFormat::Png)
-                    .unwrap();
-
                 let (w, h) = frame_image_buffer.dimensions();
 
                 // ensure w and h isn't zero
@@ -54,7 +49,7 @@ impl FormatProcessor for RawFileProcessor {
                     return Ok(Graphic::Empty);
                 }
 
-                let graphic_source = GraphicSource::new(frame_output_path, source);
+                let graphic_source = GraphicSource::new(frame_image_buffer, source);
 
                 let image = Image::with_graphic_source(graphic_source, source_file_path.to_owned())
                     .unwrap();
@@ -69,12 +64,6 @@ impl FormatProcessor for RawFileProcessor {
                 for frame_index in 0..frame_count {
                     let frame = ase.frame(frame_index);
                     let frame_image_buffer = frame.image();
-                    let frame_output_path = output_dir_path.join(format!("{}.png", frame_index));
-
-                    frame_image_buffer
-                        .save_with_format(&frame_output_path, image::ImageFormat::Png)
-                        .unwrap();
-
                     let (w, h) = frame_image_buffer.dimensions();
 
                     // ensure w and h isn't zero
@@ -89,7 +78,7 @@ impl FormatProcessor for RawFileProcessor {
                     }
 
                     animation.push_frame(
-                        GraphicSource::new(frame_output_path, source),
+                        GraphicSource::new(frame_image_buffer, source),
                         frame.duration(),
                     )
                 }

@@ -186,7 +186,9 @@ impl CommandProcessor {
             .unwrap()
             .filter_map(|e| e.ok())
         {
-            if let Ok(graphic_source_data) = GraphicSourceData::try_create(&entry.path(), &frames) {
+            if let Ok(graphic_source_data) =
+                GraphicSourceData::try_from_path(&entry.path(), &frames)
+            {
                 data_set.sources.push(graphic_source_data);
             }
         }

@@ -42,7 +42,7 @@ impl CacheEntry {
             .filter_map(|e| e.ok())
         {
             if let Ok(graphic_source_data) =
-                GraphicSourceData::try_create(&entry.path(), &self.data.frames)
+                GraphicSourceData::try_from_path(&entry.path(), &self.data.frames)
             {
                 graphic_source_data_set.sources.push(graphic_source_data)
             }

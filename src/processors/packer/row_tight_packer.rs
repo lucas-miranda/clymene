@@ -48,8 +48,8 @@ impl Packer for RowTightPacker {
 
                 for (space_index, empty_space) in empty_spaces
                     .iter()
-                    .filter(|s| s.fit_size(&size))
                     .enumerate()
+                    .filter(|(_i, s)| s.fit_size(&size))
                 {
                     if let Some(best) = &mut best_fit {
                         let extra_width = empty_space.width - size.width;
@@ -65,6 +65,7 @@ impl Packer for RowTightPacker {
                             || extra_height == 0
                         {
                             best.index = space_index;
+                            best.x = empty_space.x;
                             best.y = empty_space.y;
                         }
                     } else {
@@ -78,10 +79,7 @@ impl Packer for RowTightPacker {
 
                 match best_fit {
                     Some(space) => empty_spaces.remove(space.index),
-                    None => panic!(
-                        "Can't find a valid location for source image '{}'.",
-                        source.path.display()
-                    ),
+                    None => panic!("Can't find an unoccupied space which fits source image."),
                 }
             };
 

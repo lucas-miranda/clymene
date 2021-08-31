@@ -1,9 +1,6 @@
-use std::{fs, io, iter, path::PathBuf};
-
 use colored::Colorize;
-
-use image::{self, GenericImage, GenericImageView};
-
+use image::{self, GenericImage};
+use std::{fs, io, iter, path::PathBuf};
 use tree_decorator::decorator;
 
 use crate::{
@@ -87,28 +84,18 @@ impl PackerProcessor {
         let mut image_buffer = image::ImageBuffer::from_pixel(width, height, image::Rgba([0u8; 4]));
 
         for graphic_source in graphic_sources {
-            let image = image::open(&graphic_source.path)?;
-
             match &graphic_source.atlas_region {
                 Some(atlas_region) => {
                     image_buffer
                         .copy_from(
-                            &image.view(
-                                graphic_source.region.x,
-                                graphic_source.region.y,
-                                graphic_source.region.width,
-                                graphic_source.region.height,
-                            ),
+                            &graphic_source.region_buffer_view(),
                             atlas_region.x,
                             atlas_region.y,
                         )
                         .unwrap();
                 }
                 None => {
-                    warnln!(
-                        "Atlas region isn't defined from graphic source at '{}'",
-                        graphic_source.path.display()
-                    );
+                    warnln!("Atlas region isn't defined at graphic source");
                 }
             }
         }

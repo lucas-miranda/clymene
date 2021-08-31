@@ -13,7 +13,7 @@ pub struct GraphicSourceData {
 }
 
 impl GraphicSourceData {
-    pub fn try_create(
+    pub fn try_from_path(
         path: &Path,
         frames_data: &[FrameData],
     ) -> Result<Self, GraphicSourceDataError> {
@@ -30,10 +30,19 @@ impl GraphicSourceData {
 
         let (source_region, atlas_region) = get_regions(frame_index, frames_data);
 
+        let buffer = {
+            let dyn_image = image::open(path).map_err(GraphicSourceDataError::GraphicLoadError)?;
+
+            match dyn_image {
+                image::DynamicImage::ImageRgba8(rgba_image) => Ok(rgba_image),
+                _ => Err(GraphicSourceDataError::UnsupportedGraphicFormat),
+            }
+        }?;
+
         Ok(GraphicSourceData {
             source: GraphicSource {
                 atlas_region,
-                path: path.to_owned(),
+                buffer,
                 region: source_region,
             },
             frame_index,
@@ -98,12 +107,15 @@ pub enum GraphicSourceDataError {
     IO(io::Error),
     FileExpected,
     FrameIndexNotFound,
+    GraphicLoadError(image::ImageError),
+    UnsupportedGraphicFormat,
 }
 
 impl error::Error for GraphicSourceDataError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &self {
             GraphicSourceDataError::IO(io_error) => Some(io_error),
+            GraphicSourceDataError::GraphicLoadError(image_error) => Some(image_error),
             _ => None,
         }
     }
@@ -115,6 +127,12 @@ impl Display for GraphicSourceDataError {
             GraphicSourceDataError::IO(io_error) => write!(f, "IO Error: {}", io_error),
             GraphicSourceDataError::FileExpected => write!(f, "File expected"),
             GraphicSourceDataError::FrameIndexNotFound => write!(f, "Frame index was not found"),
+            GraphicSourceDataError::GraphicLoadError(image_error) => {
+                write!(f, "Graphic load error: {}", image_error)
+            }
+            GraphicSourceDataError::UnsupportedGraphicFormat => {
+                write!(f, "Supplied graphic format isn't supported.")
+            }
         }
     }
 }
