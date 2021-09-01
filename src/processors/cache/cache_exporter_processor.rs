@@ -139,32 +139,6 @@ impl CacheExporterProcessor {
                 Ok(metadata) => {
                     if metadata.is_dir() {
                         cache.register(location, &source_metadata, data).unwrap();
-
-                        // export images
-                        match g {
-                            Graphic::Image(image) => {
-                                let path = graphic_cache_dir_path.join("0.png");
-
-                                image
-                                    .graphic_source
-                                    .buffer
-                                    .save_with_format(&path, image::ImageFormat::Png)
-                                    .unwrap();
-                            }
-                            Graphic::Animation(anim) => {
-                                for (index, frame) in anim.frames.iter().enumerate() {
-                                    let path =
-                                        graphic_cache_dir_path.join(format!("{}.png", index));
-
-                                    frame
-                                        .graphic_source
-                                        .buffer
-                                        .save_with_format(&path, image::ImageFormat::Png)
-                                        .unwrap();
-                                }
-                            }
-                            Graphic::Empty => (),
-                        }
                     }
                 }
                 Err(e) => {

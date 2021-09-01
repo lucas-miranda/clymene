@@ -1,5 +1,5 @@
 use asefile::AsepriteFile;
-use image::{self, buffer::EnumerateRows, Rgba};
+use image::{self, buffer::EnumerateRows, Rgba, RgbaImage};
 use std::path::Path;
 
 use crate::{
@@ -26,7 +26,7 @@ impl FormatProcessor for RawFileProcessor {
     fn process(
         &self,
         source_file_path: &Path,
-        _output_dir_path: &Path,
+        output_dir_path: &Path,
         _config: &Config,
     ) -> Result<Graphic, Error> {
         let ase = AsepriteFile::read_file(source_file_path).unwrap();
@@ -34,28 +34,16 @@ impl FormatProcessor for RawFileProcessor {
 
         match frame_count {
             0 => Ok(Graphic::Empty),
-            1 => {
-                let frame_image_buffer = ase.frame(0).image();
-                let (w, h) = frame_image_buffer.dimensions();
-
-                // ensure w and h isn't zero
-                if w == 0 || h == 0 {
-                    return Ok(Graphic::Empty);
-                }
-
-                let source = crop_empty_space(frame_image_buffer.enumerate_rows());
-
-                if source.is_empty() {
-                    return Ok(Graphic::Empty);
-                }
-
-                let graphic_source = GraphicSource::new(frame_image_buffer, source);
-
-                let image = Image::with_graphic_source(graphic_source, source_file_path.to_owned())
-                    .unwrap();
-
-                Ok(image.into())
-            }
+            1 => Ok(
+                match create_graphic_source(&ase.frame(0), 0, output_dir_path) {
+                    Some(graphic_source) => {
+                        Image::with_graphic_source(graphic_source, source_file_path.to_owned())
+                            .unwrap()
+                            .into()
+                    }
+                    None => Graphic::Empty,
+                },
+            ),
             _ => {
                 let mut animation = Animation::new(source_file_path.to_owned())
                     .map_err::<Error, _>(|e| e.into())?;
@@ -63,24 +51,12 @@ impl FormatProcessor for RawFileProcessor {
                 // frames
                 for frame_index in 0..frame_count {
                     let frame = ase.frame(frame_index);
-                    let frame_image_buffer = frame.image();
-                    let (w, h) = frame_image_buffer.dimensions();
 
-                    // ensure w and h isn't zero
-                    if w == 0 || h == 0 {
-                        continue;
+                    if let Some(graphic_source) =
+                        create_graphic_source(&frame, frame_index, output_dir_path)
+                    {
+                        animation.push_frame(graphic_source, frame.duration())
                     }
-
-                    let source = crop_empty_space(frame_image_buffer.enumerate_rows());
-
-                    if source.is_empty() {
-                        continue;
-                    }
-
-                    animation.push_frame(
-                        GraphicSource::new(frame_image_buffer, source),
-                        frame.duration(),
-                    )
                 }
 
                 // tags
@@ -101,6 +77,29 @@ impl FormatProcessor for RawFileProcessor {
             }
         }
     }
+}
+
+fn create_graphic_source(
+    frame: &asefile::Frame,
+    frame_index: u32,
+    output_dir_path: &Path,
+) -> Option<GraphicSource> {
+    let frame_image_buffer = frame.image();
+    let (w, h) = frame_image_buffer.dimensions();
+
+    // ensure w and h isn't zero
+    if w == 0 || h == 0 {
+        return None;
+    }
+
+    let source = crop_empty_space(frame_image_buffer.enumerate_rows());
+
+    if source.is_empty() {
+        return None;
+    }
+
+    export_graphic(output_dir_path, frame_index, &frame_image_buffer).unwrap();
+    Some(GraphicSource::new(frame_image_buffer, source))
 }
 
 fn crop_empty_space(rows: EnumerateRows<'_, Rgba<u8>>) -> Rectangle<u32> {
@@ -146,4 +145,15 @@ fn crop_empty_space(rows: EnumerateRows<'_, Rgba<u8>>) -> Rectangle<u32> {
     }
 
     source.unwrap_or_else(Rectangle::default)
+}
+
+fn export_graphic(
+    output_dir_path: &Path,
+    index: u32,
+    image_buffer: &RgbaImage,
+) -> image::ImageResult<()> {
+    image_buffer.save_with_format(
+        &output_dir_path.join(format!("{}.png", index)),
+        image::ImageFormat::Png,
+    )
 }

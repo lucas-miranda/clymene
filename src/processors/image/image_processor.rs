@@ -412,31 +412,25 @@ impl<'a> Processor for ImageProcessor<'a> {
                 // process source file
                 match format_handler.process(source_file, &output_path, &state.config) {
                     Ok(processed_file) => {
-                        match processed_file {
-                            Graphic::Empty => {
-                                match display_kind {
-                                    DisplayKind::List => infoln!(
-                                        "{} {}",
-                                        "~".yellow().bold(),
-                                        location.display().to_string().bold().cyan()
-                                    ),
-                                    DisplayKind::Detailed => {
-                                        traceln!(entry: decorator::Entry::None, "Graphic is empty");
-                                        infoln!(
-                                            last,
-                                            "{} {}",
-                                            "~".yellow().bold(),
-                                            "Ignore".yellow()
-                                        );
-                                    }
-                                    _ => (),
+                        if let Graphic::Empty = processed_file {
+                            match display_kind {
+                                DisplayKind::List => infoln!(
+                                    "{} {}",
+                                    "~".yellow().bold(),
+                                    location.display().to_string().bold().cyan()
+                                ),
+                                DisplayKind::Detailed => {
+                                    traceln!(entry: decorator::Entry::None, "Graphic is empty");
+                                    infoln!(last, "{} {}", "~".yellow().bold(), "Ignore".yellow());
                                 }
-
-                                succeeded_files += 1;
-                                continue;
+                                _ => (),
                             }
-                            _ => output.graphics.push(processed_file),
+
+                            succeeded_files += 1;
+                            continue;
                         }
+
+                        output.graphics.push(processed_file);
 
                         match display_kind {
                             DisplayKind::List => infoln!(
