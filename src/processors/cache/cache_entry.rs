@@ -22,12 +22,15 @@ pub struct CacheEntry {
     /// Last source file modified time>
     pub modtime: SystemTime,
 
+    /// Source file extension
+    pub extension: String,
+
     /// Graphic's data
     pub data: GraphicData,
 
-    #[serde(skip)]
     /// Quickly access to location.
     /// It's the path from cache root directory to this entry with stripped root directory.
+    #[serde(skip)]
     pub location: PathBuf,
 }
 

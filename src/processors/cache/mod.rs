@@ -139,6 +139,7 @@ impl Cache {
     pub fn register<P: AsRef<Path> + Eq + Hash>(
         &mut self,
         location: P,
+        extension: String,
         metadata: &Metadata,
         data: GraphicData,
     ) -> Result<(), Error> {
@@ -148,6 +149,7 @@ impl Cache {
             location.as_ref().to_owned(),
             RefCell::new(CacheEntry {
                 modtime,
+                extension,
                 data,
                 location: location.as_ref().to_owned(),
             }),
@@ -164,7 +166,7 @@ impl Cache {
         !self.outdated
     }
 
-    pub fn mark_as_outdated(&mut self) {
+    pub(in crate::processors::cache) fn mark_as_outdated(&mut self) {
         if self.is_outdated() {
             return;
         }

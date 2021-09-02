@@ -121,7 +121,6 @@ impl<'a> ImageProcessor<'a> {
             }
         }
 
-        cache.mark_as_outdated();
         None
     }
 
@@ -323,9 +322,7 @@ impl<'a> Processor for ImageProcessor<'a> {
         let mut source_files_by_extension = self.retrieve_source_files_by_extension(&source_path);
 
         // process every format and collect it's graphic data (as image or animation)
-        let output = &mut state.graphic_output;
 
-        // progress bar
         let mut file_count = 0;
 
         infoln!(block, "File Types");
@@ -335,10 +332,19 @@ impl<'a> Processor for ImageProcessor<'a> {
                 ext.as_os_str().to_str().unwrap_or("???").bold(),
                 source_files.len()
             );
+
             file_count += source_files.len();
         }
 
         infoln!(last; entry: decorator::Entry::Double, "Found {} files", file_count);
+
+        if let Some(c) = &state.cache {
+            if c.is_updated() {
+                traceln!("Files arent modified and cache is updated");
+                doneln!();
+                return;
+            }
+        }
 
         let source_files_handling_timer = Timer::start();
 
@@ -347,6 +353,7 @@ impl<'a> Processor for ImageProcessor<'a> {
             self.display_progress_bar(0, file_count, 0, 0);
         }
 
+        let output = &mut state.graphic_output;
         let cache_images_path = state.config.cache.images_path();
         let mut succeeded_files = 0;
         let mut failed_files = 0;

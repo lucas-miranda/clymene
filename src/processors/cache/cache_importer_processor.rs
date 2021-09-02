@@ -187,15 +187,32 @@ impl CacheImporterProcessor {
         match Cache::load_from_path(&filepath, images_path.clone(), atlas_output_path.clone()) {
             Ok(c) => c,
             Err(e) => {
-                warnln!("Cache file not found at expected path");
                 match &e {
                     cache::LoadError::FileNotFound(_path) => {
+                        warnln!("Cache file not found at expected path");
                         infoln!(block, "Creating a new one");
                         let c = self.create_cache(&filepath, images_path, atlas_output_path);
                         infoln!(last, "{}", "Done".green());
                         c
                     }
-                    _ => panic!("{}", e),
+                    cache::LoadError::Deserialize(serde_json_error) => {
+                        match serde_json_error.classify() {
+                            serde_json::error::Category::Io
+                                | serde_json::error::Category::Eof => panic!("Cache file io error: {}", e),
+                            _ => {
+                                errorln!("Cache file data error: {}", serde_json_error);
+
+                                // TODO  maybe add a config option to panic when this situation
+                                //       happens, just to help tracing future problems
+
+                                infoln!("A new one will be used instead");
+                                infoln!(block, "Creating a new one");
+                                let c = self.create_cache(&filepath, images_path, atlas_output_path);
+                                infoln!(last, "{}", "Done".green());
+                                c
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -225,7 +242,7 @@ impl CacheImporterProcessor {
             .map(|project_dirs| PathBuf::from(project_dirs.cache_dir()))
     }
 
-    fn create_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> Result<PathBuf, cache::Error> {
+    fn ensure_exists_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> Result<PathBuf, cache::Error> {
         let pathbuf = cache_pathbuf.join(dir_name);
 
         match pathbuf.metadata() {
@@ -345,10 +362,12 @@ impl Processor for CacheImporterProcessor {
                 infoln!("Version {} matches", version.bold());
 
                 // atlas subdir
-                self.create_subdir(&cache_dir_pathbuf, "atlas").unwrap();
+                self.ensure_exists_subdir(&cache_dir_pathbuf, "atlas").unwrap();
 
                 // images subdir
-                self.create_subdir(&cache_dir_pathbuf, "images").unwrap();
+                self.ensure_exists_subdir(&cache_dir_pathbuf, "images").unwrap();
+
+                verify_cache_status(&state.config.image.input_path, &mut cache);
 
                 // remove invalid cache entries
                 // checking if directory entry still exists
@@ -429,11 +448,11 @@ impl Processor for CacheImporterProcessor {
 
                         // atlas subdir
                         traceln!("Creating {} sub directory", "atlas".bold());
-                        self.create_subdir(&cache_pathbuf, "atlas").unwrap();
+                        self.ensure_exists_subdir(&cache_pathbuf, "atlas").unwrap();
 
                         // images subdir
                         traceln!("Creating {} sub directory", "images".bold());
-                        self.create_subdir(&cache_pathbuf, "images").unwrap();
+                        self.ensure_exists_subdir(&cache_pathbuf, "images").unwrap();
 
                         traceln!("Initializing cache file");
                         cache = Cache::new(
@@ -465,5 +484,46 @@ impl Verbosity for CacheImporterProcessor {
 
     fn is_verbose(&self) -> bool {
         self.verbose
+    }
+}
+
+fn verify_cache_status<T: AsRef<Path>>(source_root_path: T, cache: &mut Cache) {
+    let source_root_path = source_root_path.as_ref();
+    traceln!("Verifying cache at source root path {}", source_root_path.display().to_string().bold());
+
+    for (location, entry_ref) in cache.files.iter() {
+        let pathbuf = source_root_path
+            .join(location)
+            .with_extension(&entry_ref.borrow().extension);
+
+        match pathbuf.metadata() {
+            Ok(metadata) => {
+                if !metadata.is_file() {
+                    // source file doesn't exists anymore
+                    traceln!("[{}]: Source isn't a file", location.display());
+                    cache.mark_as_outdated();
+                    break;
+                }
+
+                let modtime = metadata.modified().unwrap();
+
+                if modtime != entry_ref.borrow().modtime {
+                    // source file modtime doesn't matches cache entry data
+                    traceln!("[{}]: Source was modified", location.display());
+                    cache.mark_as_outdated();
+                    break;
+                }
+            }
+            Err(e) => {
+                if let io::ErrorKind::NotFound = e.kind() {
+                    // file wasn't found
+                    traceln!("[{}]: Source was not found", location.display());
+                    cache.mark_as_outdated();
+                    break;
+                }
+
+                panic!("{}", e);
+            },
+        }
     }
 }

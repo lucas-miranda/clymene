@@ -174,7 +174,7 @@ impl Processor for PackerProcessor {
                         infoln!(last, "{}", "Done".green());
                         return;
                     } else {
-                        infoln!(last, "{}", "Need Update".blue());
+                        infoln!(last, "{}", "Needs Update".blue());
                     }
                 }
 

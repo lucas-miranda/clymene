@@ -65,16 +65,17 @@ impl CacheExporterProcessor {
         let timer = Timer::start();
         for g in state.graphic_output.graphics.iter() {
             let source_path;
-            let location: &Path;
+            let location;
             let source_metadata;
             let mut data = GraphicData::new();
 
             let graphic_cache_dir_path = match g {
                 Graphic::Image(image) => {
-                    source_path = image.source_path.with_extension("");
+                    source_path = &image.source_path;
                     location = source_path
                         .strip_prefix(&state.config.image.input_path)
-                        .unwrap();
+                        .unwrap()
+                        .with_extension("");
 
                     source_metadata = image.source_path.metadata().unwrap();
 
@@ -94,12 +95,13 @@ impl CacheExporterProcessor {
                     cache_images_path.join(&location)
                 }
                 Graphic::Animation(animation) => {
-                    source_path = animation.source_path.with_extension("");
+                    source_path = &animation.source_path;
                     location = source_path
                         .strip_prefix(&state.config.image.input_path)
-                        .unwrap();
+                        .unwrap()
+                        .with_extension("");
 
-                    source_metadata = animation.source_path.metadata().unwrap();
+                    source_metadata = source_path.metadata().unwrap();
 
                     // extract data
                     for track in &animation.tracks {
@@ -116,7 +118,7 @@ impl CacheExporterProcessor {
                                     Some(atlas_region) => atlas_region.clone(),
                                     None => {
                                         if !frame.graphic_source.region.is_empty() {
-                                            errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", index, frame.graphic_source.region, animation.source_path.display());
+                                            errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", index, frame.graphic_source.region, source_path.display());
                                         }
 
                                         Rectangle::default()
@@ -138,7 +140,14 @@ impl CacheExporterProcessor {
             match graphic_cache_dir_path.metadata() {
                 Ok(metadata) => {
                     if metadata.is_dir() {
-                        cache.register(location, &source_metadata, data).unwrap();
+                        let ext = source_path
+                            .extension()
+                            .unwrap_or_default()
+                            .to_str()
+                            .unwrap_or_default()
+                            .to_owned();
+
+                        cache.register(location, ext, &source_metadata, data) .unwrap();
                     }
                 }
                 Err(e) => {

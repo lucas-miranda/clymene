@@ -49,7 +49,7 @@ pub enum LoadError {
 impl error::Error for LoadError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &self {
-            LoadError::Deserialize(toml_error) => Some(toml_error),
+            LoadError::Deserialize(json_error) => Some(json_error),
             LoadError::FileNotFound(_path) => None,
         }
     }
@@ -57,13 +57,11 @@ impl error::Error for LoadError {
 
 impl Display for LoadError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "An error occured when trying to load a config file:")?;
-
         match &self {
-            LoadError::Deserialize(toml_error) => write!(
+            LoadError::Deserialize(json_error) => write!(
                 f,
-                "Error when deserializing from a toml file => {}",
-                toml_error
+                "Error when deserializing from a json file => {}",
+                json_error
             ),
             LoadError::FileNotFound(path) => write!(f, "File not found at '{}'", path.display()),
         }
