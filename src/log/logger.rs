@@ -22,6 +22,7 @@ impl Logger {
         self.debug = value;
     }
 
+    #[allow(dead_code)]
     pub fn is_debug(&self) -> bool {
         self.debug
     }
@@ -62,6 +63,7 @@ impl Logger {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_module<T: Into<String>>(&self, name: T) -> Option<&LoggerModuleEntry> {
         let mut submodule: Option<&LoggerModuleEntry> = None;
 

@@ -45,33 +45,6 @@ pub struct Config {
     pub data: DataConfig,
 }
 
-impl ProcessorConfig for Config {
-    fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus) {
-        let logger_status = ConfigLoggerStatus {
-            verbose: self.is_verbose() || parent_logger_status.verbose,
-        };
-
-        if logger_status.verbose {
-            logger.verbose(true);
-        }
-
-        self.cache.configure_logger(logger, &logger_status);
-        self.packer.configure_logger(logger, &logger_status);
-        self.image.configure_logger(logger, &logger_status);
-        self.data.configure_logger(logger, &logger_status);
-    }
-}
-
-impl Verbosity for Config {
-    fn verbose(&mut self, verbose: bool) {
-        self.verbose = verbose;
-    }
-
-    fn is_verbose(&self) -> bool {
-        self.verbose
-    }
-}
-
 impl Config {
     pub fn load(file: &File) -> Result<Config, LoadError> {
         let mut contents = String::new();
@@ -96,6 +69,25 @@ impl Config {
         }?;
 
         Self::load(&file)
+    }
+
+    pub fn load_from_path_or_default<P: AsRef<Path>>(filepath: P) -> Config {
+        Config::load_from_path(&filepath).unwrap_or_else(|e| match e {
+            LoadError::Deserialize(de_err) => {
+                panic!(
+                    "At file '{}'\nError: {:?}\nDetails: {}",
+                    filepath.as_ref().display(),
+                    de_err,
+                    de_err.to_string()
+                );
+            }
+            LoadError::FileNotFound(path) => {
+                println!("Config file created at '{}'.", path.display());
+                let c = Config::default();
+                c.save_to_path(&path).unwrap();
+                c
+            }
+        })
     }
 
     pub fn default_output_name() -> String {
@@ -124,5 +116,32 @@ impl Config {
             .unwrap();
 
         self.save(&file)
+    }
+}
+
+impl ProcessorConfig for Config {
+    fn configure_logger(&self, logger: &mut Logger, parent_logger_status: &ConfigLoggerStatus) {
+        let logger_status = ConfigLoggerStatus {
+            verbose: self.is_verbose() || parent_logger_status.verbose,
+        };
+
+        if logger_status.verbose {
+            logger.verbose(true);
+        }
+
+        self.cache.configure_logger(logger, &logger_status);
+        self.packer.configure_logger(logger, &logger_status);
+        self.image.configure_logger(logger, &logger_status);
+        self.data.configure_logger(logger, &logger_status);
+    }
+}
+
+impl Verbosity for Config {
+    fn verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    fn is_verbose(&self) -> bool {
+        self.verbose
     }
 }

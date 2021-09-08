@@ -7,6 +7,7 @@ pub struct LoggerModuleEntry {
 }
 
 impl LoggerModuleEntry {
+    #[allow(dead_code)]
     pub fn new(verbose: bool) -> Self {
         Self {
             verbose,

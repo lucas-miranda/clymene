@@ -1,7 +1,7 @@
 #[allow(unused_macros)]
 macro_rules! is_trace_enabled {
     () => {{
-        match $crate::logger() {
+        match $crate::log::logger() {
             Some(logger) => logger.is_module_verbose(module_path!()),
             None => false,
         }
@@ -12,7 +12,7 @@ macro_rules! is_trace_enabled {
 #[allow(unused_macros)]
 macro_rules! is_debug_enabled {
     () => {{
-        match $crate::logger() {
+        match $crate::log::logger() {
             Some(logger) => logger.is_debug(),
             None => false,
         }
