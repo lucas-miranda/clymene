@@ -277,7 +277,7 @@ impl FormatProcessor for CommandProcessor {
 
         // retrieve source images
         let mut graphic_sources_set =
-            self.find_graphic_sources(&output_dir_path, &aseprite_data.frames);
+            self.find_graphic_sources(output_dir_path, &aseprite_data.frames);
 
         if graphic_sources_set.sources.is_empty() {
             return Ok(Graphic::Empty);

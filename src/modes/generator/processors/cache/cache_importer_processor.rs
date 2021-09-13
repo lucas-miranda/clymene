@@ -178,7 +178,7 @@ impl CacheImporterProcessor {
 
         if force {
             infoln!(block, "Creating a new one (forced)");
-            let c = self.create_cache(&filepath, images_path, atlas_output_path);
+            let c = self.create_cache(filepath, images_path, atlas_output_path);
             infoln!(last, "{}", "Done".green());
             return c;
         }
@@ -190,7 +190,7 @@ impl CacheImporterProcessor {
                     super::LoadError::FileNotFound(_path) => {
                         warnln!("Cache file not found at expected path");
                         infoln!(block, "Creating a new one");
-                        let c = self.create_cache(&filepath, images_path, atlas_output_path);
+                        let c = self.create_cache(filepath, images_path, atlas_output_path);
                         infoln!(last, "{}", "Done".green());
                         c
                     }
@@ -207,8 +207,7 @@ impl CacheImporterProcessor {
 
                                 infoln!("A new one will be used instead");
                                 infoln!(block, "Creating a new one");
-                                let c =
-                                    self.create_cache(&filepath, images_path, atlas_output_path);
+                                let c = self.create_cache(filepath, images_path, atlas_output_path);
                                 infoln!(last, "{}", "Done".green());
                                 c
                             }
@@ -362,7 +361,7 @@ impl Processor for CacheImporterProcessor {
         let version = env!("CARGO_PKG_VERSION");
         let cache_images_path = state.config.cache.images_path();
 
-        match cache.meta.expect_version(&version) {
+        match cache.meta.expect_version(version) {
             Ok(_) => {
                 infoln!("Version {} matches", version.bold());
 

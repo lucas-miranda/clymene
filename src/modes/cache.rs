@@ -1,6 +1,11 @@
 use super::Mode;
 use crate::{args::ArgsHandler, settings::Config, GlobalArgs};
 use clap::{App, Arg, ArgMatches, SubCommand};
+use colored::Colorize;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub struct CacheModeArgs {
     pub global: GlobalArgs,
@@ -37,7 +42,59 @@ impl ArgsHandler for CacheMode {
 }
 
 impl Mode for CacheMode {
-    fn run(_config: Config, _args: &Self::ModeArgs) {
-        infoln!("Cache operation");
+    fn run(config: Config, args: &Self::ModeArgs) {
+        if args.all {
+            infoln!(block, "Cleaning all cache");
+            let cache_root_path = PathBuf::from(&config.cache.path);
+            traceln!(
+                "At cache path: {}",
+                cache_root_path.display().to_string().bold()
+            );
+
+            clear_cache_dir(&cache_root_path);
+        } else {
+            infoln!(block, "Cleaning cache");
+            let cache_root_path = PathBuf::from(&config.cache.path);
+            traceln!(
+                "At cache path: {}",
+                cache_root_path.display().to_string().bold()
+            );
+
+            if !cache_root_path.is_dir() {
+                infoln!("Cache root directory doesn't exists");
+                doneln!();
+                return;
+            }
+
+            traceln!("identifier  {}", config.cache.identifier.bold());
+            clear_cache_dir(&cache_root_path.join(&config.cache.identifier));
+        }
+    }
+}
+
+fn clear_cache_dir(path: &Path) {
+    if !path.exists() {
+        traceln!("Directory doesn't exists");
+        infoln!(last, "{}", "Already Clear".blue());
+        return;
+    }
+
+    if path.is_dir() {
+        remove_dir_all(path);
+    } else {
+        panic!(
+            "Can't clear cache entry at path '{}', it must be a directory.",
+            path.display()
+        );
+    }
+}
+
+fn remove_dir_all(path: &Path) {
+    match fs::remove_dir_all(&path) {
+        Ok(_) => infoln!(last, "{}", "Clear".green()),
+        Err(err) => {
+            errorln!("{}", err);
+            infoln!(last, "{}", "Fail".red());
+        }
     }
 }

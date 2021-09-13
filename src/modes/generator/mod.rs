@@ -98,7 +98,7 @@ impl Mode for GeneratorMode {
             .enqueue(CacheExporterProcessor::new())
             // get every data from previous steps and packs it together into a nicer format
             .enqueue(DataProcessor::new())
-            .start(&mut config, &args);
+            .start(&mut config, args);
 
         println!();
         infoln!(block, "{}", "Atlas Completed".magenta().bold());

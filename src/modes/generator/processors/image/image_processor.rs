@@ -395,7 +395,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                     match &mut state.cache {
                         Some(c) => {
                             if let Some(graphic) =
-                                self.retrieve_from_cache(&location, &source_file, c, &display_kind)
+                                self.retrieve_from_cache(&location, source_file, c, &display_kind)
                             {
                                 output.graphics.push(graphic);
                                 succeeded_files += 1;
@@ -412,13 +412,13 @@ impl<'a> Processor for ImageProcessor<'a> {
                 }
 
                 let output_path = self.get_or_create_source_file_output_dir(
-                    &source_file,
+                    source_file,
                     &state.config.image.input_path,
                     &cache_images_path,
                 );
 
                 // process source file
-                match format_handler.process(source_file, &output_path, &state.config) {
+                match format_handler.process(source_file, &output_path, state.config) {
                     Ok(processed_file) => {
                         if let Graphic::Empty = processed_file {
                             match display_kind {

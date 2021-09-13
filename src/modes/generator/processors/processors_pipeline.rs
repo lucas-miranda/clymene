@@ -19,7 +19,7 @@ impl<'a> ProcessorsPipeline<'a> {
         let mut config_status = ConfigStatus::NotModified;
 
         for processor in self.processors.iter_mut() {
-            if processor.retrieve_processor_config(&config).is_verbose() {
+            if processor.retrieve_processor_config(config).is_verbose() {
                 processor.verbose(true);
             }
 

@@ -32,7 +32,7 @@ impl PackerProcessor {
     fn should_generate(&self, state: &State) -> Result<bool, Error> {
         if let Some(cache) = &state.cache {
             // verify if exists files at output path
-            let output_file_name = self.output_file_path(&state.config);
+            let output_file_name = self.output_file_path(state.config);
             match output_file_name.metadata() {
                 Ok(metadata) => {
                     if !metadata.is_file() {
@@ -168,7 +168,7 @@ impl Processor for PackerProcessor {
                 } else {
                     infoln!(block, "Checking");
 
-                    if !self.should_generate(&state).unwrap() {
+                    if !self.should_generate(state).unwrap() {
                         infoln!(last, "{}", "Already Updated".green());
                         infoln!(last, "{}", "Done".green());
                         return;
@@ -244,7 +244,7 @@ impl Processor for PackerProcessor {
                 }
 
                 // generate atlas file
-                let output_path = self.output_file_path(&state.config);
+                let output_path = self.output_file_path(state.config);
 
                 infoln!(
                     "Exporting to file {}",

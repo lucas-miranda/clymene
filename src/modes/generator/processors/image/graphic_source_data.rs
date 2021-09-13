@@ -25,7 +25,7 @@ impl GraphicSourceData {
             return Err(GraphicSourceDataError::FileExpected);
         }
 
-        let frame_index = match try_retrieve_frame_index(&path) {
+        let frame_index = match try_retrieve_frame_index(path) {
             Some(index) => index,
             None => return Err(GraphicSourceDataError::FrameIndexNotFound),
         };

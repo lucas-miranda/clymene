@@ -108,7 +108,7 @@ impl CacheExporterProcessor {
                     for track in &animation.tracks {
                         data.tracks.push(TrackData {
                             label: track.label.clone(),
-                            indices: self.prepare_indices(&track),
+                            indices: self.prepare_indices(track),
                         });
                     }
 

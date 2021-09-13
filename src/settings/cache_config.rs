@@ -8,8 +8,8 @@ use crate::{
     settings::{ConfigLoggerStatus, ProcessorConfig},
 };
 
-const IMAGES_FOLDER_NAME: &str = "images";
-const ATLAS_FOLDER_NAME: &str = "atlas";
+const IMAGES_DIR_NAME: &str = "images";
+const ATLAS_DIR_NAME: &str = "atlas";
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct CacheConfig {
@@ -51,10 +51,10 @@ impl CacheConfig {
     }
 
     pub fn images_path(&self) -> PathBuf {
-        self.root_path().join(IMAGES_FOLDER_NAME)
+        self.root_path().join(IMAGES_DIR_NAME)
     }
 
     pub fn atlas_path(&self) -> PathBuf {
-        self.root_path().join(ATLAS_FOLDER_NAME)
+        self.root_path().join(ATLAS_DIR_NAME)
     }
 }

@@ -23,7 +23,7 @@ fn main() {
 
     display_header();
 
-    let global_args = GlobalArgs::handle(&args.matches());
+    let global_args = GlobalArgs::handle(args.matches());
     let mut config = Config::load_from_path_or_default(&global_args.config_filepath);
 
     log::initialize_logger(&mut config, &global_args);
