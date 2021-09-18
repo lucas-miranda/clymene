@@ -1,6 +1,9 @@
 use colored::Colorize;
 use image::{self, GenericImage};
-use std::{fs, io, iter, path::PathBuf};
+use std::{
+    fs, io, iter,
+    path::{Path, PathBuf},
+};
 use tree_decorator::decorator;
 
 use crate::{
@@ -75,7 +78,7 @@ impl PackerProcessor {
 
     fn generate_image(
         &self,
-        output_path: PathBuf,
+        output_path: &Path,
         width: u32,
         height: u32,
         graphic_sources: &[&mut GraphicSource],
@@ -85,13 +88,11 @@ impl PackerProcessor {
         for graphic_source in graphic_sources {
             match &graphic_source.atlas_region {
                 Some(atlas_region) => {
-                    image_buffer
-                        .copy_from(
-                            &graphic_source.region_buffer_view(),
-                            atlas_region.x,
-                            atlas_region.y,
-                        )
-                        .unwrap();
+                    image_buffer.copy_from(
+                        &graphic_source.region_buffer_view(),
+                        atlas_region.x,
+                        atlas_region.y,
+                    )?;
                 }
                 None => {
                     warnln!("Atlas region isn't defined at graphic source");
@@ -139,8 +140,8 @@ impl Processor for PackerProcessor {
         "Packer"
     }
 
-    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
-        &config.packer
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> Option<&'a dyn ProcessorConfig> {
+        Some(&config.packer)
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
@@ -169,6 +170,11 @@ impl Processor for PackerProcessor {
                     infoln!(block, "Checking");
 
                     if !self.should_generate(state).unwrap() {
+                        // output
+                        state
+                            .output
+                            .register_file(&self.output_file_path(state.config));
+
                         infoln!(last, "{}", "Already Updated".green());
                         infoln!(last, "{}", "Done".green());
                         return;
@@ -243,21 +249,24 @@ impl Processor for PackerProcessor {
                     },
                 }
 
-                // generate atlas file
-                let output_path = self.output_file_path(state.config);
+                // generate atlas file at cache output path
+                let cache_output_path = self.output_file_path(state.config);
 
                 infoln!(
                     "Exporting to file {}",
-                    output_path.display().to_string().bold()
+                    cache_output_path.display().to_string().bold()
                 );
 
                 self.generate_image(
-                    output_path,
+                    &cache_output_path,
                     state.config.packer.atlas_size,
                     state.config.packer.atlas_size,
                     &graphic_sources,
                 )
                 .unwrap();
+
+                // output
+                state.output.register_file(&cache_output_path);
 
                 doneln_with_timer!(timer);
             }

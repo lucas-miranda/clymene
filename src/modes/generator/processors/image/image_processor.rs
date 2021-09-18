@@ -211,8 +211,8 @@ impl<'a> Processor for ImageProcessor<'a> {
         "Image"
     }
 
-    fn retrieve_processor_config<'c>(&self, config: &'c Config) -> &'c dyn ProcessorConfig {
-        &config.image
+    fn retrieve_processor_config<'c>(&self, config: &'c Config) -> Option<&'c dyn ProcessorConfig> {
+        Some(&config.image)
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {

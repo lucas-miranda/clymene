@@ -3,6 +3,7 @@ pub mod config;
 mod config_status;
 pub mod data;
 pub mod image;
+pub mod output;
 pub mod packer;
 mod processor;
 mod processors_pipeline;

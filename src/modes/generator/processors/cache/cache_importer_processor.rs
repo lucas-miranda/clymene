@@ -279,8 +279,8 @@ impl Processor for CacheImporterProcessor {
         "Cache Importer"
     }
 
-    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
-        &config.cache
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> Option<&'a dyn ProcessorConfig> {
+        Some(&config.cache)
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {

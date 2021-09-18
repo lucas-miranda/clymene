@@ -225,8 +225,8 @@ impl Processor for CacheExporterProcessor {
         "Cache Exporter"
     }
 
-    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
-        &config.cache
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> Option<&'a dyn ProcessorConfig> {
+        Some(&config.cache)
     }
 
     fn setup(&mut self, _config: &mut Config) -> ConfigStatus {

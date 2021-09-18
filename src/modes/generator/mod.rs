@@ -15,6 +15,7 @@ use processors::{
     config::ConfigProcessor,
     data::DataProcessor,
     image::{format_handlers::aseprite_handler, ImageProcessor},
+    output::OutputProcessor,
     packer::PackerProcessor,
     ProcessorsPipeline,
 };
@@ -98,6 +99,8 @@ impl Mode for GeneratorMode {
             .enqueue(CacheExporterProcessor::new())
             // get every data from previous steps and packs it together into a nicer format
             .enqueue(DataProcessor::new())
+            // copies registered output files from cache to user output dir path
+            .enqueue(OutputProcessor::default())
             .start(&mut config, args);
 
         println!();

@@ -28,8 +28,8 @@ impl Processor for DataProcessor {
         "Data"
     }
 
-    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> &'a dyn ProcessorConfig {
-        &config.data
+    fn retrieve_processor_config<'a>(&self, config: &'a Config) -> Option<&'a dyn ProcessorConfig> {
+        Some(&config.data)
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
@@ -90,11 +90,14 @@ impl Processor for DataProcessor {
 
         if self.prettify_output {
             atlas_data
-                .save_pretty_to_path(output_atlas_data_path)
+                .save_pretty_to_path(&output_atlas_data_path)
                 .unwrap();
         } else {
-            atlas_data.save_to_path(output_atlas_data_path).unwrap();
+            atlas_data.save_to_path(&output_atlas_data_path).unwrap();
         }
+
+        // output
+        state.output.register_file(&output_atlas_data_path);
 
         doneln_with_timer!(total_timer)
     }
