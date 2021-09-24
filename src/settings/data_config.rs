@@ -22,7 +22,7 @@ impl ProcessorConfig for DataConfig {
         };
 
         if logger_status.verbose {
-            logger.register_module("processors::data", true);
+            logger.register_module("modes::generator::processors::data", true);
         }
     }
 }

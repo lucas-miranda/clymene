@@ -30,7 +30,7 @@ impl ProcessorConfig for CacheConfig {
         };
 
         if logger_status.verbose {
-            logger.register_module("processors::cache", true);
+            logger.register_module("modes::generator::processors::cache", true);
         }
     }
 }

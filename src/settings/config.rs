@@ -10,27 +10,21 @@ use crate::{
     common::Verbosity,
     log::Logger,
     settings::{
-        CacheConfig, ConfigLoggerStatus, DataConfig, ImageConfig, LoadError, PackerConfig,
-        ProcessorConfig, SaveError,
+        CacheConfig, ConfigLoggerStatus, DataConfig, ImageConfig, LoadError, OutputConfig,
+        PackerConfig, ProcessorConfig, SaveError,
     },
 };
-
-const DEFAULT_OUTPUT_NAME: &str = "atlas";
-const DEFAULT_OUTPUT_FOLDER_PATH: &str = "output";
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub verbose: bool,
 
-    #[serde(default = "Config::default_output_name")]
-    pub output_name: String,
-
-    #[serde(default = "Config::default_output_path")]
-    pub output_path: String,
+    #[serde(default)]
+    pub prettify: bool,
 
     #[serde(default)]
-    pub prettify_json: bool,
+    pub output: OutputConfig,
 
     #[serde(default)]
     pub cache: CacheConfig,
@@ -90,14 +84,6 @@ impl Config {
         })
     }
 
-    pub fn default_output_name() -> String {
-        DEFAULT_OUTPUT_NAME.to_string()
-    }
-
-    pub fn default_output_path() -> String {
-        DEFAULT_OUTPUT_FOLDER_PATH.to_string()
-    }
-
     pub fn save(&self, file: &File) -> Result<(), SaveError> {
         let toml_data = toml::to_string(&self).map_err(SaveError::Serialize)?;
 
@@ -129,6 +115,7 @@ impl ProcessorConfig for Config {
             logger.verbose(true);
         }
 
+        self.output.configure_logger(logger, &logger_status);
         self.cache.configure_logger(logger, &logger_status);
         self.packer.configure_logger(logger, &logger_status);
         self.image.configure_logger(logger, &logger_status);

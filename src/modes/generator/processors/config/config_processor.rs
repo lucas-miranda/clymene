@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     common::Verbosity,
     modes::generator::processors::{ConfigStatus, Processor, State},
-    settings::{Config, ProcessorConfig},
+    settings::{Config, OutputConfig, ProcessorConfig},
 };
 
 pub struct ConfigProcessor {
@@ -35,8 +35,8 @@ impl Processor for ConfigProcessor {
         );
 
         // output name
-        if config.output_name.is_empty() {
-            config.output_name = Config::default_output_name();
+        if config.output.name.is_empty() {
+            config.output.name = OutputConfig::default_name();
             config_status = ConfigStatus::Modified;
         }
 

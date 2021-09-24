@@ -25,7 +25,10 @@ impl ProcessorConfig for AsepriteConfig {
         };
 
         if logger_status.verbose {
-            logger.register_module("processors::image::format_handlers::aseprite_handler", true);
+            logger.register_module(
+                "modes::generator::processors::image::format_handlers::aseprite_handler",
+                true,
+            );
         }
     }
 }

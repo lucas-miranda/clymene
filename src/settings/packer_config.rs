@@ -28,7 +28,7 @@ impl ProcessorConfig for PackerConfig {
         };
 
         if logger_status.verbose {
-            logger.register_module("processors::packer", true);
+            logger.register_module("modes::generator::processors::packer", true);
         }
     }
 }

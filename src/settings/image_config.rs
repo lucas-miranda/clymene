@@ -51,7 +51,7 @@ impl ProcessorConfig for ImageConfig {
         };
 
         if logger_status.verbose {
-            logger.register_module("processors::image", true);
+            logger.register_module("modes::generator::processors::image", true);
         }
 
         self.aseprite.configure_logger(logger, &logger_status);

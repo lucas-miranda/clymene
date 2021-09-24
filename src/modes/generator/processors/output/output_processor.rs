@@ -1,7 +1,7 @@
 use crate::{
     common::Verbosity,
     modes::generator::processors::{ConfigStatus, Processor, State},
-    settings::{Config, ProcessorConfig},
+    settings::{Config, OutputConfig, ProcessorConfig},
 };
 use colored::Colorize;
 use std::{fs, io, path::PathBuf};
@@ -26,18 +26,18 @@ impl Processor for OutputProcessor {
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
-        traceln!(block, "Output");
+        infoln!(block, "Output");
 
-        let output_path = if config.output_path.is_empty() {
-            let p = Config::default_output_path();
+        let output_path = if config.output.path.is_empty() {
+            let p = OutputConfig::default_path();
             warnln!("Output directory path is empty, default value will be used.");
             let path = PathBuf::from(&p);
-            config.output_path = p;
+            config.output.path = p;
             config_status = ConfigStatus::Modified;
             path
         } else {
             traceln!("Using provided directory path");
-            PathBuf::from(&config.output_path)
+            PathBuf::from(&config.output.path)
         };
 
         // handle output folder path
@@ -88,7 +88,7 @@ impl Processor for OutputProcessor {
 
     fn execute(&self, state: &mut State) {
         infoln!(block, "Output");
-        let output = PathBuf::from(&state.config.output_path);
+        let output = PathBuf::from(&state.config.output.path);
         infoln!("To {}", output.display().to_string().bold());
 
         if !output.is_dir() {

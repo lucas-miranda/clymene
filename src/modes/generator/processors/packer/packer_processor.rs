@@ -107,11 +107,7 @@ impl PackerProcessor {
         config
             .cache
             .atlas_path()
-            .join(if config.output_name.is_empty() {
-                format!("{}.png", Config::default_output_name())
-            } else {
-                format!("{}.png", config.output_name)
-            })
+            .join(format!("{}.png", config.output.name_or_default()))
     }
 
     /*

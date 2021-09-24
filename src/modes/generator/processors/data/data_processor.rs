@@ -33,7 +33,7 @@ impl Processor for DataProcessor {
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
-        self.prettify_output = config.data.prettify || config.prettify_json;
+        self.prettify_output = config.data.prettify || config.prettify;
         ConfigStatus::NotModified
     }
 
@@ -69,16 +69,10 @@ impl Processor for DataProcessor {
 
         doneln_with_timer!(gathering_graphics_timer);
 
-        let output_atlas_data_path =
-            state
-                .config
-                .cache
-                .atlas_path()
-                .join(if state.config.output_name.is_empty() {
-                    format!("{}.data.json", Config::default_output_name())
-                } else {
-                    format!("{}.data.json", state.config.output_name)
-                });
+        let output_atlas_data_path = state.config.cache.atlas_path().join(format!(
+            "{}.data.json",
+            state.config.output.name_or_default()
+        ));
 
         if self.prettify_output {
             infoln!("Exporting prettified data to file");
