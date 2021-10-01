@@ -11,14 +11,12 @@ use super::AtlasData;
 
 pub struct DataProcessor {
     verbose: bool,
-    prettify_output: bool,
 }
 
 impl DataProcessor {
     pub fn new() -> Self {
         Self {
             verbose: false,
-            prettify_output: false,
         }
     }
 }
@@ -33,7 +31,7 @@ impl Processor for DataProcessor {
     }
 
     fn setup(&mut self, config: &mut Config) -> ConfigStatus {
-        self.prettify_output = config.data.prettify || config.prettify;
+        config.data.prettify = config.data.prettify || config.prettify;
         ConfigStatus::NotModified
     }
 
@@ -74,7 +72,7 @@ impl Processor for DataProcessor {
             state.config.output.name_or_default()
         ));
 
-        if self.prettify_output {
+        if state.config.data.prettify {
             infoln!("Exporting prettified data to file");
         } else {
             infoln!("Exporting data to file");
@@ -82,7 +80,7 @@ impl Processor for DataProcessor {
 
         traceln!("At {}", output_atlas_data_path.display().to_string().bold());
 
-        if self.prettify_output {
+        if state.config.data.prettify {
             atlas_data
                 .save_pretty_to_path(&output_atlas_data_path)
                 .unwrap();

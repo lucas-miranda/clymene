@@ -11,6 +11,7 @@ use crate::{
     graphics::{animation::Track, Graphic},
     math::Rectangle,
     modes::generator::processors::{
+        cache::CacheMetadata,
         data::{FrameData, FrameIndicesData, GraphicData, TrackData},
         ConfigStatus, Processor, State,
     },
@@ -52,10 +53,13 @@ impl CacheExporterProcessor {
             c
         } else {
             infoln!("Initializing cache");
+
             state.cache = Some(Cache::new(
+                CacheMetadata::new(state.config.data.prettify),
                 state.config.cache.images_path(),
                 state.config.cache.atlas_path(),
             ));
+
             state.cache.as_mut().unwrap()
         };
 

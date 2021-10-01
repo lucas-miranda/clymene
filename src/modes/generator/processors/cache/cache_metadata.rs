@@ -1,27 +1,25 @@
-use super::Error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize, Debug)]
 pub struct CacheMetadata {
-    version: String,
+    pub version: String,
+    pub data_prettified: bool,
 }
 
 impl Default for CacheMetadata {
     fn default() -> Self {
-        CacheMetadata {
+        Self {
             version: env!("CARGO_PKG_VERSION").to_owned(),
+            data_prettified: false,
         }
     }
 }
 
 impl CacheMetadata {
-    pub fn expect_version(&self, expected_version: &str) -> Result<(), Error> {
-        match self.version.eq(expected_version) {
-            true => Ok(()),
-            false => Err(Error::InvalidVersion {
-                version: self.version.to_owned(),
-                expected: expected_version.to_owned(),
-            }),
+    pub fn new(data_prettified: bool) -> Self {
+        Self {
+            version: env!("CARGO_PKG_VERSION").to_owned(),
+            data_prettified,
         }
     }
 }

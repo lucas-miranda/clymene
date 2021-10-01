@@ -28,7 +28,6 @@ use crate::modes::generator::processors::data::GraphicData;
 
 #[derive(Serialize, Deserialize)]
 pub struct Cache {
-    #[serde(default)]
     pub meta: CacheMetadata,
 
     /// Cache entries by location.
@@ -45,9 +44,9 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub fn new(images_path: PathBuf, atlas_output_path: PathBuf) -> Self {
+    pub fn new(meta: CacheMetadata, images_path: PathBuf, atlas_output_path: PathBuf) -> Self {
         Self {
-            meta: CacheMetadata::default(),
+            meta,
             files: HashMap::new(),
             images_path,
             atlas_output_path,
