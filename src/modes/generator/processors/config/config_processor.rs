@@ -25,7 +25,7 @@ impl Processor for ConfigProcessor {
         Some(config)
     }
 
-    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
+    fn setup(&mut self, state: &mut State) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
 
         infoln!(
@@ -35,8 +35,8 @@ impl Processor for ConfigProcessor {
         );
 
         // output name
-        if config.output.name.is_empty() {
-            config.output.name = OutputConfig::default_name();
+        if state.config.output.name.is_empty() {
+            state.config.output.name = OutputConfig::default_name();
             config_status = ConfigStatus::Modified;
         }
 

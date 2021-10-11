@@ -6,7 +6,7 @@ mod track;
 pub use frame::Frame;
 pub use track::Track;
 
-use crate::graphics::{Error, GraphicSource};
+use crate::graphics::Error;
 
 #[derive(Debug)]
 pub struct Animation {
@@ -42,11 +42,8 @@ impl Animation {
         })
     }
 
-    pub fn push_frame(&mut self, graphic_source: GraphicSource, duration: u32) {
-        self.frames.push(Frame {
-            graphic_source,
-            duration,
-        });
+    pub fn push_frame(&mut self, frame: Frame) {
+        self.frames.push(frame);
     }
 
     pub fn push_track(&mut self, track: Track) {

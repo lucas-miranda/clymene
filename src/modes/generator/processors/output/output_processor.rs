@@ -2,6 +2,7 @@ use crate::{
     common::Verbosity,
     modes::generator::processors::{ConfigStatus, Processor, State},
     settings::{Config, OutputConfig, ProcessorConfig},
+    util,
 };
 use colored::Colorize;
 use std::{fs, io, path::PathBuf};
@@ -24,20 +25,20 @@ impl Processor for OutputProcessor {
         None
     }
 
-    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
+    fn setup(&mut self, state: &mut State) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
         infoln!(block, "Output");
 
-        let output_path = if config.output.path.is_empty() {
+        let output_path = if state.config.output.path.is_empty() {
             let p = OutputConfig::default_path();
             warnln!("Output directory path is empty, default value will be used.");
             let path = PathBuf::from(&p);
-            config.output.path = p;
+            state.config.output.path = p;
             config_status = ConfigStatus::Modified;
             path
         } else {
             traceln!("Using provided directory path");
-            PathBuf::from(&config.output.path)
+            PathBuf::from(&state.config.output.path)
         };
 
         // handle output folder path
@@ -56,30 +57,24 @@ impl Processor for OutputProcessor {
                     );
                 }
             }
-            Err(io_error) => {
-                match &io_error.kind() {
-                    io::ErrorKind::NotFound => {
-                        warnln!("Directory doesn't seems to exist");
+            Err(io_error) => match &io_error.kind() {
+                io::ErrorKind::NotFound => {
+                    warnln!("Directory doesn't seems to exist");
 
-                        infoln!(
-                            entry: decorator::Entry::None,
-                            "It'll be created right now..."
-                        );
+                    infoln!(
+                        entry: decorator::Entry::None,
+                        "It'll be created right now..."
+                    );
 
-                        fs::create_dir_all(&output_pathbuf).unwrap();
+                    fs::create_dir_all(&output_pathbuf).unwrap();
+                    util::wait_until(|| output_pathbuf.exists());
 
-                        // wait until folder is created
-                        while !output_pathbuf.exists() {
-                            std::thread::sleep(std::time::Duration::from_millis(10u64));
-                        }
-
-                        infoln!(last, "{}", "Created".green());
-                    }
-                    _ => {
-                        panic!("{}", io_error);
-                    }
+                    infoln!(last, "{}", "Created".green());
                 }
-            }
+                _ => {
+                    panic!("{}", io_error);
+                }
+            },
         }
 
         doneln!();
@@ -115,7 +110,7 @@ impl Processor for OutputProcessor {
                         if let Ok(output_modtime) = output_metadata.modified() {
                             let modtime = metadata.modified().unwrap();
 
-                            if modtime < output_modtime {
+                            if modtime <= output_modtime {
                                 infoln!(last, "{}", "Unchanged".blue().bold());
                                 continue;
                             }

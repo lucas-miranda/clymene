@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     graphics::{
-        animation::{Animation, Track},
+        animation::{Animation, Frame, Track},
         Graphic, Image,
     },
     modes::generator::processors::{
-        data::{FrameIndicesData, GraphicData},
+        data::{FrameData, FrameIndicesData, GraphicData},
         image::{GraphicSourceData, GraphicSourceDataSet},
     },
 };
@@ -32,9 +32,27 @@ pub struct CacheEntry {
     /// It's the path from cache root directory to this entry with stripped root directory.
     #[serde(skip)]
     pub location: PathBuf,
+
+    #[serde(skip)]
+    invalid: bool,
 }
 
 impl CacheEntry {
+    pub fn new(
+        modtime: SystemTime,
+        extension: String,
+        data: GraphicData,
+        location: PathBuf,
+    ) -> Self {
+        Self {
+            modtime,
+            extension,
+            data,
+            location,
+            invalid: false,
+        }
+    }
+
     pub fn retrieve_graphic(&self, source_path: &Path, image_root_path: &Path) -> Option<Graphic> {
         let graphic_dir_path = image_root_path.join(&self.location);
         let mut graphic_source_data_set = GraphicSourceDataSet::new();
@@ -81,13 +99,18 @@ impl CacheEntry {
         // register source images
         for (frame_index, source_data) in graphic_source_data_set.sources.drain(..).enumerate() {
             match self.data.frames.get(frame_index) {
-                Some(frame_data) => {
-                    match frame_data.duration {
-                        Some(duration) => animation.push_frame(source_data.source, duration),
-                        None => panic!("Animation's frame {} doesn't has a defined duration. From cache entry at '{}'.", frame_index, self.location.display())
-                    }
-                },
-                None => panic!("Frame {} data not found. From cache entry at '{}'.", frame_index, self.location.display())
+                Some(frame_data) => animation.push_frame(match frame_data {
+                    FrameData::Empty => Frame::Empty,
+                    FrameData::Contents { duration, .. } => Frame::Contents {
+                        graphic_source: source_data.source,
+                        duration: duration.unwrap_or_default(),
+                    },
+                }),
+                None => panic!(
+                    "Frame {} data not found. From cache entry at '{}'.",
+                    frame_index,
+                    self.location.display()
+                ),
             }
         }
 
@@ -114,5 +137,13 @@ impl CacheEntry {
         }
 
         Some(animation.into())
+    }
+
+    pub fn mark_as_invalid(&mut self) {
+        self.invalid = true;
+    }
+
+    pub fn is_invalid(&self) -> bool {
+        self.invalid
     }
 }

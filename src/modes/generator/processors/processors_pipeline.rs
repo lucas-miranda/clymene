@@ -17,15 +17,16 @@ impl<'a> ProcessorsPipeline<'a> {
 
     pub fn start(&mut self, config: &mut Config, args: &GeneratorModeArgs) {
         let mut config_status = ConfigStatus::NotModified;
+        let mut state = State::new(config, args);
 
         for processor in self.processors.iter_mut() {
-            if let Some(c) = processor.retrieve_processor_config(config) {
+            if let Some(c) = processor.retrieve_processor_config(state.config) {
                 if c.is_verbose() {
                     processor.verbose(true);
                 }
             }
 
-            match &processor.setup(config) {
+            match &processor.setup(&mut state) {
                 ConfigStatus::NotModified => (),
                 ConfigStatus::Modified => {
                     // save processor config status for later use
@@ -40,10 +41,11 @@ impl<'a> ProcessorsPipeline<'a> {
 
         if let ConfigStatus::Modified = config_status {
             // config was modified, we need to save it to keep updated
-            config.save_to_path(&args.global.config_filepath).unwrap();
+            state
+                .config
+                .save_to_path(&args.global.config_filepath)
+                .unwrap();
         }
-
-        let mut state = State::new(config, args.global.force);
 
         for processor in &self.processors {
             processor.execute(&mut state);

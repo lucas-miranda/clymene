@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::{
     graphics::{
-        animation::{Animation, Track},
+        animation::{Animation, Frame, Track},
         Graphic, GraphicSource, Image,
     },
     math::Rectangle,
@@ -55,7 +55,12 @@ impl FormatProcessor for RawFileProcessor {
                     if let Some(graphic_source) =
                         create_graphic_source(&frame, frame_index, output_dir_path)
                     {
-                        animation.push_frame(graphic_source, frame.duration())
+                        animation.push_frame(Frame::Contents {
+                            graphic_source,
+                            duration: frame.duration(),
+                        });
+                    } else {
+                        animation.push_frame(Frame::Empty);
                     }
                 }
 

@@ -154,12 +154,7 @@ impl<'a> ImageProcessor<'a> {
                 // ensure it's empty
                 if !util::fs::is_dir_empty(&output_path).unwrap() {
                     fs::remove_dir_all(&output_path).unwrap();
-
-                    let duration = std::time::Duration::from_millis(10u64);
-                    while output_path.exists() {
-                        std::thread::sleep(duration);
-                    }
-
+                    util::wait_until(|| !output_path.exists());
                     fs::create_dir(&output_path).unwrap();
                 }
             }
@@ -215,8 +210,8 @@ impl<'a> Processor for ImageProcessor<'a> {
         Some(&config.image)
     }
 
-    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
-        let input_pathbuf = PathBuf::from(&config.image.input_path);
+    fn setup(&mut self, state: &mut State) -> ConfigStatus {
+        let input_pathbuf = PathBuf::from(&state.config.image.input_path);
 
         infoln!(block, "Verifying image input path");
         traceln!("At {}", input_pathbuf.display().to_string().bold());
@@ -243,14 +238,14 @@ impl<'a> Processor for ImageProcessor<'a> {
             }
         }
 
-        let output_path = config.cache.images_path();
+        let output_path = state.config.cache.images_path();
 
         infoln!(block, "Verifying image output path");
         traceln!("At {}", output_path.display().to_string().bold());
 
         match output_path.metadata() {
             Ok(_metadata) => {
-                config.image.output_path = output_path;
+                state.config.image.output_path = output_path;
                 infoln!(last, "{}", "Ok".green());
             }
             Err(e) => {
@@ -274,7 +269,7 @@ impl<'a> Processor for ImageProcessor<'a> {
 
         for handler in &self.format_handlers {
             infoln!(block, "{}", handler.name().bold());
-            match handler.setup(config) {
+            match handler.setup(state.config) {
                 Ok(handler_config_status) => {
                     // update config status
 
@@ -340,11 +335,23 @@ impl<'a> Processor for ImageProcessor<'a> {
         infoln!(last; entry: decorator::Entry::Double, "Found {} files", file_count);
 
         if let Some(c) = &state.cache {
-            if c.is_updated() {
-                traceln!("Files arent modified and cache is updated");
-                doneln!();
-                return;
+            // check if should rescan source directory
+            if c.is_updated() && !state.graphic_output.is_requested() {
+                let current_cache_metadata = state.config.cache_metadata();
+
+                // check cached and current source directory's modtime
+                if c.meta.generation_metadata().image.source_directory_modtime
+                    == current_cache_metadata
+                        .generation_metadata()
+                        .image
+                        .source_directory_modtime
+                {
+                    infoln!(last, "{}", "Already Updated".green());
+                    return;
+                }
             }
+
+            infoln!("{}", "Needs Update".blue());
         }
 
         let source_files_handling_timer = Timer::start();
@@ -354,10 +361,13 @@ impl<'a> Processor for ImageProcessor<'a> {
             self.display_progress_bar(0, file_count, 0, 0);
         }
 
+        let force = state.args().global.force;
         let output = &mut state.graphic_output;
         let cache_images_path = state.config.cache.images_path();
         let mut succeeded_files = 0;
+        let mut new_files = 0;
         let mut failed_files = 0;
+        let mut failed_cache_retrieve = 0;
 
         for format_handler in &self.format_handlers {
             let source_files = format_handler
@@ -391,7 +401,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                     infoln!(block, "{}", location.display().to_string().bold().cyan());
                 }
 
-                if !state.force {
+                if !force {
                     match &mut state.cache {
                         Some(c) => {
                             if let Some(graphic) =
@@ -400,6 +410,8 @@ impl<'a> Processor for ImageProcessor<'a> {
                                 output.graphics.push(graphic);
                                 succeeded_files += 1;
                                 continue;
+                            } else {
+                                failed_cache_retrieve += 1;
                             }
                         }
                         None => panic!("Can't access cache. Isn't at valid state."),
@@ -453,6 +465,7 @@ impl<'a> Processor for ImageProcessor<'a> {
                         }
 
                         succeeded_files += 1;
+                        new_files += 1;
                     }
                     Err(e) => {
                         failed_files += 1;
@@ -476,6 +489,15 @@ impl<'a> Processor for ImageProcessor<'a> {
                         }
                     }
                 }
+            }
+        }
+
+        if new_files > 0 || failed_cache_retrieve > 0 {
+            // mark cache as outdated
+
+            match &mut state.cache {
+                Some(c) => c.mark_as_outdated(),
+                None => panic!("Can't access cache. Isn't at valid state."),
             }
         }
 

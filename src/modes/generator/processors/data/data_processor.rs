@@ -1,10 +1,11 @@
 use colored::Colorize;
+use std::fs;
 
 use crate::{
     common::Verbosity,
-    modes::generator::processors::{ConfigStatus, Processor, State},
+    modes::generator::processors::{output, ConfigStatus, Processor, State},
     settings::{Config, ProcessorConfig},
-    util::Timer,
+    util::{self, Timer},
 };
 
 use super::AtlasData;
@@ -15,9 +16,7 @@ pub struct DataProcessor {
 
 impl DataProcessor {
     pub fn new() -> Self {
-        Self {
-            verbose: false,
-        }
+        Self { verbose: false }
     }
 }
 
@@ -30,8 +29,8 @@ impl Processor for DataProcessor {
         Some(&config.data)
     }
 
-    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
-        config.data.prettify = config.data.prettify || config.prettify;
+    fn setup(&mut self, state: &mut State) -> ConfigStatus {
+        state.config.data.prettify = state.config.data.prettify || state.config.prettify;
         ConfigStatus::NotModified
     }
 
@@ -41,8 +40,33 @@ impl Processor for DataProcessor {
         let mut atlas_data = AtlasData::new();
 
         let cache = match &state.cache {
-            Some(c) => c,
-            None => panic!("Cache isn't available."),
+            Some(c) => {
+                if c.is_updated()
+                    && c.meta.generation_metadata().data.prettified == state.config.data.prettify
+                {
+                    // output file
+                    let output_atlas_data_path = state.config.cache.atlas_path().join(format!(
+                        "{}.data.json",
+                        state.config.output.name_or_default()
+                    ));
+
+                    match state.output.register_file(&output_atlas_data_path) {
+                        Ok(()) => {
+                            infoln!(last, "{}", "Already Updated".green());
+                            return;
+                        }
+                        Err(e) => match e {
+                            output::Error::FileExpected => {
+                                infoln!("Output file not found, regenerating it")
+                            }
+                            _ => panic!("{}", e),
+                        },
+                    }
+                }
+
+                c
+            }
+            None => panic!("Cache isn't available"),
         };
 
         infoln!(block, "Gathering graphics' data entries");
@@ -80,6 +104,14 @@ impl Processor for DataProcessor {
 
         traceln!("At {}", output_atlas_data_path.display().to_string().bold());
 
+        // remove file at path
+        if output_atlas_data_path.exists() {
+            fs::remove_file(&output_atlas_data_path).unwrap();
+
+            // wait until file is removed, if exists
+            util::wait_until(|| !output_atlas_data_path.exists());
+        }
+
         if state.config.data.prettify {
             atlas_data
                 .save_pretty_to_path(&output_atlas_data_path)
@@ -88,8 +120,11 @@ impl Processor for DataProcessor {
             atlas_data.save_to_path(&output_atlas_data_path).unwrap();
         }
 
+        // wait until files are written
+        util::wait_until(|| output_atlas_data_path.exists());
+
         // output
-        state.output.register_file(&output_atlas_data_path);
+        state.output.register_file(&output_atlas_data_path).unwrap();
 
         doneln_with_timer!(total_timer)
     }

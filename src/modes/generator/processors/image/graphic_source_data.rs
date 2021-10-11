@@ -68,40 +68,50 @@ fn get_regions(
     frame_index: u32,
     frames_data: &[FrameData],
 ) -> (Rectangle<u32>, Option<Rectangle<u32>>) {
-    let source_region;
-    let atlas_region;
+    let result_source_region;
+    let result_atlas_region;
 
     match frames_data.get(frame_index as usize) {
-        Some(frame_data) => {
-            source_region = Rectangle::with(
-                frame_data.source_region.x,
-                frame_data.source_region.y,
-                frame_data.source_region.width,
-                frame_data.source_region.height,
-            )
-            .unwrap_or_else(Rectangle::default);
-
-            atlas_region = if !frame_data.atlas_region.is_empty() {
-                Some(
-                    Rectangle::with(
-                        frame_data.atlas_region.x,
-                        frame_data.atlas_region.y,
-                        frame_data.atlas_region.width,
-                        frame_data.atlas_region.height,
-                    )
-                    .unwrap_or_else(Rectangle::default),
+        Some(frame_data) => match frame_data {
+            FrameData::Empty => {
+                result_source_region = Rectangle::default();
+                result_atlas_region = None;
+            }
+            FrameData::Contents {
+                atlas_region,
+                source_region,
+                ..
+            } => {
+                result_source_region = Rectangle::with(
+                    source_region.x,
+                    source_region.y,
+                    source_region.width,
+                    source_region.height,
                 )
-            } else {
-                None
-            };
-        }
+                .unwrap_or_else(Rectangle::default);
+
+                result_atlas_region = if !atlas_region.is_empty() {
+                    Some(
+                        Rectangle::with(
+                            atlas_region.x,
+                            atlas_region.y,
+                            atlas_region.width,
+                            atlas_region.height,
+                        )
+                        .unwrap_or_else(Rectangle::default),
+                    )
+                } else {
+                    None
+                };
+            }
+        },
         None => {
-            source_region = Rectangle::default();
-            atlas_region = None;
+            result_source_region = Rectangle::default();
+            result_atlas_region = None;
         }
     }
 
-    (source_region, atlas_region)
+    (result_source_region, result_atlas_region)
 }
 
 #[derive(Debug)]

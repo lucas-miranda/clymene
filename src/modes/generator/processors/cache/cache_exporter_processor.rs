@@ -8,10 +8,12 @@ use colored::Colorize;
 
 use crate::{
     common::Verbosity,
-    graphics::{animation::Track, Graphic},
+    graphics::{
+        animation::{Frame, Track},
+        Graphic,
+    },
     math::Rectangle,
     modes::generator::processors::{
-        cache::CacheMetadata,
         data::{FrameData, FrameIndicesData, GraphicData, TrackData},
         ConfigStatus, Processor, State,
     },
@@ -49,13 +51,20 @@ impl CacheExporterProcessor {
     }
 
     fn cache(&self, state: &mut State, cache_path: &Path) -> Result<(), super::SaveError> {
+        let current_metadata = state.config.cache_metadata();
+        let debug = state.args().global.debug;
+
         let cache = if let Some(c) = &mut state.cache {
+            if c.meta != current_metadata {
+                c.meta = current_metadata;
+            }
+
             c
         } else {
             infoln!("Initializing cache");
 
             state.cache = Some(Cache::new(
-                CacheMetadata::new(state.config.data.prettify),
+                current_metadata,
                 state.config.cache.images_path(),
                 state.config.cache.atlas_path(),
             ));
@@ -85,7 +94,7 @@ impl CacheExporterProcessor {
                     source_metadata = image.source_path.metadata().unwrap();
 
                     // extract data
-                    data.frames.push(FrameData {
+                    data.frames.push(FrameData::Contents {
                         atlas_region: match &image.graphic_source.atlas_region {
                             Some(atlas_region) => atlas_region.clone(),
                             None => panic!(
@@ -118,19 +127,22 @@ impl CacheExporterProcessor {
 
                     for (index, frame) in animation.frames.iter().enumerate() {
                         data.frames.push(
-                            FrameData {
-                                atlas_region: match &frame.graphic_source.atlas_region {
-                                    Some(atlas_region) => atlas_region.clone(),
-                                    None => {
-                                        if !frame.graphic_source.region.is_empty() {
-                                            errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", index, frame.graphic_source.region, source_path.display());
-                                        }
+                            match frame {
+                                Frame::Empty => FrameData::Empty,
+                                Frame::Contents { graphic_source, duration } => FrameData::Contents {
+                                    atlas_region: match &graphic_source.atlas_region {
+                                        Some(atlas_region) => atlas_region.clone(),
+                                        None => {
+                                            if !graphic_source.region.is_empty() {
+                                                errorln!("Atlas region isn't defined at Frame '{}' (graphic region: {}) from Animation '{}'", index, graphic_source.region, source_path.display());
+                                            }
 
-                                        Rectangle::default()
+                                            Rectangle::default()
+                                        },
                                     },
-                                },
-                                duration: Some(frame.duration),
-                                source_region: frame.graphic_source.region.clone()
+                                    duration: Some(*duration),
+                                    source_region: graphic_source.region.clone()
+                                }
                             }
                         );
                     }
@@ -173,7 +185,11 @@ impl CacheExporterProcessor {
         infoln!("Writing to file");
         traceln!("At {}", cache_path.display().to_string().bold());
 
-        cache.save_to_path(&cache_path).unwrap();
+        if debug && state.config.prettify {
+            cache.save_pretty_to_path(&cache_path).unwrap();
+        } else {
+            cache.save_to_path(&cache_path).unwrap();
+        }
 
         Ok(())
     }
@@ -233,7 +249,7 @@ impl Processor for CacheExporterProcessor {
         Some(&config.cache)
     }
 
-    fn setup(&mut self, _config: &mut Config) -> ConfigStatus {
+    fn setup(&mut self, _state: &mut State) -> ConfigStatus {
         ConfigStatus::NotModified
     }
 

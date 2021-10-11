@@ -9,7 +9,6 @@ pub enum Error {
     Load(LoadError),
     Save(SaveError),
     DirectoryExpected(PathBuf),
-    InvalidVersion { version: String, expected: String },
 }
 
 impl error::Error for Error {
@@ -18,7 +17,6 @@ impl error::Error for Error {
             Error::Load(load_error) => Some(load_error),
             Error::Save(save_error) => Some(save_error),
             Error::DirectoryExpected(_path) => None,
-            Error::InvalidVersion { .. } => None,
         }
     }
 }
@@ -31,11 +29,6 @@ impl Display for Error {
             Error::DirectoryExpected(path) => {
                 write!(f, "Directory expected at path '{}'", path.display())
             }
-            Error::InvalidVersion { version, expected } => write!(
-                f,
-                "Invalid cache version '{}', expected version '{}'",
-                version, expected
-            ),
         }
     }
 }

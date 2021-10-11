@@ -11,7 +11,7 @@ use tree_decorator::decorator;
 
 use crate::{
     graphics::{
-        animation::{Animation, Track},
+        animation::{Animation, Frame, Track},
         Graphic, Image,
     },
     math::Size,
@@ -303,12 +303,13 @@ impl FormatProcessor for CommandProcessor {
         for (frame_index, source_data) in graphic_sources_set.sources.drain(..).enumerate() {
             match aseprite_data.frames.get(frame_index) {
                 Some(frame_data) => {
-                    animation.push_frame(source_data.source, {
-                        if frame_data.duration < 0 {
+                    animation.push_frame(Frame::Contents {
+                        graphic_source: source_data.source,
+                        duration: if frame_data.duration < 0 {
                             0u32
                         } else {
                             frame_data.duration as u32
-                        }
+                        },
                     });
                 }
                 None => panic!(

@@ -20,7 +20,11 @@ mod error;
 pub use cache_entry::CacheEntry;
 pub use cache_exporter_processor::CacheExporterProcessor;
 pub use cache_importer_processor::CacheImporterProcessor;
-pub use cache_metadata::CacheMetadata;
+
+pub use cache_metadata::{
+    CacheMetadata, DataOutputMetadata, GenerationMetadata, ImageOutputMetadata,
+};
+
 pub use cache_status::CacheStatus;
 pub use error::{Error, LoadError, SaveError};
 
@@ -50,7 +54,7 @@ impl Cache {
             files: HashMap::new(),
             images_path,
             atlas_output_path,
-            outdated: true,
+            outdated: false,
         }
     }
 
@@ -115,6 +119,25 @@ impl Cache {
         self.save(&mut file)
     }
 
+    pub fn save_pretty(&self, file: &mut File) -> Result<(), SaveError> {
+        let mut buf_writer = BufWriter::new(file);
+        serde_json::to_writer_pretty(&mut buf_writer, &self).map_err(SaveError::Serialize)?;
+        buf_writer.flush().unwrap();
+
+        Ok(())
+    }
+
+    pub fn save_pretty_to_path<P: AsRef<Path>>(&self, filepath: P) -> Result<(), SaveError> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .append(false)
+            .create(true)
+            .open(filepath)
+            .unwrap();
+
+        self.save_pretty(&mut file)
+    }
+
     pub fn retrieve<'r, P: AsRef<Path> + Eq + Hash>(
         &'r self,
         location: P,
@@ -146,12 +169,12 @@ impl Cache {
 
         self.files.insert(
             location.as_ref().to_owned(),
-            RefCell::new(CacheEntry {
+            RefCell::new(CacheEntry::new(
                 modtime,
                 extension,
                 data,
-                location: location.as_ref().to_owned(),
-            }),
+                location.as_ref().to_owned(),
+            )),
         );
 
         Ok(())
@@ -165,7 +188,7 @@ impl Cache {
         !self.outdated
     }
 
-    pub(in crate::modes::generator::processors::cache) fn mark_as_outdated(&mut self) {
+    pub fn mark_as_outdated(&mut self) {
         if self.is_outdated() {
             return;
         }

@@ -7,15 +7,25 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct FrameData {
-    pub atlas_region: Rectangle<u32>,
-    pub duration: Option<u32>,
-    pub source_region: Rectangle<u32>,
+#[serde(untagged)]
+pub enum FrameData {
+    Empty,
+    Contents {
+        atlas_region: Rectangle<u32>,
+        duration: Option<u32>,
+        source_region: Rectangle<u32>,
+    },
 }
 
 impl From<&aseprite_handler::data::FrameData> for FrameData {
     fn from(aseprite_frame_data: &aseprite_handler::data::FrameData) -> Self {
-        Self {
+        if aseprite_frame_data.sprite_source_size.w == 0
+            || aseprite_frame_data.sprite_source_size.h == 0
+        {
+            return Self::Empty;
+        }
+
+        Self::Contents {
             atlas_region: Rectangle::default(),
             duration: {
                 match aseprite_frame_data.duration {

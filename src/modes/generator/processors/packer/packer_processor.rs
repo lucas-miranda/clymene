@@ -8,14 +8,14 @@ use tree_decorator::decorator;
 
 use crate::{
     common::Verbosity,
-    graphics::{Graphic, GraphicSource},
+    graphics::{animation::Frame, Graphic, GraphicSource},
     math::Size,
-    modes::generator::processors::{ConfigStatus, Processor, State},
+    modes::generator::processors::{output, ConfigStatus, Processor, State},
     settings::{Config, ProcessorConfig},
     util::Timer,
 };
 
-use super::{Error, Packer, RowTightPacker};
+use super::{Packer, RowTightPacker};
 
 const DEFAULT_ATLAS_SIZE: u32 = 1024;
 
@@ -30,50 +30,6 @@ impl PackerProcessor {
             verbose: false,
             packer: None,
         }
-    }
-
-    fn should_generate(&self, state: &State) -> Result<bool, Error> {
-        if let Some(cache) = &state.cache {
-            // verify if exists files at output path
-            let output_file_name = self.output_file_path(state.config);
-            match output_file_name.metadata() {
-                Ok(metadata) => {
-                    if !metadata.is_file() {
-                        traceln!(
-                            entry: decorator::Entry::None,
-                            "Expected output file {} isn't a file",
-                            output_file_name.display().to_string().bold()
-                        );
-                        return Err(Error::OutputFilepathAlreadyInUse(output_file_name));
-                    }
-                }
-                Err(e) => {
-                    if let Some(parent_path) = output_file_name.parent() {
-                        if !parent_path.exists() {
-                            return Err(Error::InvalidOutputDirectoryPath(parent_path.to_owned()));
-                        }
-                    }
-
-                    if let io::ErrorKind::NotFound = e.kind() {
-                        traceln!(
-                            entry: decorator::Entry::None,
-                            "Output file {} doesn't seems to exists",
-                            output_file_name.display().to_string().bold()
-                        );
-                        return Ok(true);
-                    }
-
-                    return Err(Error::IO(e));
-                }
-            }
-
-            // check if cache still is updated
-            if cache.is_updated() {
-                return Ok(false);
-            }
-        }
-
-        Ok(true)
     }
 
     fn generate_image(
@@ -140,16 +96,30 @@ impl Processor for PackerProcessor {
         Some(&config.packer)
     }
 
-    fn setup(&mut self, config: &mut Config) -> ConfigStatus {
+    fn setup(&mut self, state: &mut State) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
 
-        if config.packer.atlas_size == 0 {
-            config.packer.atlas_size = DEFAULT_ATLAS_SIZE;
+        infoln!(block, "Packing");
+
+        if state.config.packer.atlas_size == 0 {
+            state.config.packer.atlas_size = DEFAULT_ATLAS_SIZE;
             config_status = ConfigStatus::Modified;
         }
 
         // TODO  make a better way to select packer
         self.packer = Some(Box::new(RowTightPacker::new()));
+
+        if state.args().global.force {
+            state.graphic_output.request();
+        } else {
+            // check if will need to regenerate output file
+            if !self.output_file_path(state.config).exists() {
+                // ensure graphic output will be available at execute step
+                state.graphic_output.request();
+            }
+        }
+
+        doneln!();
 
         config_status
     }
@@ -160,22 +130,36 @@ impl Processor for PackerProcessor {
                 infoln!(block, "Packing");
                 let timer = Timer::start();
 
-                if state.force {
+                if state.args().global.force {
                     infoln!(dashed, "Force Generate");
                 } else {
                     infoln!(block, "Checking");
 
-                    if !self.should_generate(state).unwrap() {
-                        // output
-                        state
-                            .output
-                            .register_file(&self.output_file_path(state.config));
+                    match &state.cache {
+                        Some(c) => {
+                            if c.is_updated() {
+                                // output file
+                                match state
+                                    .output
+                                    .register_file(&self.output_file_path(state.config))
+                                {
+                                    Ok(()) => {
+                                        infoln!(last, "{}", "Already Updated".green());
+                                        doneln!();
+                                        return;
+                                    }
+                                    Err(e) => match e {
+                                        output::Error::FileExpected => {
+                                            infoln!("Output file not found")
+                                        }
+                                        _ => panic!("{}", e),
+                                    },
+                                }
+                            }
 
-                        infoln!(last, "{}", "Already Updated".green());
-                        infoln!(last, "{}", "Done".green());
-                        return;
-                    } else {
-                        infoln!(last, "{}", "Needs Update".blue());
+                            infoln!(last, "{}", "Needs Update".blue());
+                        }
+                        None => panic!("Cache isn't available"),
                     }
                 }
 
@@ -197,9 +181,14 @@ impl Processor for PackerProcessor {
                                 Graphic::Image(img) => {
                                     Some(Box::new(iter::once(&mut img.graphic_source)))
                                 }
-                                Graphic::Animation(anim) => Some(Box::new(
-                                    anim.frames.iter_mut().map(|f| &mut f.graphic_source),
-                                )),
+                                Graphic::Animation(anim) => {
+                                    Some(Box::new(anim.frames.iter_mut().filter_map(|f| match f {
+                                        Frame::Empty => None,
+                                        Frame::Contents { graphic_source, .. } => {
+                                            Some(graphic_source)
+                                        }
+                                    })))
+                                }
                                 Graphic::Empty => None,
                             }
                         },
@@ -262,7 +251,7 @@ impl Processor for PackerProcessor {
                 .unwrap();
 
                 // output
-                state.output.register_file(&cache_output_path);
+                state.output.register_file(&cache_output_path).unwrap();
 
                 doneln_with_timer!(timer);
             }
