@@ -51,7 +51,7 @@ impl CacheExporterProcessor {
     }
 
     fn cache(&self, state: &mut State, cache_path: &Path) -> Result<(), super::SaveError> {
-        let current_metadata = state.config.cache_metadata();
+        let current_metadata = state.create_cache_metadata();
         let debug = state.args().global.debug;
 
         let cache = if let Some(c) = &mut state.cache {

@@ -537,7 +537,7 @@ impl Processor for CacheImporterProcessor {
             cache_file_pathbuf.display().to_string().bold()
         );
 
-        let current_metadata = state.config.cache_metadata();
+        let current_metadata = state.create_cache_metadata();
         let state_cache;
 
         if state.args().global.force {

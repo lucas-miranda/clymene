@@ -1,7 +1,7 @@
 use std::{
     fs::{File, OpenOptions},
     io::{self, prelude::*, BufReader, BufWriter},
-    path::{Path, PathBuf},
+    path::Path,
 };
 
 use serde::{Deserialize, Serialize};
@@ -9,9 +9,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Verbosity,
     log::Logger,
-    modes::generator::processors::cache::{
-        CacheMetadata, DataOutputMetadata, GenerationMetadata, ImageOutputMetadata,
-    },
     settings::{
         CacheConfig, ConfigLoggerStatus, DataConfig, ImageConfig, LoadError, OutputConfig,
         PackerConfig, ProcessorConfig, SaveError,
@@ -105,24 +102,6 @@ impl Config {
             .unwrap();
 
         self.save(&file)
-    }
-
-    pub fn cache_metadata(&self) -> CacheMetadata {
-        let source_directory_path = PathBuf::from(&self.image.input_path);
-        let source_directory_modtime = source_directory_path
-            .metadata()
-            .unwrap()
-            .modified()
-            .unwrap();
-
-        CacheMetadata::new(GenerationMetadata {
-            image: ImageOutputMetadata {
-                source_directory_modtime,
-            },
-            data: DataOutputMetadata {
-                prettified: self.data.prettify,
-            },
-        })
     }
 }
 

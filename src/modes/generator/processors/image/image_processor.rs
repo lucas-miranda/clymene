@@ -337,7 +337,7 @@ impl<'a> Processor for ImageProcessor<'a> {
         if let Some(c) = &state.cache {
             // check if should rescan source directory
             if c.is_updated() && !state.graphic_output.is_requested() {
-                let current_cache_metadata = state.config.cache_metadata();
+                let current_cache_metadata = state.create_cache_metadata();
 
                 // check cached and current source directory's modtime
                 if c.meta.generation_metadata().image.source_directory_modtime

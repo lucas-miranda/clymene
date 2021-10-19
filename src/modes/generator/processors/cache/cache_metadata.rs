@@ -33,6 +33,8 @@ pub struct GenerationMetadata {
 #[derive(PartialEq, Serialize, Deserialize, Debug)]
 pub struct ImageOutputMetadata {
     pub source_directory_modtime: SystemTime,
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(PartialEq, Serialize, Deserialize, Debug)]

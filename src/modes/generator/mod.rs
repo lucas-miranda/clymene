@@ -16,7 +16,7 @@ use processors::{
     data::DataProcessor,
     image::{format_handlers::aseprite_handler, ImageProcessor},
     output::OutputProcessor,
-    packer::PackerProcessor,
+    packer::{self, PackerProcessor},
     ProcessorsPipeline,
 };
 
@@ -94,7 +94,7 @@ impl Mode for GeneratorMode {
             // handle source images to be at expected format
             .enqueue(image_processor)
             // retrieve every image and packs into a single atlas
-            .enqueue(PackerProcessor::new())
+            .enqueue(PackerProcessor::new(packer::RowTightPacker::new()))
             // exports cache entries into file format again (to be reusable in next usage)
             .enqueue(CacheExporterProcessor::new())
             // get every data from previous steps and packs it together into a nicer format
