@@ -31,13 +31,14 @@ impl<P: Packer> PackerProcessor<P> {
     }
 
     fn validate_output(&self, state: &mut State) -> bool {
-        let c = state.cache.as_ref().expect("Cache isn't available");
+        let cache = state.cache.as_ref().expect("Cache isn't available");
 
-        if !c.is_updated() {
+        if !cache.is_updated() {
             return false;
         }
 
-        let output_filepath = self.output_file_path(state.config);
+        let config = state.config.try_read().expect("Can't retrieve a read lock");
+        let output_filepath = self.output_file_path(&config);
 
         match output_filepath.metadata() {
             Ok(m) => {
@@ -129,24 +130,28 @@ impl<P: Packer> Processor for PackerProcessor<P> {
 
     fn setup(&mut self, state: &mut State) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
+        let mut c = state
+            .config
+            .try_write()
+            .expect("Can't retrieve a write lock");
 
         infoln!(block, "Packing");
 
-        if state.config.packer.atlas_size != 0 {
-            if state.config.packer.optimize && !math::is_power_2(state.config.packer.atlas_size) {
+        if c.packer.atlas_size != 0 {
+            if c.packer.optimize && !math::is_power_2(c.packer.atlas_size) {
                 state
                     .output
-                    .set_atlas_size(math::ceil_power_2(state.config.packer.atlas_size));
+                    .set_atlas_size(math::ceil_power_2(c.packer.atlas_size));
 
                 traceln!(
                     "Optimizing atlas size from {}x{0} to {}x{}",
-                    state.config.packer.atlas_size,
+                    c.packer.atlas_size,
                     state.output.atlas_width,
                     state.output.atlas_height,
                 );
             } else {
-                state.output.atlas_width = state.config.packer.atlas_size;
-                state.output.atlas_height = state.config.packer.atlas_size;
+                state.output.atlas_width = c.packer.atlas_size;
+                state.output.atlas_height = c.packer.atlas_size;
                 traceln!(
                     "Using provided atlas size {}x{}",
                     state.output.atlas_width,
@@ -155,19 +160,16 @@ impl<P: Packer> Processor for PackerProcessor<P> {
             }
         } else {
             // store default value at config
-            state.config.packer.atlas_size = state.output.atlas_width;
+            c.packer.atlas_size = state.output.atlas_width;
             config_status = ConfigStatus::Modified;
 
-            traceln!(
-                "Using default atlas size {}x{0}",
-                state.config.packer.atlas_size
-            );
+            traceln!("Using default atlas size {}x{0}", c.packer.atlas_size);
         }
 
         if state.args().global.force {
             state.graphic_output.request();
         } else {
-            let output_filepath = self.output_file_path(state.config);
+            let output_filepath = self.output_file_path(&c);
 
             // check if will need to regenerate output file
             // and ensure graphic output will be available at execute step
@@ -195,7 +197,7 @@ impl<P: Packer> Processor for PackerProcessor<P> {
         config_status
     }
 
-    fn execute(&self, state: &mut State) {
+    fn execute(&mut self, state: &mut State) {
         infoln!(block, "Packing");
         let timer = Timer::start();
 
@@ -251,7 +253,8 @@ impl<P: Packer> Processor for PackerProcessor<P> {
         infoln!(last, "{}", "Done".green());
         infoln!("Generating output");
 
-        let atlas_dir_path = state.config.cache.atlas_path();
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
+        let atlas_dir_path = c.cache.atlas_path();
         traceln!(
             entry: decorator::Entry::None,
             "With output path {}",
@@ -278,7 +281,7 @@ impl<P: Packer> Processor for PackerProcessor<P> {
         }
 
         // generate atlas file at cache output path
-        let cache_output_path = self.output_file_path(state.config);
+        let cache_output_path = self.output_file_path(&c);
 
         infoln!(
             "Exporting to file {}",

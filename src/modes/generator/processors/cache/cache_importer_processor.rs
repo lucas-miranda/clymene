@@ -29,10 +29,11 @@ impl CacheImporterProcessor {
     }
 
     fn initialize_cache(&self, state: &State, metadata: CacheMetadata) -> Cache {
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
+
         traceln!(block, "Creating cache directories");
 
-        let cache_pathbuf =
-            PathBuf::from(&state.config.cache.path).join(&state.config.cache.identifier);
+        let cache_pathbuf = PathBuf::from(&c.cache.path).join(&c.cache.identifier);
 
         if cache_pathbuf.is_dir() {
             traceln!("Cleaning directories");
@@ -55,11 +56,7 @@ impl CacheImporterProcessor {
         self.ensure_exists_subdir(&cache_pathbuf, "images").unwrap();
 
         traceln!("Initializing cache file");
-        let mut cache = Cache::new(
-            metadata,
-            state.config.cache.images_path(),
-            state.config.cache.atlas_path(),
-        );
+        let mut cache = Cache::new(metadata, c.cache.images_path(), c.cache.atlas_path());
 
         // always start outdated
         cache.mark_as_outdated();
@@ -77,7 +74,8 @@ impl CacheImporterProcessor {
     }
 
     fn handle_cache(&self, state: &State, cache: &mut Cache) {
-        let cache_dir_pathbuf = state.config.cache.root_path();
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
+        let cache_dir_pathbuf = c.cache.root_path();
 
         // atlas subdir
         self.ensure_exists_subdir(&cache_dir_pathbuf, "atlas")
@@ -88,13 +86,13 @@ impl CacheImporterProcessor {
             .unwrap();
 
         infoln!(block, "Verifying");
-        self.verify_cache_status(&state.config.image.input_path, cache);
+        self.verify_cache_status(&c.image.input_path, cache);
         doneln!();
 
         // remove invalid cache entries
         // checking if directory entry still exists
         infoln!(block, "Removing invalid cache entries");
-        let cache_images_path = state.config.cache.images_path();
+        let cache_images_path = c.cache.images_path();
         let removing_entries_timer = Timer::start();
 
         cache.files.retain(|location, entry| {
@@ -466,15 +464,19 @@ impl Processor for CacheImporterProcessor {
 
     fn setup(&mut self, state: &mut State) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
+        let mut c = state
+            .config
+            .try_write()
+            .expect("Can't retrieve a write lock");
 
         infoln!(block, "Validating cache base directory");
 
         // handle cache output directory path
-        let cache_dir_pathbuf = self.get_or_create_output(&state.config.cache.path);
+        let cache_dir_pathbuf = self.get_or_create_output(&c.cache.path);
 
-        if cache_dir_pathbuf != PathBuf::from(&state.config.cache.path) {
+        if cache_dir_pathbuf != PathBuf::from(&c.cache.path) {
             config_status = ConfigStatus::Modified;
-            state.config.cache.path = cache_dir_pathbuf.display().to_string();
+            c.cache.path = cache_dir_pathbuf.display().to_string();
         }
 
         // cache identifier
@@ -482,11 +484,11 @@ impl Processor for CacheImporterProcessor {
         traceln!(
             entry: decorator::Entry::None,
             "At cache directory {}",
-            state.config.cache.path.bold()
+            c.cache.path.bold()
         );
 
         let identifier =
-            self.get_or_create_cache_identifier(&state.config.cache.identifier, &cache_dir_pathbuf);
+            self.get_or_create_cache_identifier(&c.cache.identifier, &cache_dir_pathbuf);
 
         // create cache instance path
         let cache_instance_path = cache_dir_pathbuf.join(&identifier);
@@ -516,19 +518,21 @@ impl Processor for CacheImporterProcessor {
             }
         }
 
-        if identifier != state.config.cache.identifier {
+        if identifier != c.cache.identifier {
             config_status = ConfigStatus::Modified;
-            state.config.cache.identifier = identifier;
+            c.cache.identifier = identifier;
         }
 
         config_status
     }
 
-    fn execute(&self, state: &mut State) {
+    fn execute(&mut self, state: &mut State) {
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
+
         infoln!(block, "Checking cache version");
         let total_timer = Timer::start();
 
-        let cache_dir_pathbuf = state.config.cache.root_path();
+        let cache_dir_pathbuf = c.cache.root_path();
         let cache_file_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
         traceln!(
@@ -545,8 +549,8 @@ impl Processor for CacheImporterProcessor {
             state_cache = self.initialize_cache(state, current_metadata);
             infoln!(last, "{}", "Done".green());
         } else {
-            let images_path = state.config.cache.images_path();
-            let atlas_output_path = state.config.cache.atlas_path();
+            let images_path = c.cache.images_path();
+            let atlas_output_path = c.cache.atlas_path();
 
             match Cache::load_from_path(&cache_file_pathbuf, images_path, atlas_output_path) {
                 Ok(mut c) => {

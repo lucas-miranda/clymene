@@ -27,18 +27,23 @@ impl Processor for OutputProcessor {
 
     fn setup(&mut self, state: &mut State) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
+        let mut c = state
+            .config
+            .try_write()
+            .expect("Can't retrieve a write lock");
+
         infoln!(block, "Output");
 
-        let output_path = if state.config.output.path.is_empty() {
+        let output_path = if c.output.path.is_empty() {
             let p = OutputConfig::default_path();
             warnln!("Output directory path is empty, default value will be used.");
             let path = PathBuf::from(&p);
-            state.config.output.path = p;
+            c.output.path = p;
             config_status = ConfigStatus::Modified;
             path
         } else {
             traceln!("Using provided directory path");
-            PathBuf::from(&state.config.output.path)
+            PathBuf::from(&c.output.path)
         };
 
         // handle output folder path
@@ -81,9 +86,10 @@ impl Processor for OutputProcessor {
         config_status
     }
 
-    fn execute(&self, state: &mut State) {
+    fn execute(&mut self, state: &mut State) {
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
         infoln!(block, "Output");
-        let output = PathBuf::from(&state.config.output.path);
+        let output = PathBuf::from(&c.output.path);
         infoln!("To {}", output.display().to_string().bold());
 
         if !output.is_dir() {

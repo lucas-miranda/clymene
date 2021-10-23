@@ -27,6 +27,10 @@ impl Processor for ConfigProcessor {
 
     fn setup(&mut self, state: &mut State) -> ConfigStatus {
         let mut config_status = ConfigStatus::NotModified;
+        let mut c = state
+            .config
+            .try_write()
+            .expect("Can't retrieve a write lock");
 
         infoln!(
             block,
@@ -35,8 +39,8 @@ impl Processor for ConfigProcessor {
         );
 
         // output name
-        if state.config.output.name.is_empty() {
-            state.config.output.name = OutputConfig::default_name();
+        if c.output.name.is_empty() {
+            c.output.name = OutputConfig::default_name();
             config_status = ConfigStatus::Modified;
         }
 
@@ -45,7 +49,7 @@ impl Processor for ConfigProcessor {
         config_status
     }
 
-    fn execute(&self, _state: &mut State) {
+    fn execute(&mut self, _state: &mut State) {
         // there is nothing to do at this phase
     }
 }

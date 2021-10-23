@@ -78,7 +78,7 @@ impl ArgsHandler for GeneratorMode {
 }
 
 impl Mode for GeneratorMode {
-    fn run(mut config: Config, args: &Self::ModeArgs) {
+    fn run(config: Config, args: &Self::ModeArgs) {
         let processing_timer = Timer::start();
 
         let mut image_processor = ImageProcessor::new();
@@ -101,7 +101,7 @@ impl Mode for GeneratorMode {
             .enqueue(DataProcessor::new())
             // copies registered output files from cache to user output dir path
             .enqueue(OutputProcessor::default())
-            .start(&mut config, args);
+            .start(config, args);
 
         println!();
         infoln!(block, "{}", "Atlas Completed".magenta().bold());

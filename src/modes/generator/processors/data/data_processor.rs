@@ -30,25 +30,32 @@ impl Processor for DataProcessor {
     }
 
     fn setup(&mut self, state: &mut State) -> ConfigStatus {
-        state.config.data.prettify = state.config.data.prettify || state.config.prettify;
+        let mut c = state
+            .config
+            .try_write()
+            .expect("Can't retrieve a write lock");
+
+        c.data.prettify = c.data.prettify || c.prettify;
         ConfigStatus::NotModified
     }
 
-    fn execute(&self, state: &mut State) {
+    fn execute(&mut self, state: &mut State) {
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
+
         infoln!(block, "Processing data");
         let total_timer = Timer::start();
         let mut atlas_data = AtlasData::new();
 
         let cache = match &state.cache {
-            Some(c) => {
-                if c.is_updated()
-                    && c.meta.generation_metadata().data.prettified == state.config.data.prettify
+            Some(cache) => {
+                if cache.is_updated()
+                    && cache.meta.generation_metadata().data.prettified == c.data.prettify
                 {
                     // output file
-                    let output_atlas_data_path = state.config.cache.atlas_path().join(format!(
-                        "{}.data.json",
-                        state.config.output.name_or_default()
-                    ));
+                    let output_atlas_data_path = c
+                        .cache
+                        .atlas_path()
+                        .join(format!("{}.data.json", c.output.name_or_default()));
 
                     match state.output.register_file(&output_atlas_data_path) {
                         Ok(()) => {
@@ -64,7 +71,7 @@ impl Processor for DataProcessor {
                     }
                 }
 
-                c
+                cache
             }
             None => panic!("Cache isn't available"),
         };
@@ -91,12 +98,12 @@ impl Processor for DataProcessor {
 
         doneln_with_timer!(gathering_graphics_timer);
 
-        let output_atlas_data_path = state.config.cache.atlas_path().join(format!(
-            "{}.data.json",
-            state.config.output.name_or_default()
-        ));
+        let output_atlas_data_path = c
+            .cache
+            .atlas_path()
+            .join(format!("{}.data.json", c.output.name_or_default()));
 
-        if state.config.data.prettify {
+        if c.data.prettify {
             infoln!("Exporting prettified data to file");
         } else {
             infoln!("Exporting data to file");
@@ -112,7 +119,7 @@ impl Processor for DataProcessor {
             util::wait_until(|| !output_atlas_data_path.exists());
         }
 
-        if state.config.data.prettify {
+        if c.data.prettify {
             atlas_data
                 .save_pretty_to_path(&output_atlas_data_path)
                 .unwrap();

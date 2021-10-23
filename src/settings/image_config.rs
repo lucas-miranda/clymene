@@ -14,6 +14,9 @@ pub struct ImageConfig {
     pub verbose: bool,
 
     #[serde(default)]
+    pub jobs: i32,
+
+    #[serde(default)]
     pub input_path: String,
 
     #[serde(skip)]
@@ -36,9 +39,10 @@ impl Default for ImageConfig {
     fn default() -> Self {
         Self {
             verbose: false,
+            jobs: i32::default(),
             input_path: String::default(),
             output_path: PathBuf::default(),
-            display: DisplayKind::Simple,
+            display: ImageConfig::default_display(),
             aseprite: AsepriteConfig::default(),
         }
     }

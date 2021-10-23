@@ -15,14 +15,18 @@ impl<'a> ProcessorsPipeline<'a> {
         }
     }
 
-    pub fn start(&mut self, config: &mut Config, args: &GeneratorModeArgs) {
+    pub fn start(&mut self, config: Config, args: &GeneratorModeArgs) {
         let mut config_status = ConfigStatus::NotModified;
         let mut state = State::new(config, args);
 
         for processor in self.processors.iter_mut() {
-            if let Some(c) = processor.retrieve_processor_config(state.config) {
-                if c.is_verbose() {
-                    processor.verbose(true);
+            {
+                let config = state.config.try_read().expect("Can't retrieve a read lock");
+
+                if let Some(c) = processor.retrieve_processor_config(&config) {
+                    if c.is_verbose() {
+                        processor.verbose(true);
+                    }
                 }
             }
 
@@ -41,13 +45,12 @@ impl<'a> ProcessorsPipeline<'a> {
 
         if let ConfigStatus::Modified = config_status {
             // config was modified, we need to save it to keep updated
-            state
-                .config
-                .save_to_path(&args.global.config_filepath)
-                .unwrap();
+            let config = state.config.try_read().expect("Can't retrieve a read lock");
+
+            config.save_to_path(&args.global.config_filepath).unwrap();
         }
 
-        for processor in &self.processors {
+        for processor in self.processors.iter_mut() {
             processor.execute(&mut state);
             println!();
         }

@@ -112,6 +112,7 @@ dependencies = [
  "directories",
  "image",
  "num-traits",
+ "num_cpus",
  "rand",
  "regex",
  "serde",

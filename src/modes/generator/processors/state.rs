@@ -4,12 +4,15 @@ use super::{
     output::Output,
 };
 
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    sync::{Arc, RwLock},
+};
 
 use crate::{modes::generator::GeneratorModeArgs, settings::Config};
 
 pub struct State<'a> {
-    pub config: &'a mut Config,
+    pub config: Arc<RwLock<Config>>,
     pub cache: Option<Cache>,
     pub graphic_output: GraphicOutput,
     pub output: Output,
@@ -17,11 +20,11 @@ pub struct State<'a> {
 }
 
 impl<'a> State<'a> {
-    pub fn new<'c>(config: &'c mut Config, args: &'c GeneratorModeArgs) -> State<'c> {
+    pub fn new<'c>(config: Config, args: &'c GeneratorModeArgs) -> State<'c> {
         let output = Output::new(config.packer.atlas_size, config.packer.atlas_size);
 
         State {
-            config,
+            config: Arc::new(RwLock::new(config)),
             cache: None,
             graphic_output: GraphicOutput::new(),
             output,
@@ -34,7 +37,9 @@ impl<'a> State<'a> {
     }
 
     pub fn create_cache_metadata(&self) -> CacheMetadata {
-        let source_directory_path = PathBuf::from(&self.config.image.input_path);
+        let c = self.config.try_read().expect("Can't retrieve a read lock");
+
+        let source_directory_path = PathBuf::from(&c.image.input_path);
         let source_directory_modtime = source_directory_path
             .metadata()
             .unwrap()
@@ -48,7 +53,7 @@ impl<'a> State<'a> {
                 height: self.output.atlas_height,
             },
             data: DataOutputMetadata {
-                prettified: self.config.data.prettify,
+                prettified: c.data.prettify,
             },
         })
     }

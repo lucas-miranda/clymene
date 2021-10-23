@@ -1,10 +1,10 @@
-use colored::Colorize;
+//use colored::Colorize;
 use std::{
     fs::OpenOptions,
     io::{Read, Seek, SeekFrom},
     path::Path,
 };
-use tree_decorator::decorator;
+//use tree_decorator::decorator;
 
 use crate::{
     common::Verbosity,
@@ -22,7 +22,7 @@ const ASEPRITE_FILE_MAGIC_NUMBER: [u8; 2] = [0xE0, 0xA5];
 
 pub struct AsepriteFormatHandler {
     verbose: bool,
-    processor: Box<dyn FormatProcessor>,
+    processor: Box<dyn FormatProcessor + Send + Sync + 'static>,
 }
 
 impl AsepriteFormatHandler {
@@ -89,20 +89,24 @@ impl FormatProcessor for AsepriteFormatHandler {
         output_dir_path: &Path,
         config: &Config,
     ) -> Result<Graphic, Error> {
+        /*
         traceln!(
             entry: decorator::Entry::None,
             "Source filepath: {}",
             source_file_path.display().to_string().bold()
         );
+        */
 
         self.validate_file(source_file_path)?;
 
+        /*
         // verify output directory
         traceln!(
             entry: decorator::Entry::None,
             "Output dir: {}",
             output_dir_path.display().to_string().bold()
         );
+        */
 
         if !output_dir_path.is_dir() {
             return Err(Error::DirectoryExpected);

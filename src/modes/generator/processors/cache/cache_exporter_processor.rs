@@ -51,6 +51,7 @@ impl CacheExporterProcessor {
     }
 
     fn cache(&self, state: &mut State, cache_path: &Path) -> Result<(), super::SaveError> {
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
         let current_metadata = state.create_cache_metadata();
         let debug = state.args().global.debug;
 
@@ -65,15 +66,15 @@ impl CacheExporterProcessor {
 
             state.cache = Some(Cache::new(
                 current_metadata,
-                state.config.cache.images_path(),
-                state.config.cache.atlas_path(),
+                c.cache.images_path(),
+                c.cache.atlas_path(),
             ));
 
             state.cache.as_mut().unwrap()
         };
 
         // insert graphics to cache (if isn't already registered)
-        let cache_images_path = state.config.cache.images_path();
+        let cache_images_path = c.cache.images_path();
 
         infoln!(block, "Registering generated graphics and data");
         let timer = Timer::start();
@@ -87,7 +88,7 @@ impl CacheExporterProcessor {
                 Graphic::Image(image) => {
                     source_path = &image.source_path;
                     location = source_path
-                        .strip_prefix(&state.config.image.input_path)
+                        .strip_prefix(&c.image.input_path)
                         .unwrap()
                         .with_extension("");
 
@@ -111,7 +112,7 @@ impl CacheExporterProcessor {
                 Graphic::Animation(animation) => {
                     source_path = &animation.source_path;
                     location = source_path
-                        .strip_prefix(&state.config.image.input_path)
+                        .strip_prefix(&c.image.input_path)
                         .unwrap()
                         .with_extension("");
 
@@ -185,7 +186,7 @@ impl CacheExporterProcessor {
         infoln!("Writing to file");
         traceln!("At {}", cache_path.display().to_string().bold());
 
-        if debug && state.config.prettify {
+        if debug && c.prettify {
             cache.save_pretty_to_path(&cache_path).unwrap();
         } else {
             cache.save_to_path(&cache_path).unwrap();
@@ -253,12 +254,16 @@ impl Processor for CacheExporterProcessor {
         ConfigStatus::NotModified
     }
 
-    fn execute(&self, state: &mut State) {
+    fn execute(&mut self, state: &mut State) {
         infoln!(block, "Cache result");
         let total_timer = Timer::start();
         infoln!("Preparing to update entries");
 
-        let cache_dir_pathbuf = state.config.cache.root_path();
+        let cache_dir_pathbuf = {
+            let c = state.config.try_read().expect("Can't retrieve a read lock");
+            c.cache.root_path()
+        };
+
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
         let backup_path = match self.backup(cache_pathbuf.as_path()) {
