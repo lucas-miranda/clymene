@@ -20,7 +20,7 @@ pub struct State<'a> {
 }
 
 impl<'a> State<'a> {
-    pub fn new<'c>(config: Config, args: &'c GeneratorModeArgs) -> State<'c> {
+    pub fn new(config: Config, args: &GeneratorModeArgs) -> State<'_> {
         let output = Output::new(config.packer.atlas_size, config.packer.atlas_size);
 
         State {

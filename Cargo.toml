@@ -8,7 +8,7 @@ homepage = "https://github.com/lucas-miranda/clymene"
 repository = "https://github.com/lucas-miranda/clymene"
 readme = "README.md"
 keywords = ["atlas", "packer", "graphics", "aseprite"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 serde = { version = "1.0.129", features = ["derive"] }

@@ -22,114 +22,114 @@ macro_rules! is_debug_enabled {
 #[allow(unused_macros)]
 macro_rules! info {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
-        print!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*));
+        print!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*))
     };
 
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )*) => {
-        print!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*));
+        print!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*))
     };
 
     ($str:literal $($arg:tt)*) => {
-        print!("{}", tree_decorator::tree_item!($str $( $arg )*));
+        print!("{}", tree_decorator::tree_item!($str $( $arg )*))
     };
 
     () => {
-        print!("{}", tree_decorator::tree_item!());
+        print!("{}", tree_decorator::tree_item!())
     };
 }
 
 #[allow(unused_macros)]
 macro_rules! infoln {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
-        println!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*));
+        println!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*))
     };
 
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )*) => {
-        println!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*));
+        println!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*))
     };
 
     ($str:literal $($arg:tt)*) => {
-        println!("{}", tree_decorator::tree_item!($str $( $arg )*));
+        println!("{}", tree_decorator::tree_item!($str $( $arg )*))
     };
 
     () => {
-        println!("{}", tree_decorator::tree_item!());
+        println!("{}", tree_decorator::tree_item!())
     };
 }
 
 #[allow(unused_macros)]
 macro_rules! warn {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
-        print!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*));
+        print!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*))
     };
 
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )*) => {
-        print!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*));
+        print!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*))
     };
 
     ($str:literal $($arg:tt)*) => {
-        print!("{}", tree_decorator::tree_item!($str $( $arg )*));
+        print!("{}", tree_decorator::tree_item!($str $( $arg )*))
     };
 
     () => {
-        print!("{}", tree_decorator::tree_item!());
+        print!("{}", tree_decorator::tree_item!())
     };
 }
 
 #[allow(unused_macros)]
 macro_rules! warnln {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
-        println!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*));
+        println!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*))
     };
 
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )*) => {
-        println!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*));
+        println!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*))
     };
 
     ($str:literal $($arg:tt)*) => {
-        println!("{}", tree_decorator::tree_item!($str $( $arg )*));
+        println!("{}", tree_decorator::tree_item!($str $( $arg )*))
     };
 
     () => {
-        println!("{}", tree_decorator::tree_item!());
+        println!("{}", tree_decorator::tree_item!())
     };
 }
 
 #[allow(unused_macros)]
 macro_rules! error {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
-        print!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*));
+        print!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*))
     };
 
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )*) => {
-        print!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*));
+        print!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*))
     };
 
     ($str:literal $($arg:tt)*) => {
-        print!("{}", tree_decorator::tree_item!($str $( $arg )*));
+        print!("{}", tree_decorator::tree_item!($str $( $arg )*))
     };
 
     () => {
-        print!("{}", tree_decorator::tree_item!());
+        print!("{}", tree_decorator::tree_item!())
     };
 }
 
 #[allow(unused_macros)]
 macro_rules! errorln {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
-        println!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*));
+        println!("{}", tree_decorator::tree_item!($first_style_name $( : $ first_style_value )? $( ; $other_style_name $( : $other_style_value )? )* , $str $( $arg )*))
     };
 
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )*) => {
-        println!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*));
+        println!("{}", tree_decorator::tree_item!($first_style_name $( : $first_style_value )? $( ; $other_style_name $( : $other_style_value )? )*))
     };
 
     ($str:literal $($arg:tt)*) => {
-        println!("{}", tree_decorator::tree_item!($str $( $arg )*));
+        println!("{}", tree_decorator::tree_item!($str $( $arg )*))
     };
 
     () => {
-        println!("{}", tree_decorator::tree_item!());
+        println!("{}", tree_decorator::tree_item!())
     };
 }
 

@@ -41,7 +41,7 @@ impl ImageProcessor {
         &mut self,
         handler: H,
     ) -> &mut Self {
-        self.format_handlers.push(Arc::new(Box::new(handler)));
+        self.format_handlers.push(Arc::new(handler));
         self
     }
 
@@ -214,26 +214,24 @@ impl Processor for ImageProcessor {
                 DisplayKind::Simple => (),
                 _ => infoln!("{}", "Force Update".bright_yellow()),
             }
-        } else {
-            if let Some(c) = &state.cache {
-                // check if should rescan source directory
-                if c.is_updated() && !state.graphic_output.is_requested() {
-                    let current_cache_metadata = state.create_cache_metadata();
+        } else if let Some(c) = &state.cache {
+            // check if should rescan source directory
+            if c.is_updated() && !state.graphic_output.is_requested() {
+                let current_cache_metadata = state.create_cache_metadata();
 
-                    // check cached and current source directory's modtime
-                    if c.meta.generation_metadata().image.source_directory_modtime
-                        == current_cache_metadata
-                            .generation_metadata()
-                            .image
-                            .source_directory_modtime
-                    {
-                        infoln!(last, "{}", "Already Updated".green());
-                        return;
-                    }
+                // check cached and current source directory's modtime
+                if c.meta.generation_metadata().image.source_directory_modtime
+                    == current_cache_metadata
+                        .generation_metadata()
+                        .image
+                        .source_directory_modtime
+                {
+                    infoln!(last, "{}", "Already Updated".green());
+                    return;
                 }
-
-                infoln!("{}", "Needs Update".blue());
             }
+
+            infoln!("{}", "Needs Update".blue());
         }
 
         // prepare processing threads
@@ -250,16 +248,13 @@ impl Processor for ImageProcessor {
             let (processing_sender, processor_receiver) = channel();
             let c_lock = Arc::clone(&state.config);
 
-            let join_handle = thread::spawn(move || loop {
-                match processing_receiver.recv().unwrap() {
-                    Process::Request(data) => {
-                        let c = c_lock
-                            .try_read()
-                            .expect("Can't retrieve a read lock at child thread");
+            let join_handle = thread::spawn(move || {
+                while let Process::Request(data) = processing_receiver.recv().unwrap() {
+                    let c = c_lock
+                        .try_read()
+                        .expect("Can't retrieve a read lock at child thread");
 
-                        processing_sender.send(data.process(c)).unwrap();
-                    }
-                    Process::Stop => break,
+                    processing_sender.send(data.process(c)).unwrap();
                 }
             });
 

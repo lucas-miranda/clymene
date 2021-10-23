@@ -149,7 +149,7 @@ fn crop_empty_space(rows: EnumerateRows<'_, Rgba<u8>>) -> Rectangle<u32> {
         }
     }
 
-    source.unwrap_or_else(Rectangle::default)
+    source.unwrap_or_default()
 }
 
 fn export_graphic(

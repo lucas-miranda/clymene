@@ -88,7 +88,7 @@ fn get_regions(
                     source_region.width,
                     source_region.height,
                 )
-                .unwrap_or_else(Rectangle::default);
+                .unwrap_or_default();
 
                 result_atlas_region = if !atlas_region.is_empty() {
                     Some(
@@ -98,7 +98,7 @@ fn get_regions(
                             atlas_region.width,
                             atlas_region.height,
                         )
-                        .unwrap_or_else(Rectangle::default),
+                        .unwrap_or_default(),
                     )
                 } else {
                     None

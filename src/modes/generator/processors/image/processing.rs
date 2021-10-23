@@ -116,7 +116,7 @@ impl Processing {
 
                 if !force {
                     if let Some(graphic) =
-                        self.retrieve_from_cache(&location, source_file, cache, &display_kind)
+                        self.retrieve_from_cache(&location, source_file, cache, display_kind)
                     {
                         output.graphics.push(graphic);
                         self.succeeded_files += 1;

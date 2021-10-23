@@ -39,7 +39,7 @@ impl From<&aseprite_handler::data::FrameData> for FrameData {
                 aseprite_frame_data.sprite_source_size.w,
                 aseprite_frame_data.sprite_source_size.h,
             )
-            .unwrap_or_else(Rectangle::default),
+            .unwrap_or_default(),
         }
     }
 }

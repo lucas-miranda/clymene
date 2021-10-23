@@ -9,7 +9,7 @@ macro_rules! doneln {
                 "Done".green(),
                 format!($str $( $arg )*),
             ),
-        );
+        )
     };
 
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )*) => {
@@ -21,7 +21,7 @@ macro_rules! doneln {
                 "{}",
                 "Done".green(),
             ),
-        );
+        )
     };
 
     ($str:literal $($arg:tt)*) => {
@@ -33,7 +33,7 @@ macro_rules! doneln {
                 "Done".green(),
                 format!($str $( $arg )*),
             ),
-        );
+        )
     };
 
     () => {
@@ -44,12 +44,12 @@ macro_rules! doneln {
                 "{}",
                 "Done".green(),
             ),
-        );
+        )
     };
 }
 
 macro_rules! doneln_with_timer {
     ($timer:expr) => {
-        doneln!(" {}", format!("{}s", $timer.end_secs_str()).bright_black());
+        doneln!(" {}", format!("{}s", $timer.end_secs_str()).bright_black())
     };
 }

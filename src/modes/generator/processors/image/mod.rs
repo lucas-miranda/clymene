@@ -25,7 +25,7 @@ pub use graphic_source_data_set::GraphicSourceDataSet;
 pub use image_processor::ImageProcessor;
 use processing::Processing;
 
-type FormatHandlerEntry = Arc<Box<dyn FormatHandler + Sync + Send + 'static>>;
+type FormatHandlerEntry = Arc<dyn FormatHandler + Sync + Send + 'static>;
 
 struct ProcessingThread {
     pub join_handle: Option<JoinHandle<()>>,
@@ -52,13 +52,13 @@ enum Process {
 
 struct ProcessData {
     pub location: PathBuf,
-    pub format_handler: Arc<Box<(dyn FormatHandler + Sync + Send + 'static)>>,
+    pub format_handler: FormatHandlerEntry,
     pub source_filepath: PathBuf,
     pub output_path: PathBuf,
 }
 
 impl ProcessData {
-    pub fn process<'a>(self, config: RwLockReadGuard<'a, Config>) -> ProcessedInfo {
+    pub fn process(self, config: RwLockReadGuard<'_, Config>) -> ProcessedInfo {
         match self
             .format_handler
             .process(&self.source_filepath, &self.output_path, &config)
