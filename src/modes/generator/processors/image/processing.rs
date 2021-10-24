@@ -3,7 +3,7 @@ use std::{
     ffi::OsString,
     fs, io,
     path::{Path, PathBuf},
-    sync::mpsc::TryRecvError,
+    sync::mpsc::{Receiver, RecvError},
 };
 
 use colored::Colorize;
@@ -17,7 +17,8 @@ use crate::{
 };
 
 use super::{
-    FormatHandlerEntry, GraphicOutput, Process, ProcessData, ProcessedData, ProcessingThread,
+    FormatHandlerEntry, GraphicOutput, Process, ProcessData, ProcessedData, ProcessedInfo,
+    ProcessingThread,
 };
 
 static PROGRESS_BAR_LENGTH: usize = 20;
@@ -27,6 +28,7 @@ pub struct Processing {
     source_path: PathBuf,
     cache_images_path: PathBuf,
     source_files_by_extension: HashMap<OsString, Vec<PathBuf>>,
+    total_processed_files: usize,
     succeeded_files: u32,
     new_files: u32,
     failed_files: u32,
@@ -43,6 +45,7 @@ impl Processing {
             source_path,
             cache_images_path,
             source_files_by_extension,
+            total_processed_files: 0,
             succeeded_files: 0,
             new_files: 0,
             failed_files: 0,
@@ -73,6 +76,7 @@ impl Processing {
     pub(super) fn process<'a, T: Iterator<Item = &'a FormatHandlerEntry>>(
         &mut self,
         threads: &mut Vec<ProcessingThread>,
+        receiver: Receiver<ProcessedInfo>,
         format_handlers: T,
         cache: &mut Cache,
         output: &mut GraphicOutput,
@@ -137,47 +141,71 @@ impl Processing {
 
                 'search: loop {
                     for (i, thread) in threads.iter_mut().enumerate() {
-                        match self.receive_from_processing_thread(thread, output, display_kind) {
-                            Ok(processing_status) => match processing_status {
-                                ProcessThreadStatus::Waiting | ProcessThreadStatus::Finished => {
-                                    traceln!(
-                                        "Sending '{}' to processing thread #{}",
-                                        location.display(),
-                                        i,
-                                    );
+                        if thread.is_waiting {
+                            traceln!(
+                                "Sending '{}' to waiting processing thread #{}",
+                                location.display(),
+                                i,
+                            );
 
-                                    thread.is_waiting = false;
+                            thread.is_waiting = false;
 
-                                    thread
-                                        .sender
-                                        .send(Process::Request(ProcessData {
-                                            location,
-                                            format_handler: format_handler.clone(),
-                                            source_filepath: source_file.clone(),
-                                            output_path,
-                                        }))
-                                        .unwrap();
+                            thread
+                                .sender
+                                .send(Process::Request(ProcessData {
+                                    location,
+                                    format_handler: format_handler.clone(),
+                                    source_filepath: source_file.clone(),
+                                    output_path,
+                                }))
+                                .unwrap();
 
-                                    break 'search;
-                                }
-                                ProcessThreadStatus::Busy => (),
-                            },
-                            Err(e) => panic!("Thread #{} error: {}", i, e),
+                            break 'search;
                         }
+                    }
+
+                    // wait until receive a message from a processing thread
+                    match self.receive(&receiver, output, display_kind) {
+                        Ok(result_data) => {
+                            self.total_processed_files += 1;
+
+                            traceln!(
+                                "Sending '{}' to processing thread #{}",
+                                location.display(),
+                                result_data.thread_index,
+                            );
+
+                            threads[result_data.thread_index]
+                                .sender
+                                .send(Process::Request(ProcessData {
+                                    location,
+                                    format_handler: format_handler.clone(),
+                                    source_filepath: source_file.clone(),
+                                    output_path,
+                                }))
+                                .unwrap();
+
+                            break 'search;
+                        }
+                        Err(e) => panic!("{}", e),
                     }
                 }
             }
         }
 
+        // receive lasting processed data
+
+        while self.total_processed_files < file_count {
+            match self.receive(&receiver, output, display_kind) {
+                Ok(_) => self.total_processed_files += 1,
+                Err(e) => panic!("{}", e),
+            }
+        }
+
         // stop every processing thread to release resources
         // it will not be used anymore
-        for (i, thread) in threads.iter_mut().enumerate() {
-            // receive message, if any
-            match self.receive_from_processing_thread(thread, output, display_kind) {
-                Ok(_thread_status) => (),
-                Err(e) => panic!("Thread #{} error: {}", i, e),
-            }
 
+        for thread in threads.iter_mut() {
             // finalize
             thread.sender.send(Process::Stop).unwrap();
             let join_handle = thread.join_handle.take().unwrap();
@@ -195,90 +223,110 @@ impl Processing {
         }
     }
 
-    fn receive_from_processing_thread(
+    /*
+    fn try_receive(
         &mut self,
-        thread: &mut ProcessingThread,
+        receiver: &Receiver<ProcessedInfo>,
         output: &mut GraphicOutput,
         display_kind: &DisplayKind,
-    ) -> Result<ProcessThreadStatus, TryRecvError> {
-        match thread.receiver.try_recv() {
+    ) -> Result<ResultData, TryRecvError> {
+        match receiver.try_recv() {
             Ok(processed_info) => {
-                if let DisplayKind::Detailed = display_kind {
-                    infoln!(
-                        block,
-                        "{}",
-                        processed_info.location.display().to_string().bold().cyan()
-                    );
-                }
-
-                match processed_info.data {
-                    ProcessedData::Succeeded => {
-                        match display_kind {
-                            DisplayKind::List => infoln!(
-                                "{} {}",
-                                "~".yellow().bold(),
-                                processed_info.location.display().to_string().bold().cyan()
-                            ),
-                            DisplayKind::Detailed => {
-                                traceln!(entry: decorator::Entry::None, "Graphic is empty");
-                                infoln!(last, "{} {}", "~".yellow().bold(), "Ignore".yellow());
-                            }
-                            _ => (),
-                        }
-
-                        self.succeeded_files += 1;
-                    }
-                    ProcessedData::New(g) => {
-                        match display_kind {
-                            DisplayKind::List => infoln!(
-                                "{} {}",
-                                "+".green().bold(),
-                                processed_info.location.display().to_string().bold().cyan()
-                            ),
-                            DisplayKind::Detailed => {
-                                infoln!(last, "{} {}", "+".green().bold(), "Include".green())
-                            }
-                            _ => (),
-                        }
-
-                        self.succeeded_files += 1;
-                        self.new_files += 1;
-
-                        output.graphics.push(g);
-                    }
-                    ProcessedData::Failed(ref format_handler_error) => {
-                        self.failed_files += 1;
-
-                        match display_kind {
-                            DisplayKind::List => infoln!(
-                                "{} {}",
-                                "x".red().bold(),
-                                processed_info.location.display().to_string().bold().cyan()
-                            ),
-                            DisplayKind::Detailed => {
-                                errorln!(
-                                    entry: decorator::Entry::None,
-                                    "{}: {}",
-                                    "Error".bold().red(),
-                                    format_handler_error
-                                );
-                                infoln!(last, "{} {}", "x".red().bold(), "Error".red());
-                            }
-                            _ => (),
-                        }
-                    }
-                }
-
-                Ok(ProcessThreadStatus::Finished)
+                Ok(self.handle_processed_info(processed_info, output, display_kind))
             }
             Err(e) => match e {
-                TryRecvError::Empty => Ok(if thread.is_waiting {
-                    ProcessThreadStatus::Waiting
-                } else {
-                    ProcessThreadStatus::Busy
-                }),
+                TryRecvError::Empty => Ok(ResultData::Empty),
                 _ => Err(e),
             },
+        }
+    }
+    */
+
+    fn receive(
+        &mut self,
+        receiver: &Receiver<ProcessedInfo>,
+        output: &mut GraphicOutput,
+        display_kind: &DisplayKind,
+    ) -> Result<ResultData, RecvError> {
+        receiver
+            .recv()
+            .map(|processed_info| self.handle_processed_info(processed_info, output, display_kind))
+    }
+
+    fn handle_processed_info(
+        &mut self,
+        processed_info: ProcessedInfo,
+        output: &mut GraphicOutput,
+        display_kind: &DisplayKind,
+    ) -> ResultData {
+        if let DisplayKind::Detailed = display_kind {
+            infoln!(
+                block,
+                "{}",
+                processed_info.location.display().to_string().bold().cyan()
+            );
+        }
+
+        match processed_info.data {
+            ProcessedData::Succeeded => {
+                match display_kind {
+                    DisplayKind::List => infoln!(
+                        "{} {}",
+                        "~".yellow().bold(),
+                        processed_info.location.display().to_string().bold().cyan()
+                    ),
+                    DisplayKind::Detailed => {
+                        traceln!(entry: decorator::Entry::None, "Graphic is empty");
+                        infoln!(last, "{} {}", "~".yellow().bold(), "Ignore".yellow());
+                    }
+                    _ => (),
+                }
+
+                self.succeeded_files += 1;
+            }
+            ProcessedData::New(g) => {
+                match display_kind {
+                    DisplayKind::List => infoln!(
+                        "{} {}",
+                        "+".green().bold(),
+                        processed_info.location.display().to_string().bold().cyan()
+                    ),
+                    DisplayKind::Detailed => {
+                        infoln!(last, "{} {}", "+".green().bold(), "Include".green())
+                    }
+                    _ => (),
+                }
+
+                self.succeeded_files += 1;
+                self.new_files += 1;
+
+                output.graphics.push(g);
+            }
+            ProcessedData::Failed(ref format_handler_error) => {
+                self.failed_files += 1;
+
+                match display_kind {
+                    DisplayKind::List => infoln!(
+                        "{} {}",
+                        "x".red().bold(),
+                        processed_info.location.display().to_string().bold().cyan()
+                    ),
+                    DisplayKind::Detailed => {
+                        errorln!(
+                            entry: decorator::Entry::None,
+                            "{}: {}",
+                            "Error".bold().red(),
+                            format_handler_error
+                        );
+                        infoln!(last, "{} {}", "x".red().bold(), "Error".red());
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        ResultData {
+            thread_index: processed_info.thread_index,
         }
     }
 
@@ -430,8 +478,6 @@ impl Processing {
     }
 }
 
-enum ProcessThreadStatus {
-    Waiting,
-    Finished,
-    Busy,
+struct ResultData {
+    thread_index: usize,
 }

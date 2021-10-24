@@ -243,9 +243,11 @@ impl Processor for ImageProcessor {
         };
 
         traceln!("Preparing {} processing threads", thread_num);
-        for _ in 0..thread_num {
+        let (processing_sender, processor_receiver) = channel();
+
+        for thread_index in 0..thread_num {
             let (processor_sender, processing_receiver) = channel();
-            let (processing_sender, processor_receiver) = channel();
+            let sender = processing_sender.clone();
             let c_lock = Arc::clone(&state.config);
 
             let join_handle = thread::spawn(move || {
@@ -254,14 +256,13 @@ impl Processor for ImageProcessor {
                         .try_read()
                         .expect("Can't retrieve a read lock at child thread");
 
-                    processing_sender.send(data.process(c)).unwrap();
+                    sender.send(data.process(thread_index, c)).unwrap();
                 }
             });
 
             self.threads.push(ProcessingThread {
                 join_handle: Some(join_handle),
                 sender: processor_sender,
-                receiver: processor_receiver,
                 is_waiting: true,
             });
         }
@@ -271,6 +272,7 @@ impl Processor for ImageProcessor {
 
         processing.process(
             &mut self.threads,
+            processor_receiver,
             self.format_handlers.iter(),
             state.cache.as_mut().unwrap(),
             &mut state.graphic_output,

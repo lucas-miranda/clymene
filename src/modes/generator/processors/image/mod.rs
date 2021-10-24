@@ -1,9 +1,6 @@
 use std::{
     path::PathBuf,
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc, RwLockReadGuard,
-    },
+    sync::{mpsc::Sender, Arc, RwLockReadGuard},
     thread::JoinHandle,
 };
 
@@ -30,12 +27,12 @@ type FormatHandlerEntry = Arc<dyn FormatHandler + Sync + Send + 'static>;
 struct ProcessingThread {
     pub join_handle: Option<JoinHandle<()>>,
     pub sender: Sender<Process>,
-    pub receiver: Receiver<ProcessedInfo>,
     pub is_waiting: bool,
 }
 
 struct ProcessedInfo {
     pub location: PathBuf,
+    pub thread_index: usize,
     pub data: ProcessedData,
 }
 
@@ -58,7 +55,11 @@ struct ProcessData {
 }
 
 impl ProcessData {
-    pub fn process(self, config: RwLockReadGuard<'_, Config>) -> ProcessedInfo {
+    pub fn process(
+        self,
+        thread_index: usize,
+        config: RwLockReadGuard<'_, Config>,
+    ) -> ProcessedInfo {
         match self
             .format_handler
             .process(&self.source_filepath, &self.output_path, &config)
@@ -67,17 +68,20 @@ impl ProcessData {
                 if let Graphic::Empty = processed_file {
                     return ProcessedInfo {
                         location: self.location,
+                        thread_index,
                         data: ProcessedData::Succeeded,
                     };
                 }
 
                 ProcessedInfo {
                     location: self.location,
+                    thread_index,
                     data: ProcessedData::New(processed_file),
                 }
             }
             Err(e) => ProcessedInfo {
                 location: self.location,
+                thread_index,
                 data: ProcessedData::Failed(e),
             },
         }
