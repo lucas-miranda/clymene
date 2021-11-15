@@ -19,7 +19,8 @@ use crate::{
 };
 
 use super::{
-    format_handlers::FormatHandler, FormatHandlerEntry, Process, Processing, ProcessingThread,
+    format_handlers::FormatHandler, FormatHandlerEntry, Process, Processing, ProcessingOptions,
+    ProcessingThread,
 };
 
 pub struct ImageProcessor {
@@ -276,8 +277,10 @@ impl Processor for ImageProcessor {
             self.format_handlers.iter(),
             state.cache.as_mut().unwrap(),
             &mut state.graphic_output,
-            &display_kind,
-            force,
+            ProcessingOptions {
+                display_kind,
+                force,
+            },
         );
 
         if processing.new_files() > 0 || processing.failed_cache_retrieve() > 0 {

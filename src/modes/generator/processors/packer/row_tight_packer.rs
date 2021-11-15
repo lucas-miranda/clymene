@@ -22,11 +22,12 @@ impl Packer for RowTightPacker {
         &self,
         atlas_size: Size<u32>,
         graphic_sources: &mut Vec<&mut GraphicSource>,
-    ) -> Option<()> {
+    ) -> Option<f32> {
         if atlas_size.width == 0 || atlas_size.height == 0 {
             return None;
         }
 
+        let atlas_area = atlas_size.area();
         let mut empty_spaces: Vec<Rectangle<u32>> = vec![atlas_size.into()];
 
         // sort by increasing order of their height and width
@@ -139,7 +140,13 @@ impl Packer for RowTightPacker {
             source.atlas_region = Some(atlas_region);
         }
 
-        Some(())
+        let sum_empty_area: u32 = empty_spaces
+            .iter()
+            .map(|empty_space| empty_space.area())
+            .sum();
+
+        let percent = f64::from(sum_empty_area) / f64::from(atlas_area);
+        Some(100f32 * (percent as f32))
     }
 }
 

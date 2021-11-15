@@ -99,16 +99,16 @@ impl Processor for OutputProcessor {
             );
         }
 
-        for filepath in state.output.files() {
-            match filepath.metadata() {
+        for output_file in state.output.files() {
+            match output_file.path().metadata() {
                 Ok(metadata) => {
                     if !metadata.is_file() {
-                        infoln!(block, "{}", filepath.display().to_string().bold());
+                        infoln!(block, "{}", output_file.path.display().to_string().bold());
                         errorln!(last, "Isn't a valid file");
                         continue;
                     }
 
-                    let filename = filepath.file_name().unwrap();
+                    let filename = output_file.path.file_name().unwrap();
                     infoln!(block, "{}", filename.to_str().unwrap().bold());
 
                     let output_filepath = output.join(filename);
@@ -123,13 +123,17 @@ impl Processor for OutputProcessor {
                         }
                     }
 
-                    match fs::copy(&filepath, output_filepath) {
+                    if let Some(stats) = output_file.stats() {
+                        stats.display_stats();
+                    }
+
+                    match fs::copy(&output_file.path, output_filepath) {
                         Ok(_) => infoln!(last, "{}", "Generated".green().bold()),
                         Err(err) => errorln!(last, "{}  {}", "Error".red().bold(), err),
                     }
                 }
                 Err(e) => {
-                    infoln!(block, "{}", filepath.display().to_string().bold());
+                    infoln!(block, "{}", output_file.path.display().to_string().bold());
                     errorln!(last, "{}  {}", "Error".red().bold(), e);
                 }
             }

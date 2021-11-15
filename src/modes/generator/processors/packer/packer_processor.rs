@@ -10,7 +10,10 @@ use crate::{
     common::Verbosity,
     graphics::{animation::Frame, Graphic, GraphicSource},
     math::{self, Size},
-    modes::generator::processors::{output, ConfigStatus, Processor, State},
+    modes::generator::processors::{
+        output::{self, AtlasOutputStats, OutputFile},
+        ConfigStatus, Processor, State,
+    },
     settings::{Config, ProcessorConfig},
     util::Timer,
 };
@@ -71,7 +74,9 @@ impl<P: Packer> PackerProcessor<P> {
             },
         }
 
-        if let Err(e) = state.output.register_file(&output_filepath) {
+        let output_file = OutputFile::with_stats(output_filepath, AtlasOutputStats::new(0.0));
+
+        if let Err(e) = state.output.register_file(output_file) {
             match e {
                 output::Error::FileExpected => {
                     infoln!("Output file not found");
@@ -245,10 +250,19 @@ impl<P: Packer> Processor for PackerProcessor<P> {
             .collect::<Vec<&mut GraphicSource>>();
 
         traceln!("Using {} packer", self.packer.name().bold());
-        self.packer.execute(
-            Size::new(state.output.atlas_width, state.output.atlas_height),
-            &mut graphic_sources,
-        );
+
+        let usage = self
+            .packer
+            .execute(
+                Size::new(state.output.atlas_width, state.output.atlas_height),
+                &mut graphic_sources,
+            )
+            .unwrap_or_else(|| {
+                panic!(
+                    "Packer '{}' can't complete it's execution successfully.",
+                    self.packer.name()
+                )
+            });
 
         infoln!(last, "{}", "Done".green());
         infoln!("Generating output");
@@ -297,7 +311,8 @@ impl<P: Packer> Processor for PackerProcessor<P> {
         .unwrap();
 
         // output
-        state.output.register_file(&cache_output_path).unwrap();
+        let output_file = OutputFile::with_stats(cache_output_path, AtlasOutputStats::new(usage));
+        state.output.register_file(output_file).unwrap();
 
         doneln_with_timer!(timer);
     }

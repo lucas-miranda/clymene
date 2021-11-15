@@ -114,6 +114,10 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
     pub fn is_empty(&self) -> bool {
         self.width.is_zero() && self.height.is_zero()
     }
+
+    pub fn area(&self) -> T {
+        self.width * self.height
+    }
 }
 
 impl<T: Unsigned + NumCast + PartialOrd + Copy> Rectangle<T> {

@@ -18,7 +18,7 @@ use crate::{
 
 use super::{
     FormatHandlerEntry, GraphicOutput, Process, ProcessData, ProcessedData, ProcessedInfo,
-    ProcessingThread,
+    ProcessingOptions, ProcessingThread,
 };
 
 static PROGRESS_BAR_LENGTH: usize = 20;
@@ -80,12 +80,11 @@ impl Processing {
         format_handlers: T,
         cache: &mut Cache,
         output: &mut GraphicOutput,
-        display_kind: &DisplayKind,
-        force: bool,
+        options: ProcessingOptions,
     ) {
         let file_count = self.collect_file_stats();
 
-        if let DisplayKind::Simple = display_kind {
+        if let DisplayKind::Simple = options.display_kind {
             info!("");
             self.display_progress_bar(0, file_count, 0, 0);
         }
@@ -99,7 +98,7 @@ impl Processing {
                 .collect::<Vec<PathBuf>>();
 
             for (file_index, source_file) in source_files.iter().enumerate() {
-                if let DisplayKind::Simple = display_kind {
+                if let DisplayKind::Simple = options.display_kind {
                     self.display_progress_bar(
                         file_index,
                         file_count,
@@ -118,10 +117,13 @@ impl Processing {
                     }
                 }
 
-                if !force {
-                    if let Some(graphic) =
-                        self.retrieve_from_cache(&location, source_file, cache, display_kind)
-                    {
+                if !options.force {
+                    if let Some(graphic) = self.retrieve_from_cache(
+                        &location,
+                        source_file,
+                        cache,
+                        &options.display_kind,
+                    ) {
                         output.graphics.push(graphic);
                         self.succeeded_files += 1;
                         continue;
@@ -165,7 +167,7 @@ impl Processing {
                     }
 
                     // wait until receive a message from a processing thread
-                    match self.receive(&receiver, output, display_kind) {
+                    match self.receive(&receiver, output, &options.display_kind) {
                         Ok(result_data) => {
                             self.total_processed_files += 1;
 
@@ -196,7 +198,7 @@ impl Processing {
         // receive lasting processed data
 
         while self.total_processed_files < file_count {
-            match self.receive(&receiver, output, display_kind) {
+            match self.receive(&receiver, output, &options.display_kind) {
                 Ok(_) => self.total_processed_files += 1,
                 Err(e) => panic!("{}", e),
             }
@@ -212,7 +214,7 @@ impl Processing {
             join_handle.join().unwrap();
         }
 
-        if let DisplayKind::Simple = display_kind {
+        if let DisplayKind::Simple = options.display_kind {
             self.display_progress_bar(
                 file_count,
                 file_count,

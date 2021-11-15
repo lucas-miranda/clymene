@@ -12,5 +12,5 @@ pub trait Packer {
         &self,
         atlas_min_size: Size<u32>,
         graphic_sources: &mut Vec<&mut GraphicSource>,
-    ) -> Option<()>;
+    ) -> Option<f32>;
 }

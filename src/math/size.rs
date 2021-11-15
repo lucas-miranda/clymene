@@ -37,6 +37,10 @@ impl<T: Unsigned + NumCast + PartialOrd + Copy> Size<T> {
 
         Some(Self::new(w, h))
     }
+
+    pub fn area(&self) -> T {
+        self.width * self.height
+    }
 }
 
 impl<T: Unsigned + NumCast + PartialOrd + Copy> From<Size<T>> for Rectangle<T> {

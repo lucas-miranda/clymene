@@ -15,7 +15,7 @@ pub struct State<'a> {
     pub config: Arc<RwLock<Config>>,
     pub cache: Option<Cache>,
     pub graphic_output: GraphicOutput,
-    pub output: Output,
+    pub output: Output<'a>,
     args: &'a GeneratorModeArgs,
 }
 

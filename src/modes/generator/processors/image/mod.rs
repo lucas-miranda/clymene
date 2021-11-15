@@ -13,6 +13,7 @@ mod graphic_source_data;
 mod graphic_source_data_set;
 mod image_processor;
 mod processing;
+mod processing_options;
 
 pub use error::Error;
 use format_handlers::FormatHandler;
@@ -21,6 +22,7 @@ pub use graphic_source_data::{GraphicSourceData, GraphicSourceDataError};
 pub use graphic_source_data_set::GraphicSourceDataSet;
 pub use image_processor::ImageProcessor;
 use processing::Processing;
+use processing_options::ProcessingOptions;
 
 type FormatHandlerEntry = Arc<dyn FormatHandler + Sync + Send + 'static>;
 

@@ -3,7 +3,10 @@ use std::fs;
 
 use crate::{
     common::Verbosity,
-    modes::generator::processors::{output, ConfigStatus, Processor, State},
+    modes::generator::processors::{
+        output::{self, OutputFile},
+        ConfigStatus, Processor, State,
+    },
     settings::{Config, ProcessorConfig},
     util::{self, Timer},
 };
@@ -57,7 +60,9 @@ impl Processor for DataProcessor {
                         .atlas_path()
                         .join(format!("{}.data.json", c.output.name_or_default()));
 
-                    match state.output.register_file(&output_atlas_data_path) {
+                    let output_file = OutputFile::new(output_atlas_data_path);
+
+                    match state.output.register_file(output_file) {
                         Ok(()) => {
                             infoln!(last, "{}", "Already Updated".green());
                             return;
@@ -131,7 +136,8 @@ impl Processor for DataProcessor {
         util::wait_until(|| output_atlas_data_path.exists());
 
         // output
-        state.output.register_file(&output_atlas_data_path).unwrap();
+        let output_file = OutputFile::new(output_atlas_data_path);
+        state.output.register_file(output_file).unwrap();
 
         doneln_with_timer!(total_timer)
     }
