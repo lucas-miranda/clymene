@@ -113,6 +113,7 @@ impl Processing {
                     Ok(path) => location = path.with_extension(""),
                     Err(_) => {
                         self.failed_files += 1;
+                        self.total_processed_files += 1;
                         continue;
                     }
                 }
@@ -126,6 +127,7 @@ impl Processing {
                     ) {
                         output.graphics.push(graphic);
                         self.succeeded_files += 1;
+                        self.total_processed_files += 1;
                         continue;
                     } else {
                         self.failed_cache_retrieve += 1;
@@ -344,7 +346,7 @@ impl Processing {
         match cache.retrieve(&location, &source_metadata) {
             CacheStatus::Found(cache_entry) => {
                 if let DisplayKind::Detailed = display_kind {
-                    infoln!("Cache: {}", "Found".green());
+                    infoln!(block, "Cache: {}", "Found".green());
                 }
 
                 if let Some(graphic) =
