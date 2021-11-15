@@ -18,7 +18,7 @@ use crate::{
     util::Timer,
 };
 
-use super::Packer;
+use super::{Packer, ValidationError};
 
 pub struct PackerProcessor<P: Packer> {
     verbose: bool,
@@ -33,11 +33,11 @@ impl<P: Packer> PackerProcessor<P> {
         }
     }
 
-    fn validate_output(&self, state: &mut State) -> bool {
+    fn validate_output(&self, state: &mut State) -> Result<(), ValidationError> {
         let cache = state.cache.as_ref().expect("Cache isn't available");
 
         if !cache.is_updated() {
-            return false;
+            return Err(ValidationError::CacheNotUpdated);
         }
 
         let config = state.config.try_read().expect("Can't retrieve a read lock");
@@ -47,9 +47,8 @@ impl<P: Packer> PackerProcessor<P> {
             Ok(m) => {
                 if m.is_file() {
                     // check image data
-                    let (w, h) = image::image_dimensions(&output_filepath).unwrap_or_else(|_| {
-                        panic!("Can't read output image at '{}'", output_filepath.display())
-                    });
+                    let (w, h) = image::image_dimensions(&output_filepath)
+                        .map_err(ValidationError::AtlasImageLoadFailed)?;
 
                     if w != state.output.atlas_width || h != state.output.atlas_height {
                         traceln!(
@@ -60,17 +59,13 @@ impl<P: Packer> PackerProcessor<P> {
                             state.output.atlas_height,
                         );
 
-                        return false;
+                        return Err(ValidationError::PreviousFileImageSizeMismatch);
                     }
                 }
             }
             Err(e) => match e.kind() {
                 io::ErrorKind::NotFound => (),
-                _ => panic!(
-                    "Can't access output file at '{}': {}",
-                    output_filepath.display(),
-                    e
-                ),
+                _ => return Err(ValidationError::AtlasImageIoError(e)),
             },
         }
 
@@ -80,13 +75,13 @@ impl<P: Packer> PackerProcessor<P> {
             match e {
                 output::Error::FileExpected => {
                     infoln!("Output file not found");
-                    return false;
+                    return Err(ValidationError::AtlasImageNotFound);
                 }
                 _ => panic!("{}", e),
             }
         }
 
-        true
+        Ok(())
     }
 
     fn generate_image(
@@ -211,10 +206,18 @@ impl<P: Packer> Processor for PackerProcessor<P> {
         } else {
             infoln!(block, "Checking");
 
-            if self.validate_output(state) {
-                infoln!(last, "{}", "Already Updated".green());
-                doneln!();
-                return;
+            match self.validate_output(state) {
+                Ok(()) => {
+                    infoln!(last, "{}", "Already Updated".green());
+                    doneln!();
+                    return;
+                }
+                Err(e) => match e {
+                    ValidationError::CacheNotUpdated
+                    | ValidationError::AtlasImageNotFound
+                    | ValidationError::PreviousFileImageSizeMismatch => (),
+                    _ => panic!("{}", e),
+                },
             }
 
             infoln!(last, "{}", "Needs Update".blue());

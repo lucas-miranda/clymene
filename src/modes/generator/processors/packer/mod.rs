@@ -1,8 +1,10 @@
 mod packer_processor;
 mod row_tight_packer;
+mod validation_error;
 
 pub use packer_processor::PackerProcessor;
 pub use row_tight_packer::RowTightPacker;
+use validation_error::ValidationError;
 
 use crate::{graphics::GraphicSource, math::Size};
 
