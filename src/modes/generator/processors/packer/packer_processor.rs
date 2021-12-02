@@ -18,7 +18,9 @@ use crate::{
     util::Timer,
 };
 
-use super::{Packer, ValidationError};
+use super::{Packer, PackerError, ValidationError};
+
+const DEFAULT_MAX_ATLAS_SIZE: u32 = 4096;
 
 pub struct PackerProcessor<P: Packer> {
     verbose: bool,
@@ -252,25 +254,73 @@ impl<P: Packer> Processor for PackerProcessor<P> {
             .flatten()
             .collect::<Vec<&mut GraphicSource>>();
 
-        traceln!("Using {} packer", self.packer.name().bold());
+        infoln!("Using {} packer", self.packer.name().bold());
+        let c = state.config.try_read().expect("Can't retrieve a read lock");
 
-        let usage = self
-            .packer
-            .execute(
+        let until_atlas_size = if c.packer.retry.until_atlas_size == 0 {
+            DEFAULT_MAX_ATLAS_SIZE
+        } else {
+            c.packer.retry.until_atlas_size
+        };
+
+        let mut retries = 0;
+        let usage = loop {
+            match self.packer.execute(
                 Size::new(state.output.atlas_width, state.output.atlas_height),
                 &mut graphic_sources,
-            )
-            .unwrap_or_else(|| {
-                panic!(
-                    "Packer '{}' can't complete it's execution successfully.",
-                    self.packer.name()
-                )
-            });
+            ) {
+                Ok(u) => break u,
+                Err(err) => {
+                    let can_retry = {
+                        match err {
+                            PackerError::EmptyTargetSize => false,
+                            PackerError::OutOfSpace => {
+                                c.packer.retry.enable
+                                    && (c.packer.retry.max_retries == 0
+                                        || retries < c.packer.retry.max_retries)
+                                    && !(state.output.atlas_width == until_atlas_size
+                                        && state.output.atlas_height == until_atlas_size)
+                            }
+                        }
+                    };
+
+                    if !can_retry {
+                        panic!(
+                            "Packer '{}' can't complete it's execution successfully.\n{}",
+                            self.packer.name(),
+                            err
+                        )
+                    }
+
+                    if state.output.atlas_width < until_atlas_size {
+                        state.output.atlas_width =
+                            (state.output.atlas_width * 2).min(until_atlas_size);
+                    }
+
+                    if state.output.atlas_height < until_atlas_size {
+                        state.output.atlas_height =
+                            (state.output.atlas_height * 2).min(until_atlas_size);
+                    }
+
+                    retries += 1;
+
+                    errorln!(block, "{}", "Can't complete".red());
+                    errorln!(last, "{}", err);
+                    infoln!(entry: decorator::Entry::None);
+                    infoln!(block, "Retry #{}", retries.to_string().bold());
+                    infoln!(
+                        last,
+                        "With atlas size: {}x{}",
+                        state.output.atlas_width,
+                        state.output.atlas_height
+                    );
+                }
+            }
+        };
 
         infoln!(last, "{}", "Done".green());
         infoln!("Generating output");
 
-        let c = state.config.try_read().expect("Can't retrieve a read lock");
         let atlas_dir_path = c.cache.atlas_path();
         traceln!(
             entry: decorator::Entry::None,

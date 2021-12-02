@@ -3,7 +3,7 @@ use crate::{
     math::{Rectangle, Size},
 };
 
-use super::Packer;
+use super::{Packer, PackerError};
 
 pub struct RowTightPacker {}
 
@@ -22,9 +22,9 @@ impl Packer for RowTightPacker {
         &self,
         atlas_size: Size<u32>,
         graphic_sources: &mut Vec<&mut GraphicSource>,
-    ) -> Option<f32> {
+    ) -> Result<f32, PackerError> {
         if atlas_size.width == 0 || atlas_size.height == 0 {
-            return None;
+            return Err(PackerError::EmptyTargetSize);
         }
 
         let atlas_area = atlas_size.area();
@@ -41,7 +41,7 @@ impl Packer for RowTightPacker {
         // reverse traverse sorted graphic sources
         for source in graphic_sources.iter_mut().rev() {
             if empty_spaces.is_empty() {
-                panic!("Out of empty spaces.");
+                return Err(PackerError::OutOfSpace);
             }
 
             let empty_space = {
@@ -81,7 +81,7 @@ impl Packer for RowTightPacker {
 
                 match best_fit {
                     Some(space) => empty_spaces.remove(space.index),
-                    None => panic!("Can't find an unoccupied space which fits source image."),
+                    None => return Err(PackerError::OutOfSpace),
                 }
             };
 
@@ -146,7 +146,7 @@ impl Packer for RowTightPacker {
             .sum();
 
         let percent = f64::from(sum_empty_area) / f64::from(atlas_area);
-        Some(100f32 * (percent as f32))
+        Ok(100f32 * (percent as f32))
     }
 }
 

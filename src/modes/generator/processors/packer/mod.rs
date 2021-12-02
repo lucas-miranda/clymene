@@ -1,7 +1,9 @@
+mod packer_error;
 mod packer_processor;
 mod row_tight_packer;
 mod validation_error;
 
+pub use packer_error::PackerError;
 pub use packer_processor::PackerProcessor;
 pub use row_tight_packer::RowTightPacker;
 use validation_error::ValidationError;
@@ -14,5 +16,5 @@ pub trait Packer {
         &self,
         atlas_min_size: Size<u32>,
         graphic_sources: &mut Vec<&mut GraphicSource>,
-    ) -> Option<f32>;
+    ) -> Result<f32, PackerError>;
 }

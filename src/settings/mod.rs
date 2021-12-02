@@ -7,6 +7,7 @@ mod image_config;
 mod load_error;
 mod output_config;
 mod packer_config;
+mod packer_retry_config;
 mod processor_config;
 mod save_error;
 
@@ -19,5 +20,6 @@ pub use image_config::{DisplayKind, ImageConfig};
 pub use load_error::LoadError;
 pub use output_config::OutputConfig;
 pub use packer_config::PackerConfig;
+pub use packer_retry_config::PackerRetryConfig;
 pub use processor_config::ProcessorConfig;
 pub use save_error::SaveError;

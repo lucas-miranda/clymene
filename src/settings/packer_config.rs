@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Verbosity,
     log::Logger,
-    settings::{ConfigLoggerStatus, ProcessorConfig},
+    settings::{ConfigLoggerStatus, PackerRetryConfig, ProcessorConfig},
 };
 
 #[derive(Default, Serialize, Deserialize)]
@@ -19,6 +19,9 @@ pub struct PackerConfig {
 
     #[serde(default)]
     pub force: bool,
+
+    #[serde(default)]
+    pub retry: PackerRetryConfig,
 }
 
 impl ProcessorConfig for PackerConfig {
