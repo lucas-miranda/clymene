@@ -146,11 +146,13 @@ impl Processing {
                 'search: loop {
                     for (i, thread) in threads.iter_mut().enumerate() {
                         if thread.is_waiting {
-                            traceln!(
-                                "Sending '{}' to waiting processing thread #{}",
-                                location.display(),
-                                i,
-                            );
+                            if is_trace_enabled!() {
+                                debugln!(
+                                    "Sending '{}' to waiting processing thread #{}",
+                                    location.display(),
+                                    i,
+                                );
+                            }
 
                             thread.is_waiting = false;
 
@@ -173,11 +175,13 @@ impl Processing {
                         Ok(result_data) => {
                             self.total_processed_files += 1;
 
-                            traceln!(
-                                "Sending '{}' to processing thread #{}",
-                                location.display(),
-                                result_data.thread_index,
-                            );
+                            if is_trace_enabled!() {
+                                debugln!(
+                                    "Sending '{}' to processing thread #{}",
+                                    location.display(),
+                                    result_data.thread_index,
+                                );
+                            }
 
                             threads[result_data.thread_index]
                                 .sender

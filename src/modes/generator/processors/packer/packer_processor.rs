@@ -204,7 +204,7 @@ impl<P: Packer> Processor for PackerProcessor<P> {
         let timer = Timer::start();
 
         if state.args().global.force {
-            infoln!(dashed, "Force Generate");
+            infoln!(entry: decorator::Entry::None, "Force Generate");
         } else {
             infoln!(block, "Checking");
 
