@@ -1,41 +1,71 @@
-[raven]
-# make the entire program show verbose messages, it'll overwrite others if 'true' is set here
+# make everything show verbose messages
 verbose = false
 
-# where cache files will be stored, leave empty to auto get project path's cache
-cache_path = ""
+# prettify any text output file (such as atlas data json files)
+prettify = false
 
-# path where finalized files should be stored
-output_path = "output/"
-
-# make atlas data .json pretty before writing to a file
-prettify_json = false
-
-[aseprite]
-# should messages be more verbose about what is happening at aseprite processor?
+[output]
+# display output related verbose messages
 verbose = false
 
-# filepath to 'aseprite.exe'
-path = "C:\\Program Files\\Aseprite\\Aseprite.exe"
+# generated files name
+name = "atlas"
 
-# root path to search for aseprite files
-input_path = "source/"
+# where to output generated files
+path = "output"
 
-# make json pretty before writing to file (affects 'cache.json' file)
-prettify_json = false
-
-[crunch]
-# should crunch print every action?
+[cache]
+# display cache related verbose messages
 verbose = false
 
-# filepath to 'crunch.exe'
-path = "tools/crunch.exe"
+# where cache files should be stored (leave empty to use system's default path)
+path = ""
 
-# name of atlas generated .png file
-atlas_name = "atlas"
+# which cache identifier to use (leave empty to generate a new one automatically)
+identifier = ""
 
-# accepted values are: 4096, 2048, 1024, 512, 256, 128 or 64
+[packer]
+# display packer related verbose messages
+verbose = false
+
+# atlas target size (width and height will be the same)
+# accept any value, but a power of two is better
 atlas_size = 1024
 
-# force crunch to recreate atlas, even when none file has been changed
+# should try to optimize packer values?
+#   * use next (from atlas_size value) power of two atlas size
+optimize = true
+
+# force packing (or only do when it is needed)
 force = false
+
+[packer.retry]
+# packer should retry when failed? (by lacking of space)
+enable = true
+
+# max retries (zero will make it retry indefinitely)
+max_retries = 0
+
+# retry until reaches an atlas size (zero will leave it to use default value, which is 4096)
+until_atlas_size = 0
+
+[image]
+# display image related verbose messages
+verbose = false
+
+# where to get source images
+input_path = "source"
+
+# kind of image processing progress display, it could be: simple, list or detailed
+display = "simple"
+
+[image.aseprite]
+# display aseprite's image related verbose messages
+verbose = false
+
+[data]
+# display data related verbose messages
+verbose = false
+
+# prettify output data file
+prettify = false
