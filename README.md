@@ -1,6 +1,6 @@
 # clymene
 
-Process files, packs them and yields an atlas (image and data).
+The main target is to aid game devs at atlas packing and processing. It doesn't just outputs a packed image, but also a data set about it's sources, which they can be either static images or animations (containing it's frames and tracks data extracted from source).
 
 ## Design Goals
 
