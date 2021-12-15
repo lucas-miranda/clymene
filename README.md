@@ -11,23 +11,20 @@ Process files, packs them and yields an atlas (image and data).
 
 ## Features
 
-* Input files processing
-    * Supported formats
-        * [X] aseprite, ase
-        * [ ] png (with data descriptor)
-        * [ ] *others relevant formats*
-    * [X] Multithreaded processing
+* Input files formats
+    * [X] aseprite, ase
+    * [ ] png (with data descriptor)
+    * [ ] *others relevant formats*
+* Multithreaded sources processing
 * Config project-like file
     * [ ] Reads config file from input directory (mixed with system-wide one)
-* Outputs image and data
-    * Data file formats
-        * [X] json
-        * [ ] binary
-        * [ ] *others relevant formats*
-    * [ ] Combined file (image + data)
-    * Stats
-        * [X] Space usage
-        * [ ] Density
+* Outputs file formats
+    * [X] json
+    * [ ] binary (image + data)
+    * [ ] *others relevant formats*
+* Output stats
+    * [X] Space usage
+    * [ ] Density
 
 ## Building
 
@@ -37,9 +34,9 @@ Process files, packs them and yields an atlas (image and data).
 
 ## Usage
 
-1. Take [config file](/config.toml)
+1. Take [config.toml file](/config.toml)
 2. Put it aside clymene executable (after building it)
-3. Open config file and change:
+3. Open *config.toml* file and change:
     - `image.input_path` directory to retrieve image sources
 4. Optionally, you can modify:
     - `output.path` directory where clymene should outputs
