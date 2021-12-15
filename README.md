@@ -1,4 +1,4 @@
-# Clymene
+# clymene
 
 Process files, packs them and yields an atlas (image and data).
 
