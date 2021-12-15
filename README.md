@@ -18,10 +18,16 @@ The main target is to aid game devs at atlas packing and processing. It doesn't 
 * Multithreaded sources processing
 * Config project-like file
     * [ ] Reads config file from input directory (mixed with system-wide one)
-* Outputs file formats
-    * [X] json
-    * [ ] binary (image + data)
-    * [ ] *others relevant formats*
+* Output file formats
+    * Combined
+        * [ ] binary (image + data)
+    * Splitted
+        * Image
+            * [X] png
+            * [ ] *others relevant formats*
+        * Data 
+            * [X] json
+            * [ ] *others relevant formats*
 * Output stats
     * [X] Space usage
     * [ ] Density
