@@ -8,6 +8,14 @@ macro_rules! is_trace_enabled {
     }};
 }
 
+#[cfg(not(debug_assertions))]
+#[allow(unused_macros)]
+macro_rules! is_debug_enabled {
+    () => {{
+        false
+    }};
+}
+
 #[cfg(debug_assertions)]
 #[allow(unused_macros)]
 macro_rules! is_debug_enabled {
@@ -133,7 +141,6 @@ macro_rules! errorln {
     };
 }
 
-#[cfg(debug_assertions)]
 #[allow(unused_macros)]
 macro_rules! debug {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
@@ -161,7 +168,6 @@ macro_rules! debug {
     };
 }
 
-#[cfg(debug_assertions)]
 #[allow(unused_macros)]
 macro_rules! debugln {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
@@ -189,7 +195,6 @@ macro_rules! debugln {
     };
 }
 
-#[cfg(debug_assertions)]
 #[allow(unused_macros)]
 macro_rules! trace {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {{
@@ -217,7 +222,6 @@ macro_rules! trace {
     };
 }
 
-#[cfg(debug_assertions)]
 #[allow(unused_macros)]
 macro_rules! traceln {
     ($first_style_name:ident $( : $first_style_value:expr )? $( ; $other_style_name:ident $( : $other_style_value:expr )? )* , $str:literal $($arg:tt)*) => {
