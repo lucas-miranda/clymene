@@ -1,0 +1,17 @@
+tag_prefix = "v"
+
+pre_bump_hooks = [
+    "cargo clippy -- -D warnings",
+    "cargo fmt --all -- --check",
+    "cargo bump {{version}}",
+    "cargo build --release",
+]
+
+post_bump_hooks = [
+    "git push",
+    "git push origin v{{version}}",
+]
+
+[changelog]
+path = "CHANGELOG.md"
+template = "templates/incremental-changelog-template"
