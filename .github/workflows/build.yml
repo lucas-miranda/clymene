@@ -1,0 +1,140 @@
+name: Build
+
+on:
+  workflow_call:
+    outputs:
+      linux-artifact-filepath:
+        value: ${{ jobs.linux.outputs.artifact-filepath }}
+      windows-artifact-filepath:
+        value: ${{ jobs.windows.outputs.artifact-filepath }}
+      macos-artifact-filepath:
+        value: ${{ jobs.macos.outputs.artifact-filepath }}
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-filepath: ${{ steps.values.outputs.archive_filepath }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Archive
+        id: archive
+        run: |
+          archive_filename="clymene-linux.tar.gz"
+          cd target/release
+          tar cfz $archive_filename clymene
+          echo "::set-output name=filename::$archive_filename"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: clymene-linux
+          path: target/release/${{ steps.archive.outputs.filename }}
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Define Output Values
+        id: values
+        run: |
+          path=clymene-linux/${{ steps.archive.outputs.filename }}
+          echo "::set-output name=archive_filepath::$path"
+
+  windows:
+    runs-on: windows-latest
+    outputs:
+      artifact-filepath: ${{ steps.values.outputs.archive_filepath }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Archive
+        id: archive
+        shell: bash
+        run: |
+          archive_filename="clymene-windows.zip"
+          cd target/release
+          powershell Compress-Archive clymene.exe $archive_filename
+          echo "::set-output name=filename::$archive_filename"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: clymene-windows
+          path: target/release/${{ steps.archive.outputs.filename }}
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Define Output Values
+        id: values
+        shell: bash
+        run: |
+          path=clymene-windows/${{ steps.archive.outputs.filename }}
+          echo "::set-output name=archive_filepath::$path"
+
+  macos:
+    runs-on: macos-latest
+    outputs:
+      artifact-filepath: ${{ steps.values.outputs.archive_filepath }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Archive
+        id: archive
+        run: |
+          archive_filename="clymene-macos.tar.gz"
+          cd target/release
+          tar cfz $archive_filename clymene
+          echo "::set-output name=filename::$archive_filename"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: clymene-macos
+          path: target/release/${{ steps.archive.outputs.filename }}
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Define Output Values
+        id: values
+        run: |
+          path=clymene-macos/${{ steps.archive.outputs.filename }}
+          echo "::set-output name=archive_filepath::$path"

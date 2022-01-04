@@ -1,0 +1,13 @@
+{% for type, typed_commits in commits | sort(attribute="type")| group_by(attribute="type")%}                            \
+                                                                                                                        \
+#### {{ type | upper_first }}
+                                                                                                                        \
+    {% for scope, scoped_commits in typed_commits | group_by(attribute="scope") %}                                      \
+        {% for commit in scoped_commits | sort(attribute="scope") %}                                                    \
+            - {{ commit.id }} - **({{ scope }})** {{ commit.summary }}
+        {% endfor %}                                                                                                    \
+    {% endfor %}                                                                                                        \
+    {% for commit in typed_commits | unscoped %}                                                                        \
+            - {{ commit.id }} - {{ commit.summary }}
+    {% endfor %}                                                                                                        \
+{% endfor %}                                                                                                            \

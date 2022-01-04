@@ -1,0 +1,26 @@
+name: Clippy
+
+on:
+    workflow_call:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Add Components
+        run: rustup component add clippy rustfmt
+
+      - name: Run
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: -- -D warnings
+
+      - name: Run
+        run: cargo fmt --all -- --check

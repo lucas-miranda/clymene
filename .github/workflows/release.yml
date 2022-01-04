@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  check:
+    uses: lucas-miranda/clymene/.github/workflows/clippy.yml@main
+
+  build:
+    needs: check
+    uses: lucas-miranda/clymene/.github/workflows/build.yml@main
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Prepare Release
+        id: release
+        uses: oknozor/cocogitto-action@v2
+        with:
+          check: false
+          check-latest-tag-only: true
+
+      - name: Version
+        id: version
+        run: |
+          LATEST_VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
+          echo ::set-output name=latest::"$LATEST_VERSION"
+
+      - name: Generate Changelog
+        run: cog changelog --at ${{ steps.version.outputs.latest }} -t templates/release-changelog-template > GITHUB_CHANGELOG.md
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: "${{ needs.build.outputs.linux-artifact-filepath }},${{ needs.build.outputs.windows-artifact-filepath }},${{ needs.build.outputs.macos-artifact-filepath }}"
+          bodyFile: GITHUB_CHANGELOG.md
+          #draft: true
+          replacesArtifacts: true
+          tag: ${{ steps.version.outputs.latest }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display Result
+        run: |
+          echo "Bumped to ${{ steps.version.outputs.latest }}"
+          echo ""
+          echo "Changelog:"
+          echo ""
+          echo "$(cat GITHUB_CHANGELOG.md)"
