@@ -7,7 +7,7 @@ use crate::{
     GlobalArgs,
 };
 
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{App, Arg, ArgMatches};
 use colored::Colorize;
 
 use processors::{
@@ -45,17 +45,17 @@ impl ArgsHandler for GeneratorMode {
         "generate"
     }
 
-    fn subcommand<'a>() -> Option<App<'a, 'a>> {
+    fn subcommand<'a>() -> Option<App<'a>> {
         Some(
-            SubCommand::with_name(Self::name())
+            App::new(Self::name())
                 .about("Generate an atlas image and data using source files")
                 .arg(
-                    Arg::with_name("display")
-                        .short("d")
+                    Arg::new("display")
+                        .short('d')
                         .long("display")
                         .takes_value(true)
                         .possible_values(&["simple", "list", "detailed"])
-                        .case_insensitive(true)
+                        .ignore_case(true)
                         .help("Specifies file presentation kind"),
                 ),
         )

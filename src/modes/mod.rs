@@ -30,17 +30,15 @@ macro_rules! register_modes {
                 traceln!("With config file at {}", global_args.config_filepath.bold());
             }
 
-            let (name, m) = args.subcommands();
-
-            $(
-                if <$mode_type>::name() == name {
-                    if let Some(sub_matches) = m {
+            if let Some((name, sub_matches)) = args.subcommand() {
+                $(
+                    if <$mode_type>::name() == name {
                         let submode_args = <$mode_type>::handle(sub_matches, global_args);
                         <$mode_type>::run(config, &submode_args);
                         return;
                     }
-                }
-            )*
+                )*
+            }
 
             // default mode
             GeneratorMode::run(config, &GeneratorModeArgs::new(global_args));

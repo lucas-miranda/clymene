@@ -1,20 +1,17 @@
 use crate::GlobalArgs;
-use clap::{
-    app_from_crate, crate_authors, crate_description, crate_name, crate_version, App, Arg,
-    ArgMatches,
-};
+use clap::{app_from_crate, App, Arg, ArgMatches};
 
 pub trait ArgsHandler {
     type ModeArgs;
 
     fn name() -> &'static str;
-    fn subcommand<'a>() -> Option<App<'a, 'a>>;
+    fn subcommand<'a>() -> Option<App<'a>>;
     fn handle(matches: &ArgMatches, global_args: GlobalArgs) -> Self::ModeArgs;
 }
 
 pub struct Args<'a> {
-    subcommands: Vec<App<'a, 'a>>,
-    matches: Option<ArgMatches<'a>>,
+    subcommands: Vec<App<'a>>,
+    matches: Option<ArgMatches>,
 }
 
 impl<'a> Args<'a> {
@@ -25,42 +22,42 @@ impl<'a> Args<'a> {
         }
     }
 
-    pub fn matches(&self) -> &ArgMatches<'a> {
+    pub fn matches(&self) -> &ArgMatches {
         self.matches.as_ref().unwrap()
     }
 
-    pub fn subcommands(&self) -> (&str, Option<&ArgMatches<'a>>) {
+    pub fn subcommand(&self) -> Option<(&str, &ArgMatches)> {
         self.matches.as_ref().unwrap().subcommand()
     }
 
-    pub fn register(&mut self, subcommand: App<'a, 'a>) {
+    pub fn register(&mut self, subcommand: App<'a>) {
         self.subcommands.push(subcommand);
     }
 
     pub fn load(&mut self) {
         let app = app_from_crate!()
             .arg(
-                Arg::with_name("config")
-                    .short("c")
+                Arg::new("config")
+                    .short('c')
                     .long("config")
                     .takes_value(true)
                     .value_name("FILE")
                     .help("Uses a custom config toml file"),
             )
             .arg(
-                Arg::with_name("verbose")
-                    .short("v")
+                Arg::new("verbose")
+                    .short('v')
                     .long("verbose")
                     .help("Gives additional info about execution"),
             )
             .arg(
-                Arg::with_name("debug")
+                Arg::new("debug")
                     .long("debug")
                     .help("Gives debug info, useful when tracking problems"),
             )
             .arg(
-                Arg::with_name("force")
-                    .short("f")
+                Arg::new("force")
+                    .short('f')
                     .long("force")
                     .help("Force every action"),
             );

@@ -72,7 +72,7 @@ impl Config {
                     "At file '{}'\nError: {:?}\nDetails: {}",
                     filepath.as_ref().display(),
                     de_err,
-                    de_err.to_string()
+                    de_err
                 );
             }
             LoadError::FileNotFound(path) => {
