@@ -54,8 +54,7 @@ impl ImageProcessor {
         let mut source_files_by_extension = self
             .format_handlers
             .iter()
-            .map(|h| h.extensions())
-            .flatten()
+            .flat_map(|h| h.extensions())
             .map(|ext| (OsString::from(ext), Vec::new()))
             .collect::<HashMap<OsString, Vec<PathBuf>>>();
 

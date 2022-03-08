@@ -107,16 +107,14 @@ impl Processing {
                     );
                 }
 
-                let location;
-
-                match source_file.strip_prefix(&self.source_path) {
-                    Ok(path) => location = path.with_extension(""),
+                let location = match source_file.strip_prefix(&self.source_path) {
+                    Ok(path) => path.with_extension(""),
                     Err(_) => {
                         self.failed_files += 1;
                         self.total_processed_files += 1;
                         continue;
                     }
-                }
+                };
 
                 if !options.force {
                     if let Some(graphic) = self.retrieve_from_cache(
