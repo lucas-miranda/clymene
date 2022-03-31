@@ -1,5 +1,4 @@
 use std::{
-    cmp::Ordering,
     fs, io,
     path::{Path, PathBuf},
 };
@@ -8,13 +7,10 @@ use colored::Colorize;
 
 use crate::{
     common::Verbosity,
-    graphics::{
-        animation::{Frame, Track},
-        Graphic,
-    },
+    graphics::{animation::Frame, Graphic},
     math::Rectangle,
     modes::generator::processors::{
-        data::{FrameData, FrameIndicesData, GraphicData, TrackData},
+        data::{FrameData, GraphicData},
         ConfigStatus, Processor, State,
     },
     settings::{Config, ProcessorConfig},
@@ -119,11 +115,8 @@ impl CacheExporterProcessor {
                     source_metadata = source_path.metadata().unwrap();
 
                     // extract data
-                    for track in &animation.tracks {
-                        data.tracks.push(TrackData {
-                            label: track.label.clone(),
-                            indices: self.prepare_indices(track),
-                        });
+                    for track in animation.tracks.entries() {
+                        data.tracks.register(track.clone());
                     }
 
                     for (index, frame) in animation.frames.iter().enumerate() {
@@ -193,51 +186,6 @@ impl CacheExporterProcessor {
         }
 
         Ok(())
-    }
-
-    fn prepare_indices(&self, track: &Track) -> Vec<FrameIndicesData> {
-        // try to group ranges together
-        let mut indices = Vec::new();
-        let mut index_range_start: Option<&u32> = None;
-        let mut index_range_end: Option<&u32> = None;
-
-        for index in &track.frame_indices {
-            match index_range_end {
-                Some(end_index) => {
-                    if *index != end_index + 1 {
-                        let from = *index_range_start.expect("Undefined range start.");
-                        let to = *index_range_end.expect("Undefined range end.");
-
-                        match to.cmp(&from) {
-                            Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
-                            Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
-                            _ => panic!("Malformed indices array. From: {}, To: {}", from, to),
-                        }
-
-                        index_range_start = Some(index);
-                    }
-                }
-                None => {
-                    index_range_start = Some(index);
-                }
-            }
-
-            index_range_end = Some(index);
-        }
-
-        // handle remaining indices
-        if let Some(from) = index_range_start {
-            let from = *from;
-            let to = *index_range_end.expect("Undefined range end.");
-
-            match to.cmp(&from) {
-                Ordering::Greater => indices.push(FrameIndicesData::Range { from, to }),
-                Ordering::Equal => indices.push(FrameIndicesData::Value(to)),
-                _ => panic!("Malformed indices array. From: {}, To: {}", from, to),
-            }
-        }
-
-        indices
     }
 }
 

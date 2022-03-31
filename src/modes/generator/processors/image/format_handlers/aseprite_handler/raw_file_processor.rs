@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::{
     graphics::{
-        animation::{Animation, Frame, Track},
+        animation::{Animation, Frame, FrameIndicesGroup, Track},
         Graphic, GraphicSource, Image,
     },
     math::Rectangle,
@@ -69,13 +69,11 @@ impl FormatProcessor for RawFileProcessor {
 
                 for tag_index in 0..tag_count {
                     let tag = ase.tag(tag_index);
-                    let mut track = Track::new(Some(tag.name().to_owned()));
 
-                    for frame_index in tag.from_frame()..=tag.to_frame() {
-                        track.frame_indices.push(frame_index);
-                    }
-
-                    animation.push_track(track);
+                    animation.tracks.register(Track::new(
+                        Some(tag.name().to_owned()),
+                        FrameIndicesGroup::with_range(tag.from_frame(), tag.to_frame()),
+                    ));
                 }
 
                 Ok(animation.into())

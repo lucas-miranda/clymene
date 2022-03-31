@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     graphics::{
-        animation::{Animation, Frame, Track},
+        animation::{Animation, Frame},
         Graphic, Image,
     },
     modes::generator::processors::{
-        data::{FrameData, FrameIndicesData, GraphicData},
+        data::{FrameData, GraphicData},
         image::{GraphicSourceData, GraphicSourceDataSet},
     },
 };
@@ -115,25 +115,8 @@ impl CacheEntry {
         }
 
         // register tracks
-        for track_data in &self.data.tracks {
-            let label = track_data.label.as_ref().cloned();
-            let mut track = Track::new(label);
-
-            for index_entry in &track_data.indices {
-                match index_entry {
-                    FrameIndicesData::Value(index) => {
-                        track.frame_indices.push(*index);
-                    }
-                    FrameIndicesData::Range { from, to } => {
-                        for index in (*from)..=(*to) {
-                            track.frame_indices.push(index);
-                        }
-                    }
-                }
-            }
-
-            track.frame_indices.sort_unstable();
-            animation.push_track(track);
+        for track in self.data.tracks.entries() {
+            animation.tracks.register(track.clone())
         }
 
         Some(animation.into())

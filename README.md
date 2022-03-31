@@ -25,7 +25,7 @@ The main target is to aid game devs at atlas packing and processing. It doesn't 
         * Image
             * [X] png
             * [ ] *others relevant formats*
-        * Data 
+        * Data
             * [X] json
             * [ ] *others relevant formats*
 * Output stats

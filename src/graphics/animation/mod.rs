@@ -1,10 +1,16 @@
 use std::{ffi::OsString, path::PathBuf};
 
 mod frame;
+mod frame_indices;
+mod frame_indices_group;
 mod track;
+mod track_list;
 
 pub use frame::Frame;
+pub use frame_indices::FrameIndices;
+pub use frame_indices_group::FrameIndicesGroup;
 pub use track::Track;
+pub use track_list::TrackList;
 
 use crate::graphics::Error;
 
@@ -18,7 +24,7 @@ pub struct Animation {
 
     pub indices: Vec<u32>,
     pub frames: Vec<Frame>,
-    pub tracks: Vec<Track>,
+    pub tracks: TrackList,
 }
 
 impl Animation {
@@ -38,15 +44,11 @@ impl Animation {
             source_path,
             indices: Vec::new(),
             frames: Vec::new(),
-            tracks: Vec::new(),
+            tracks: TrackList::new(),
         })
     }
 
     pub fn push_frame(&mut self, frame: Frame) {
         self.frames.push(frame);
-    }
-
-    pub fn push_track(&mut self, track: Track) {
-        self.tracks.push(track);
     }
 }

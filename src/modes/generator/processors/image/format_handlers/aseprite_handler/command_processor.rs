@@ -11,7 +11,7 @@ use tree_decorator::decorator;
 
 use crate::{
     graphics::{
-        animation::{Animation, Frame, Track},
+        animation::{Animation, Frame, FrameIndicesGroup, Track},
         Graphic, Image,
     },
     math::Size,
@@ -330,19 +330,10 @@ impl FormatProcessor for CommandProcessor {
                 }
             };
 
-            let mut track = Track::new(label);
-
-            for index in frame_tag_data.from..=frame_tag_data.to {
-                if index < 0 {
-                    errorln!("Skipping invalid index '{}'.", index);
-                    continue;
-                }
-
-                track.frame_indices.push(index as u32);
-            }
-
-            track.frame_indices.sort_unstable();
-            animation.push_track(track);
+            animation.tracks.register(Track::new(
+                label,
+                FrameIndicesGroup::with_range(frame_tag_data.from as u32, frame_tag_data.to as u32),
+            ));
         }
 
         Ok(animation.into())
