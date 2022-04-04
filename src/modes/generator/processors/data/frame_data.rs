@@ -11,8 +11,13 @@ use crate::{
 pub enum FrameData {
     Empty,
     Contents {
+        #[serde(rename = "atlas region")]
         atlas_region: Rectangle<u32>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
         duration: Option<u32>,
+
+        #[serde(rename = "source region")]
         source_region: Rectangle<u32>,
     },
 }

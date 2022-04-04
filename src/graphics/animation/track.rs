@@ -8,20 +8,20 @@ pub struct Track {
     #[serde(skip_serializing_if = "TrackList::is_empty")]
     pub tracks: TrackList,
 
-    frame_indices: FrameIndicesGroup,
+    indices: FrameIndicesGroup,
 }
 
 impl Track {
-    pub fn new(label: Option<String>, frame_indices: FrameIndicesGroup) -> Self {
+    pub fn new(label: Option<String>, indices: FrameIndicesGroup) -> Self {
         Self {
             label,
-            frame_indices,
+            indices,
             tracks: TrackList::new(),
         }
     }
 
-    /// [`FrameIndicesGroup`] in this `Track`.
-    pub fn frame_indices(&self) -> &FrameIndicesGroup {
-        &self.frame_indices
+    /// Group of frame indices.
+    pub fn indices(&self) -> &FrameIndicesGroup {
+        &self.indices
     }
 }

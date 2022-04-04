@@ -30,7 +30,7 @@ impl TrackList {
             .entries
             .iter()
             .enumerate()
-            .filter_map(|(i, t)| track.frame_indices().contains(t.frame_indices()).then(|| i))
+            .filter_map(|(i, t)| track.indices().contains(t.indices()).then(|| i))
             .collect();
 
         // remove items by index using reverse order
@@ -44,7 +44,7 @@ impl TrackList {
 
         // try insert to the first inner track which contains it
         for t in &mut self.entries {
-            if t.frame_indices().contains(track.frame_indices()) {
+            if t.indices().contains(track.indices()) {
                 t.tracks.register(track);
                 return;
             }
