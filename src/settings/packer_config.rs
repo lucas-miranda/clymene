@@ -6,7 +6,7 @@ use crate::{
     settings::{ConfigLoggerStatus, PackerRetryConfig, ProcessorConfig},
 };
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PackerConfig {
     #[serde(default)]
     pub verbose: bool,
@@ -22,6 +22,18 @@ pub struct PackerConfig {
 
     #[serde(default)]
     pub retry: PackerRetryConfig,
+}
+
+impl Default for PackerConfig {
+    fn default() -> Self {
+        Self {
+            verbose: false,
+            atlas_size: 1024,
+            optimize: true,
+            force: false,
+            retry: PackerRetryConfig::default(),
+        }
+    }
 }
 
 impl ProcessorConfig for PackerConfig {

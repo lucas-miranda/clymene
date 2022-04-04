@@ -15,7 +15,7 @@ use crate::{
     },
 };
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub verbose: bool,

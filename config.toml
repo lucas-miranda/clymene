@@ -44,7 +44,7 @@ force = false
 enable = true
 
 # max retries (zero will make it retry indefinitely)
-max_retries = 0
+max_retries = 3
 
 # retry until reaches an atlas size (zero will leave it to use default value, which is 4096)
 until_atlas_size = 0

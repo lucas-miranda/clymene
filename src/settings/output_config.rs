@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 const DEFAULT_NAME: &str = "atlas";
 const DEFAULT_FOLDER_PATH: &str = "output";
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OutputConfig {
     #[serde(default)]
     pub verbose: bool,
@@ -34,6 +34,16 @@ impl OutputConfig {
             DEFAULT_NAME
         } else {
             &self.name
+        }
+    }
+}
+
+impl Default for OutputConfig {
+    fn default() -> Self {
+        Self {
+            verbose: false,
+            name: OutputConfig::default_name(),
+            path: OutputConfig::default_path(),
         }
     }
 }

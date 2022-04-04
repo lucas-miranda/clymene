@@ -39,8 +39,8 @@ impl Default for ImageConfig {
     fn default() -> Self {
         Self {
             verbose: false,
-            jobs: i32::default(),
-            input_path: String::default(),
+            jobs: 0,
+            input_path: String::from("source"),
             output_path: PathBuf::default(),
             display: ImageConfig::default_display(),
             aseprite: AsepriteConfig::default(),
