@@ -1,6 +1,6 @@
 use super::Mode;
 use crate::{args::ArgsHandler, settings::Config, GlobalArgs};
-use clap::{App, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command};
 use colored::Colorize;
 use std::{
     fs,
@@ -21,9 +21,9 @@ impl ArgsHandler for CacheMode {
         "clear-cache"
     }
 
-    fn subcommand<'a>() -> Option<App<'a>> {
+    fn subcommand<'a>() -> Option<Command<'a>> {
         Some(
-            App::new(Self::name())
+            Command::new(Self::name())
                 .about("Clear cache directory")
                 .arg(Arg::new("all").long("all").help("Clear all cache entries")),
         )

@@ -1,16 +1,16 @@
 use crate::GlobalArgs;
-use clap::{app_from_crate, App, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command, command};
 
 pub trait ArgsHandler {
     type ModeArgs;
 
     fn name() -> &'static str;
-    fn subcommand<'a>() -> Option<App<'a>>;
+    fn subcommand<'a>() -> Option<Command<'a>>;
     fn handle(matches: &ArgMatches, global_args: GlobalArgs) -> Self::ModeArgs;
 }
 
 pub struct Args<'a> {
-    subcommands: Vec<App<'a>>,
+    subcommands: Vec<Command<'a>>,
     matches: Option<ArgMatches>,
 }
 
@@ -30,12 +30,12 @@ impl<'a> Args<'a> {
         self.matches.as_ref().unwrap().subcommand()
     }
 
-    pub fn register(&mut self, subcommand: App<'a>) {
+    pub fn register(&mut self, subcommand: Command<'a>) {
         self.subcommands.push(subcommand);
     }
 
     pub fn load(&mut self) {
-        let app = app_from_crate!()
+        let command = command!()
             .arg(
                 Arg::new("config")
                     .short('c')
@@ -62,6 +62,6 @@ impl<'a> Args<'a> {
                     .help("Force every action"),
             );
 
-        self.matches = Some(app.subcommands(self.subcommands.drain(..)).get_matches());
+        self.matches = Some(command.subcommands(self.subcommands.drain(..)).get_matches());
     }
 }

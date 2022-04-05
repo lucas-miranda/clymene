@@ -99,7 +99,7 @@ impl<P: Packer> PackerProcessor<P> {
             match &graphic_source.atlas_region {
                 Some(atlas_region) => {
                     image_buffer.copy_from(
-                        &graphic_source.region_buffer_view(),
+                        &graphic_source.region_buffer_view().to_image(),
                         atlas_region.x,
                         atlas_region.y,
                     )?;

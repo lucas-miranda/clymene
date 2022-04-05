@@ -87,8 +87,19 @@ fn create_graphic_source(
     frame_index: u32,
     output_dir_path: &Path,
 ) -> Option<GraphicSource> {
-    let frame_image_buffer = frame.image();
-    let (w, h) = frame_image_buffer.dimensions();
+    let w;
+    let h;
+
+    let frame_image_buffer = {
+        let ase_frame_image = frame.image();
+        let dim = ase_frame_image.dimensions();
+        w = dim.0;
+        h = dim.1;
+
+        // recreate asefile frame image from raw
+        // just to be independent from their image version
+        RgbaImage::from_raw(w, h, ase_frame_image.into_raw()).unwrap()
+    };
 
     // ensure w and h isn't zero
     if w == 0 || h == 0 {
