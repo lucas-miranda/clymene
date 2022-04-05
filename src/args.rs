@@ -1,5 +1,5 @@
 use crate::GlobalArgs;
-use clap::{Arg, ArgMatches, Command, command};
+use clap::{command, Arg, ArgMatches, Command};
 
 pub trait ArgsHandler {
     type ModeArgs;
@@ -62,6 +62,10 @@ impl<'a> Args<'a> {
                     .help("Force every action"),
             );
 
-        self.matches = Some(command.subcommands(self.subcommands.drain(..)).get_matches());
+        self.matches = Some(
+            command
+                .subcommands(self.subcommands.drain(..))
+                .get_matches(),
+        );
     }
 }

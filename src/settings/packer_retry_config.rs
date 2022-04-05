@@ -17,7 +17,7 @@ impl Default for PackerRetryConfig {
         Self {
             enable: true,
             max_retries: 3,
-            until_atlas_size: 0
+            until_atlas_size: 0,
         }
     }
 }
