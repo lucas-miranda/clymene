@@ -17,6 +17,10 @@ impl FrameIndicesGroup {
     }
 
     pub fn with_range(from: u32, to: u32) -> Self {
+        if from == to {
+            return Self::with(from);
+        }
+
         let mut indices = Self::default();
         indices.insert(FrameIndices::Range { from, to });
 
