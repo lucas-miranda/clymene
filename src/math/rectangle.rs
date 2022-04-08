@@ -60,11 +60,19 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
     }
 
     pub fn right(&self) -> T {
-        self.x + self.width
+        if self.width.is_zero() {
+            self.left()
+        } else {
+            self.left() + self.width - T::one()
+        }
     }
 
     pub fn bottom(&self) -> T {
-        self.y + self.height
+        if self.height.is_zero() {
+            self.top()
+        } else {
+            self.top() + self.height - T::one()
+        }
     }
 
     /*
@@ -90,16 +98,14 @@ impl<T: Num + NumCast + PartialOrd + Copy> Rectangle<T> {
     */
 
     pub fn set_left(&mut self, left: T) {
-        let w = self.right() - left;
+        let w = (self.right() + T::one()) - left;
         self.x = left;
         self.width = w;
     }
 
     /*
     pub fn set_top(&mut self, top: T) {
-        let h = self.bottom() - top;
-        self.y = top;
-        self.height = h;
+        unimplemented!();
     }
     */
 

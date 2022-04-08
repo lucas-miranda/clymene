@@ -99,7 +99,7 @@ impl Packer for RowTightPacker {
 
                 if empty_space.width > source.region.width {
                     empty_spaces.push(Rectangle::new(
-                        atlas_region.right(),
+                        atlas_region.right() + 1,
                         atlas_region.top(),
                         empty_space.width - source.region.width,
                         empty_space.height,
@@ -109,7 +109,7 @@ impl Packer for RowTightPacker {
                 if empty_space.height > source.region.height {
                     empty_spaces.push(Rectangle::new(
                         atlas_region.left(),
-                        atlas_region.bottom(),
+                        atlas_region.bottom() + 1,
                         source.region.width,
                         empty_space.height - source.region.height,
                     ));
@@ -120,7 +120,7 @@ impl Packer for RowTightPacker {
 
                 if empty_space.width > source.region.width {
                     empty_spaces.push(Rectangle::new(
-                        atlas_region.right(),
+                        atlas_region.right() + 1,
                         atlas_region.top(),
                         empty_space.width - source.region.width,
                         source.region.height,
@@ -130,7 +130,7 @@ impl Packer for RowTightPacker {
                 if empty_space.height > source.region.height {
                     empty_spaces.push(Rectangle::new(
                         atlas_region.left(),
-                        atlas_region.bottom(),
+                        atlas_region.bottom() + 1,
                         empty_space.width,
                         empty_space.height - source.region.height,
                     ));
