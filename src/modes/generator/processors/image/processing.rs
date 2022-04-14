@@ -75,7 +75,7 @@ impl Processing {
 
     pub(super) fn process<'a, T: Iterator<Item = &'a FormatHandlerEntry>>(
         &mut self,
-        threads: &mut Vec<ProcessingThread>,
+        threads: &mut [ProcessingThread],
         receiver: Receiver<ProcessedInfo>,
         format_handlers: T,
         cache: &mut Cache,
