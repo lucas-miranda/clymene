@@ -21,7 +21,7 @@ colored = "2.0.0"
 num-traits = "0.2.14"
 image = "0.24.1"
 tree_decorator = { git = "https://github.com/lucas-miranda/tree_decorator", version = "^0.1.2", features = ["no_log"] }
-asefile = "0.3.4"
+asefile = { git = "https://github.com/lucas-miranda/asefile", version = "0.3.4" }
 clap = { version = "3.1.8", features = ["cargo", "default"] }
 num_cpus = "1.13.1"
 
