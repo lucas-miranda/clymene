@@ -17,11 +17,11 @@ impl Image {
     pub fn with_graphic_source(
         graphic_source: GraphicSource,
         source_path: PathBuf,
-    ) -> Result<Self, Error> {
-        let metadata = source_path.metadata().unwrap();
+    ) -> eyre::Result<Self> {
+        let metadata = source_path.metadata().map_err(eyre::Report::from)?;
 
         if !metadata.is_file() {
-            return Err(Error::FileExpected(source_path));
+            return Err(Error::FileExpected(source_path).into());
         }
 
         let source_name = source_path

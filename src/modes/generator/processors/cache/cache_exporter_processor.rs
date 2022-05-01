@@ -17,6 +17,7 @@ use crate::{
     util::Timer,
 };
 
+use eyre::WrapErr;
 use super::Cache;
 
 pub struct CacheExporterProcessor {
@@ -28,7 +29,7 @@ impl CacheExporterProcessor {
         Self { verbose: false }
     }
 
-    fn backup(&self, cache_path: &Path) -> Result<Option<PathBuf>, io::Error> {
+    fn backup(&self, cache_path: &Path) -> eyre::Result<Option<PathBuf>> {
         if !cache_path.is_file() {
             traceln!("No need to backup, there is no cache.json file");
             return Ok(None);
@@ -46,7 +47,7 @@ impl CacheExporterProcessor {
         Ok(Some(backup_cache_path))
     }
 
-    fn cache(&self, state: &mut State, cache_path: &Path) -> Result<(), super::SaveError> {
+    fn cache(&self, state: &mut State, cache_path: &Path) -> eyre::Result<()> {
         let c = state.config.try_read().expect("Can't retrieve a read lock");
         let current_metadata = state.create_cache_metadata();
         let debug = state.args().global.debug;
@@ -217,13 +218,12 @@ impl Processor for CacheExporterProcessor {
         let backup_path = match self.backup(cache_pathbuf.as_path()) {
             Ok(p) => p,
             Err(e) => {
-                match e.kind() {
+                match e.downcast_ref::<io::Error>().unwrap().kind() {
                     io::ErrorKind::NotFound => (),
-                    _ => panic!(
-                        "Can't backup cache file at '{}': {}",
-                        cache_pathbuf.display(),
-                        e
-                    ),
+                    _ => Err(e).wrap_err(format!(
+                        "Can't backup cache file at '{}'",
+                        cache_pathbuf.display()
+                    )).unwrap()
                 }
 
                 None

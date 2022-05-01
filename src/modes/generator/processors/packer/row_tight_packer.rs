@@ -22,9 +22,9 @@ impl Packer for RowTightPacker {
         &self,
         atlas_size: Size<u32>,
         graphic_sources: &mut Vec<&mut GraphicSource>,
-    ) -> Result<f32, PackerError> {
+    ) -> eyre::Result<f32> {
         if atlas_size.width == 0 || atlas_size.height == 0 {
-            return Err(PackerError::EmptyTargetSize);
+            return Err(PackerError::EmptyTargetSize.into());
         }
 
         let atlas_area = atlas_size.area();
@@ -41,7 +41,7 @@ impl Packer for RowTightPacker {
         // reverse traverse sorted graphic sources
         for source in graphic_sources.iter_mut().rev() {
             if empty_spaces.is_empty() {
-                return Err(PackerError::OutOfSpace);
+                return Err(PackerError::OutOfSpace.into());
             }
 
             let empty_space = {
@@ -81,7 +81,7 @@ impl Packer for RowTightPacker {
 
                 match best_fit {
                     Some(space) => empty_spaces.remove(space.index),
-                    None => return Err(PackerError::OutOfSpace),
+                    None => return Err(PackerError::OutOfSpace.into()),
                 }
             };
 

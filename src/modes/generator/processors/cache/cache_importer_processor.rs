@@ -397,7 +397,7 @@ impl CacheImporterProcessor {
         &self,
         cache_pathbuf: &Path,
         dir_name: &str,
-    ) -> Result<PathBuf, super::Error> {
+    ) -> eyre::Result<PathBuf> {
         let pathbuf = cache_pathbuf.join(dir_name);
 
         match pathbuf.metadata() {
@@ -405,12 +405,12 @@ impl CacheImporterProcessor {
                 if metadata.is_dir() {
                     Ok(())
                 } else {
-                    Err(super::Error::DirectoryExpected(pathbuf.clone()))
+                    Err(eyre::Error::from(super::Error::DirectoryExpected(pathbuf.clone())))
                 }
             }
             Err(e) => match e.kind() {
                 io::ErrorKind::NotFound => Ok(()),
-                _ => panic!("{}", e),
+                _ => Err(eyre::Error::from(e)),
             },
         }?;
 
@@ -593,7 +593,7 @@ impl Processor for CacheImporterProcessor {
                     }
                 }
                 Err(e) => {
-                    match &e {
+                    match e.downcast_ref::<super::LoadError>().unwrap() {
                         super::LoadError::FileNotFound(_path) => {
                             warnln!("Cache file not found at expected path");
                             infoln!(block, "Creating a new one");

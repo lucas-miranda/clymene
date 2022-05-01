@@ -16,7 +16,9 @@ use args::Args;
 pub use global_args::GlobalArgs;
 use settings::Config;
 
-fn main() {
+fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
+
     let mut args = Args::new();
     modes::register_subcommands(&mut args);
     args.load();
@@ -28,6 +30,8 @@ fn main() {
 
     log::initialize_logger(&mut config, &global_args);
     modes::run(config, args, global_args);
+
+    Ok(())
 }
 
 fn display_header() {

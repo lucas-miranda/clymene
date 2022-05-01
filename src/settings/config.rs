@@ -40,13 +40,13 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(file: &File) -> Result<Config, LoadError> {
+    pub fn load(file: &File) -> eyre::Result<Config> {
         let mut contents = String::new();
         BufReader::new(file).read_to_string(&mut contents).unwrap();
-        toml::from_str(&contents).map_err(LoadError::Deserialize)
+        toml::from_str(&contents).map_err(|e| LoadError::Deserialize(e).into())
     }
 
-    pub fn load_from_path<P: AsRef<Path>>(filepath: P) -> Result<Config, LoadError> {
+    pub fn load_from_path<P: AsRef<Path>>(filepath: P) -> eyre::Result<Config> {
         let file = match OpenOptions::new()
             .read(true)
             .write(true)
@@ -66,26 +66,29 @@ impl Config {
     }
 
     pub fn load_from_path_or_default<P: AsRef<Path>>(filepath: P) -> Config {
-        Config::load_from_path(&filepath).unwrap_or_else(|e| match e {
-            LoadError::Deserialize(de_err) => {
-                panic!(
-                    "At file '{}'\nError: {:?}\nDetails: {}",
-                    filepath.as_ref().display(),
-                    de_err,
-                    de_err
-                );
+        let config_from_path = Config::load_from_path(&filepath);
+
+        match config_from_path {
+            Ok(config) => config,
+            Err(e) => match e.downcast_ref::<LoadError>().unwrap() {
+                LoadError::FileNotFound(path) => {
+                    println!("Config file created at '{}'.", path.display());
+                    let c = Config::default();
+                    c.save_to_path(&path).unwrap();
+                    c
+                },
+                _ => Err(e)
+                    .map_err(|e| e.wrap_err(format!(
+                        "When loading from file at '{}'",
+                        filepath.as_ref().display()
+                    )))
+                    .unwrap(),
             }
-            LoadError::FileNotFound(path) => {
-                println!("Config file created at '{}'.", path.display());
-                let c = Config::default();
-                c.save_to_path(&path).unwrap();
-                c
-            }
-        })
+        }
     }
 
-    pub fn save(&self, file: &File) -> Result<(), SaveError> {
-        let toml_data = toml::to_string(&self).map_err(SaveError::Serialize)?;
+    pub fn save(&self, file: &File) -> eyre::Result<()> {
+        let toml_data = toml::to_string(&self).map_err(|e| eyre::Error::from(SaveError::Serialize(e)))?;
 
         let mut buffer = BufWriter::new(file);
         buffer.write_all(toml_data.as_bytes()).unwrap();
@@ -93,7 +96,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn save_to_path<P: AsRef<Path>>(&self, filepath: P) -> Result<(), SaveError> {
+    pub fn save_to_path<P: AsRef<Path>>(&self, filepath: P) -> eyre::Result<()> {
         let file = OpenOptions::new()
             .write(true)
             .append(false)

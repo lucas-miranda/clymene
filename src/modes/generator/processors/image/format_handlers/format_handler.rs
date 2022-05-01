@@ -5,16 +5,14 @@ use crate::{
     settings::Config,
 };
 
-use super::Error;
-
 pub trait FormatProcessor {
-    fn setup(&self, config: &mut Config) -> Result<ConfigStatus, Error>;
+    fn setup(&self, config: &mut Config) -> eyre::Result<ConfigStatus>;
     fn process(
         &self,
         source_file_path: &Path,
         output_dir_path: &Path,
         config: &Config,
-    ) -> Result<Graphic, Error>;
+    ) -> eyre::Result<Graphic>;
 }
 
 pub trait FormatHandler: FormatProcessor + Verbosity {

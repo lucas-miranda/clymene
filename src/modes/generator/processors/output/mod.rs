@@ -25,11 +25,11 @@ impl<'a> Output<'a> {
         }
     }
 
-    pub fn register_file(&mut self, output_file: OutputFile<'a>) -> Result<(), Error> {
-        let metadata = output_file.path.metadata().map_err(Error::from)?;
+    pub fn register_file(&mut self, output_file: OutputFile<'a>) -> eyre::Result<()> {
+        let metadata = output_file.path.metadata().map_err(eyre::Error::from)?;
 
         if !metadata.is_file() {
-            return Err(Error::FileExpected);
+            return Err(Error::FileExpected.into());
         }
 
         self.files.push(output_file);

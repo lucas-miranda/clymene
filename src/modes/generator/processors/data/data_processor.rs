@@ -67,11 +67,11 @@ impl Processor for DataProcessor {
                             infoln!(last, "{}", "Already Updated".green());
                             return;
                         }
-                        Err(e) => match e {
+                        Err(e) => match e.downcast_ref::<output::Error>().unwrap() {
                             output::Error::FileExpected => {
                                 infoln!("Output file not found, regenerating it")
                             }
-                            _ => panic!("{}", e),
+                            _ => Err(e).unwrap(),
                         },
                     }
                 }

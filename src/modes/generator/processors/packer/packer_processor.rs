@@ -35,11 +35,11 @@ impl<P: Packer> PackerProcessor<P> {
         }
     }
 
-    fn validate_output(&self, state: &mut State) -> Result<(), ValidationError> {
+    fn validate_output(&self, state: &mut State) -> eyre::Result<()> {
         let cache = state.cache.as_ref().expect("Cache isn't available");
 
         if !cache.is_updated() {
-            return Err(ValidationError::CacheNotUpdated);
+            return Err(ValidationError::CacheNotUpdated.into());
         }
 
         let config = state.config.try_read().expect("Can't retrieve a read lock");
@@ -61,23 +61,23 @@ impl<P: Packer> PackerProcessor<P> {
                             state.output.atlas_height,
                         );
 
-                        return Err(ValidationError::PreviousFileImageSizeMismatch);
+                        return Err(ValidationError::PreviousFileImageSizeMismatch.into());
                     }
                 }
             }
             Err(e) => match e.kind() {
                 io::ErrorKind::NotFound => (),
-                _ => return Err(ValidationError::AtlasImageIoError(e)),
+                _ => return Err(ValidationError::AtlasImageIoError(e).into()),
             },
         }
 
         let output_file = OutputFile::with_stats(output_filepath, AtlasOutputStats::new(0.0));
 
         if let Err(e) = state.output.register_file(output_file) {
-            match e {
+            match e.downcast_ref::<output::Error>().unwrap() {
                 output::Error::FileExpected => {
                     infoln!("Output file not found");
-                    return Err(ValidationError::AtlasImageNotFound);
+                    return Err(ValidationError::AtlasImageNotFound.into());
                 }
                 _ => panic!("{}", e),
             }
@@ -92,7 +92,7 @@ impl<P: Packer> PackerProcessor<P> {
         width: u32,
         height: u32,
         graphic_sources: &[&mut GraphicSource],
-    ) -> Result<(), image::ImageError> {
+    ) -> eyre::Result<()> {
         let mut image_buffer = image::ImageBuffer::from_pixel(width, height, image::Rgba([0u8; 4]));
 
         for graphic_source in graphic_sources {
@@ -111,6 +111,7 @@ impl<P: Packer> PackerProcessor<P> {
         }
 
         image_buffer.save_with_format(output_path, image::ImageFormat::Png)
+            .map_err(eyre::Error::from)
     }
 
     fn output_file_path(&self, config: &Config) -> PathBuf {
@@ -214,11 +215,11 @@ impl<P: Packer> Processor for PackerProcessor<P> {
                     doneln!();
                     return;
                 }
-                Err(e) => match e {
+                Err(e) => match e.downcast_ref::<ValidationError>().unwrap() {
                     ValidationError::CacheNotUpdated
                     | ValidationError::AtlasImageNotFound
                     | ValidationError::PreviousFileImageSizeMismatch => (),
-                    _ => panic!("{}", e),
+                    _ => Err(e).unwrap(),
                 },
             }
 
@@ -272,7 +273,7 @@ impl<P: Packer> Processor for PackerProcessor<P> {
                 Ok(u) => break u,
                 Err(err) => {
                     let can_retry = {
-                        match err {
+                        match err.downcast_ref::<PackerError>().unwrap() {
                             PackerError::EmptyTargetSize => false,
                             PackerError::OutOfSpace => {
                                 c.packer.retry.enable

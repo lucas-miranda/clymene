@@ -41,7 +41,7 @@ struct ProcessedInfo {
 enum ProcessedData {
     Succeeded,
     New(Graphic),
-    Failed(format_handlers::Error),
+    Failed(eyre::Report),
 }
 
 enum Process {

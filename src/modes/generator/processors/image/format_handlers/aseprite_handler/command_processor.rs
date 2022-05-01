@@ -201,7 +201,7 @@ impl CommandProcessor {
 }
 
 impl FormatProcessor for CommandProcessor {
-    fn setup(&self, config: &mut Config) -> Result<ConfigStatus, Error> {
+    fn setup(&self, config: &mut Config) -> eyre::Result<ConfigStatus> {
         let mut config_status = ConfigStatus::NotModified;
 
         if let ConfigStatus::Modified = self.ensure_bin_exists(&mut config.image.aseprite) {
@@ -216,7 +216,7 @@ impl FormatProcessor for CommandProcessor {
         source_file_path: &Path,
         output_dir_path: &Path,
         config: &Config,
-    ) -> Result<Graphic, Error> {
+    ) -> eyre::Result<Graphic> {
         // extract every frame (excluding empty ones)
         let output = Command::new(&config.image.aseprite.bin_path)
             .args(&[
@@ -236,7 +236,7 @@ impl FormatProcessor for CommandProcessor {
             .unwrap();
 
         if !output.status.success() {
-            return Err(Error::ExternalProgramFail(output.stderr));
+            return Err(Error::ExternalProgramFail(output.stderr).into());
         }
 
         // generate data
@@ -269,11 +269,11 @@ impl FormatProcessor for CommandProcessor {
             .unwrap();
 
         if !output.status.success() {
-            return Err(Error::ExternalProgramFail(output.stderr));
+            return Err(Error::ExternalProgramFail(output.stderr).into());
         }
 
         // process generated images and data
-        let aseprite_data = Data::from_file(&data_pathbuf).map_err::<Error, _>(|e| e.into())?;
+        let aseprite_data = Data::from_file(&data_pathbuf).map_err(eyre::Error::from)?;
 
         // retrieve source images
         let mut graphic_sources_set =
@@ -297,7 +297,7 @@ impl FormatProcessor for CommandProcessor {
         }
 
         let mut animation =
-            Animation::new(source_file_path.to_owned()).map_err::<Error, _>(|e| e.into())?;
+            Animation::new(source_file_path.to_owned()).map_err(eyre::Report::from)?;
 
         // register source images
         for (frame_index, source_data) in graphic_sources_set.sources.drain(..).enumerate() {

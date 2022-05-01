@@ -24,6 +24,8 @@ tree_decorator = { git = "https://github.com/lucas-miranda/tree_decorator", vers
 asefile = { git = "https://github.com/lucas-miranda/asefile", version = "0.3.4" }
 clap = { version = "3.1.8", features = ["cargo", "default"] }
 num_cpus = "1.13.1"
+eyre = "0.6.8"
+color-eyre = "0.6.1"
 
 [profile.dev]
 opt-level = 0

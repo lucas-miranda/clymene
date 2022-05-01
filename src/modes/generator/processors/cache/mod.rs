@@ -66,7 +66,7 @@ impl Cache {
         file: &File,
         images_path: P,
         atlas_output_path: P,
-    ) -> Result<Self, LoadError> {
+    ) -> eyre::Result<Self> {
         let buf_reader = BufReader::new(file);
         match serde_json::from_reader::<_, Cache>(buf_reader) {
             Ok(mut c) => {
@@ -80,7 +80,7 @@ impl Cache {
 
                 Ok(c)
             }
-            Err(serde_json_error) => Err(LoadError::Deserialize(serde_json_error)),
+            Err(serde_json_error) => Err(eyre::Error::from(LoadError::Deserialize(serde_json_error))),
         }
     }
 
@@ -88,19 +88,19 @@ impl Cache {
         filepath: P,
         images_path: T,
         atlas_output_path: T,
-    ) -> Result<Self, LoadError> {
+    ) -> eyre::Result<Self> {
         match OpenOptions::new().read(true).open(&filepath) {
             Ok(file) => Self::load(&file, images_path, atlas_output_path),
             Err(e) => match e.kind() {
                 io::ErrorKind::NotFound => {
-                    Err(LoadError::FileNotFound(filepath.as_ref().to_owned()))
+                    Err(eyre::Error::from(LoadError::FileNotFound(filepath.as_ref().to_owned())))
                 }
-                _ => panic!("{}", e),
+                _ => Err(eyre::Error::from(e)),
             },
         }
     }
 
-    pub fn save(&self, file: &mut File) -> Result<(), SaveError> {
+    pub fn save(&self, file: &mut File) -> eyre::Result<()> {
         let mut buf_writer = BufWriter::new(file);
         serde_json::to_writer(&mut buf_writer, &self).map_err(SaveError::Serialize)?;
         buf_writer.flush().unwrap();
@@ -108,7 +108,7 @@ impl Cache {
         Ok(())
     }
 
-    pub fn save_to_path<P: AsRef<Path>>(&self, filepath: P) -> Result<(), SaveError> {
+    pub fn save_to_path<P: AsRef<Path>>(&self, filepath: P) -> eyre::Result<()> {
         let mut file = OpenOptions::new()
             .write(true)
             .append(false)
@@ -119,7 +119,7 @@ impl Cache {
         self.save(&mut file)
     }
 
-    pub fn save_pretty(&self, file: &mut File) -> Result<(), SaveError> {
+    pub fn save_pretty(&self, file: &mut File) -> eyre::Result<()> {
         let mut buf_writer = BufWriter::new(file);
         serde_json::to_writer_pretty(&mut buf_writer, &self).map_err(SaveError::Serialize)?;
         buf_writer.flush().unwrap();
@@ -127,7 +127,7 @@ impl Cache {
         Ok(())
     }
 
-    pub fn save_pretty_to_path<P: AsRef<Path>>(&self, filepath: P) -> Result<(), SaveError> {
+    pub fn save_pretty_to_path<P: AsRef<Path>>(&self, filepath: P) -> eyre::Result<()> {
         let mut file = OpenOptions::new()
             .write(true)
             .append(false)
@@ -164,7 +164,7 @@ impl Cache {
         extension: String,
         metadata: &Metadata,
         data: GraphicData,
-    ) -> Result<(), Error> {
+    ) -> eyre::Result<()> {
         let modtime = metadata.modified().unwrap();
 
         self.files.insert(

@@ -1,10 +1,8 @@
-//use colored::Colorize;
 use std::{
     fs::OpenOptions,
     io::{Read, Seek, SeekFrom},
     path::Path,
 };
-//use tree_decorator::decorator;
 
 use crate::{
     common::Verbosity,
@@ -36,11 +34,11 @@ impl AsepriteFormatHandler {
         }
     }
 
-    fn validate_file(&self, source_file_path: &Path) -> Result<(), Error> {
+    fn validate_file(&self, source_file_path: &Path) -> eyre::Result<()> {
         match source_file_path.metadata() {
             Ok(metadata) => {
                 if !metadata.is_file() {
-                    return Err(Error::FileExpected(source_file_path.to_path_buf()));
+                    return Err(Error::FileExpected(source_file_path.to_path_buf()).into());
                 }
 
                 // check magic number section
@@ -56,7 +54,7 @@ impl AsepriteFormatHandler {
 
                 if buffer[..] != ASEPRITE_FILE_MAGIC_NUMBER[..] {
                     // magic number doesn't match
-                    return Err(Error::WrongFileType);
+                    return Err(Error::WrongFileType.into());
                 }
             }
             Err(e) => {
@@ -79,7 +77,7 @@ impl FormatHandler for AsepriteFormatHandler {
 }
 
 impl FormatProcessor for AsepriteFormatHandler {
-    fn setup(&self, config: &mut Config) -> Result<ConfigStatus, Error> {
+    fn setup(&self, config: &mut Config) -> eyre::Result<ConfigStatus> {
         self.processor.setup(config)
     }
 
@@ -88,7 +86,7 @@ impl FormatProcessor for AsepriteFormatHandler {
         source_file_path: &Path,
         output_dir_path: &Path,
         config: &Config,
-    ) -> Result<Graphic, Error> {
+    ) -> eyre::Result<Graphic> {
         /*
         traceln!(
             entry: decorator::Entry::None,
@@ -109,7 +107,7 @@ impl FormatProcessor for AsepriteFormatHandler {
         */
 
         if !output_dir_path.is_dir() {
-            return Err(Error::DirectoryExpected);
+            return Err(Error::DirectoryExpected.into());
         }
 
         self.processor

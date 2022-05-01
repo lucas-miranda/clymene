@@ -85,7 +85,7 @@ pub struct SizeData {
 }
 
 impl Data {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, FormatHandlerError> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> eyre::Result<Self> {
         let data_file = OpenOptions::new().read(true).open(path).unwrap();
         let buf_reader = BufReader::new(data_file);
         let aseprite_animation_data: Self =

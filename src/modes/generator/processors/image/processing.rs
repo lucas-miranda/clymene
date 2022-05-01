@@ -202,10 +202,8 @@ impl Processing {
         // receive lasting processed data
 
         while self.total_processed_files < file_count {
-            match self.receive(&receiver, output, &options.display_kind) {
-                Ok(_) => self.total_processed_files += 1,
-                Err(e) => panic!("{}", e),
-            }
+            self.receive(&receiver, output, &options.display_kind).unwrap();
+            self.total_processed_files += 1;
         }
 
         // stop every processing thread to release resources
@@ -253,10 +251,11 @@ impl Processing {
         receiver: &Receiver<ProcessedInfo>,
         output: &mut GraphicOutput,
         display_kind: &DisplayKind,
-    ) -> Result<ResultData, RecvError> {
+    ) -> eyre::Result<ResultData> {
         receiver
             .recv()
             .map(|processed_info| self.handle_processed_info(processed_info, output, display_kind))
+            .map_err(eyre::Error::from)
     }
 
     fn handle_processed_info(

@@ -23,7 +23,7 @@ impl AtlasData {
         }
     }
 
-    pub fn save(&self, file: &mut File) -> Result<(), SaveError> {
+    pub fn save(&self, file: &mut File) -> eyre::Result<()> {
         let mut buf_writer = BufWriter::new(file);
         serde_json::to_writer(&mut buf_writer, &self).map_err(SaveError::Serialize)?;
         buf_writer.flush().unwrap();
@@ -31,7 +31,7 @@ impl AtlasData {
         Ok(())
     }
 
-    pub fn save_to_path<P: AsRef<Path>>(&self, filepath: P) -> Result<(), SaveError> {
+    pub fn save_to_path<P: AsRef<Path>>(&self, filepath: P) -> eyre::Result<()> {
         let mut file = OpenOptions::new()
             .write(true)
             .append(false)
@@ -42,17 +42,15 @@ impl AtlasData {
         self.save(&mut file)
     }
 
-    pub fn save_pretty(&self, file: &mut File) -> Result<(), SaveError> {
+    pub fn save_pretty(&self, file: &mut File) -> eyre::Result<()> {
         let mut buf_writer = BufWriter::new(file);
-
         serde_json::to_writer_pretty(&mut buf_writer, &self).map_err(SaveError::Serialize)?;
-
         buf_writer.flush().unwrap();
 
         Ok(())
     }
 
-    pub fn save_pretty_to_path<P: AsRef<Path>>(&self, filepath: P) -> Result<(), SaveError> {
+    pub fn save_pretty_to_path<P: AsRef<Path>>(&self, filepath: P) -> eyre::Result<()> {
         let mut file = OpenOptions::new()
             .write(true)
             .append(false)

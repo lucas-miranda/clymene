@@ -28,16 +28,16 @@ pub struct Animation {
 }
 
 impl Animation {
-    pub fn new(source_path: PathBuf) -> Result<Self, Error> {
-        let metadata = source_path.metadata().unwrap();
+    pub fn new(source_path: PathBuf) -> eyre::Result<Self> {
+        let metadata = source_path.metadata().map_err(eyre::Report::from)?;
 
         if !metadata.is_file() {
-            return Err(Error::FileExpected(source_path));
+            return Err(Error::FileExpected(source_path).into());
         }
 
         let source_name = source_path
             .file_stem()
-            .ok_or_else(|| Error::FileExpected(source_path.clone()))?;
+            .ok_or_else::<eyre::Report, _>(|| Error::FileExpected(source_path.clone()).into())?;
 
         Ok(Self {
             source_name: source_name.to_owned(),
