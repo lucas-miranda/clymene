@@ -319,7 +319,7 @@ impl Processing {
                     DisplayKind::Detailed => {
                         errorln!(
                             entry: decorator::Entry::None,
-                            "{}: {}",
+                            "{}: {:#}",
                             "Error".bold().red(),
                             format_handler_error
                         );

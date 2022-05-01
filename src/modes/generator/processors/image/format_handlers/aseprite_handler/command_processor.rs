@@ -232,8 +232,7 @@ impl FormatProcessor for CommandProcessor {
                 OsStr::new("--save-as"),
                 output_dir_path.join(FRAME_FILE_NAME_FORMAT).as_os_str(),
             ])
-            .output()
-            .unwrap();
+            .output()?;
 
         if !output.status.success() {
             return Err(Error::ExternalProgramFail(output.stderr).into());

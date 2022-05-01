@@ -29,8 +29,7 @@ impl FormatProcessor for RawFileProcessor {
         output_dir_path: &Path,
         _config: &Config,
     ) -> eyre::Result<Graphic> {
-        //let ase = AsepriteFile::read_file(source_file_path).map_err::<eyre::Report, _>(|e| e.into()).unwrap();
-        let ase = AsepriteFile::read_file(source_file_path).map_err(eyre::Report::from).unwrap();
+        let ase = AsepriteFile::read_file(source_file_path).map_err(eyre::Report::from)?;
         let frame_count = ase.num_frames();
 
         match frame_count {
