@@ -210,7 +210,7 @@ impl Processor for CacheExporterProcessor {
 
         let cache_dir_pathbuf = {
             let c = state.config.try_read().expect("Can't retrieve a read lock");
-            c.cache.root_path()
+            c.cache.entry_path()
         };
 
         let cache_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());

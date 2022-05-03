@@ -46,15 +46,15 @@ impl Verbosity for CacheConfig {
 }
 
 impl CacheConfig {
-    pub fn root_path(&self) -> PathBuf {
+    pub fn entry_path(&self) -> PathBuf {
         PathBuf::from(&self.path).join(&self.identifier)
     }
 
     pub fn images_path(&self) -> PathBuf {
-        self.root_path().join(IMAGES_DIR_NAME)
+        self.entry_path().join(IMAGES_DIR_NAME)
     }
 
     pub fn atlas_path(&self) -> PathBuf {
-        self.root_path().join(ATLAS_DIR_NAME)
+        self.entry_path().join(ATLAS_DIR_NAME)
     }
 }

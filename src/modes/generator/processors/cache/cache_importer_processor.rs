@@ -75,7 +75,7 @@ impl CacheImporterProcessor {
 
     fn handle_cache(&self, state: &State, cache: &mut Cache) {
         let c = state.config.try_read().expect("Can't retrieve a read lock");
-        let cache_dir_pathbuf = c.cache.root_path();
+        let cache_dir_pathbuf = c.cache.entry_path();
 
         // atlas subdir
         self.ensure_exists_subdir(&cache_dir_pathbuf, "atlas")
@@ -532,7 +532,7 @@ impl Processor for CacheImporterProcessor {
         infoln!(block, "Checking cache version");
         let total_timer = Timer::start();
 
-        let cache_dir_pathbuf = c.cache.root_path();
+        let cache_dir_pathbuf = c.cache.entry_path();
         let cache_file_pathbuf = cache_dir_pathbuf.join(Cache::default_filename());
 
         traceln!(
