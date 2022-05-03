@@ -14,7 +14,7 @@ pub enum FrameData {
         #[serde(rename = "atlas")]
         atlas_region: Rectangle<u32>,
 
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(skip_serializing_if = "Option::is_none", default)]
         duration: Option<u32>,
 
         #[serde(rename = "source")]

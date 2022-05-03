@@ -1,7 +1,7 @@
 use super::Track;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(transparent)]
 pub struct TrackList {
     entries: Vec<Track>,

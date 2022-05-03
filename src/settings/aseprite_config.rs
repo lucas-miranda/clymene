@@ -11,8 +11,7 @@ pub struct AsepriteConfig {
     #[serde(default)]
     pub verbose: bool,
 
-    #[serde(default)]
-    #[serde(skip_serializing_if = "String::is_empty")]
+    #[serde(skip_serializing_if = "String::is_empty", default)]
     pub bin_path: String,
 }
 

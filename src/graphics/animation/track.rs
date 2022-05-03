@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct Track {
     pub label: Option<String>,
 
-    #[serde(skip_serializing_if = "TrackList::is_empty")]
+    #[serde(skip_serializing_if = "TrackList::is_empty", default)]
     pub tracks: TrackList,
 
     indices: FrameIndicesGroup,
