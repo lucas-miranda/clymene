@@ -241,11 +241,23 @@ impl<P: Packer> Processor for PackerProcessor<P> {
             .filter_map(
                 |g| -> Option<Box<dyn Iterator<Item = &mut GraphicSource>>> {
                     match g {
-                        Graphic::Image(img) => Some(Box::new(iter::once(&mut img.graphic_source))),
+                        Graphic::Image(img) => {
+                            if !img.graphic_source.region.is_empty() {
+                                Some(Box::new(iter::once(&mut img.graphic_source)))
+                            } else {
+                                None
+                            }
+                        }
                         Graphic::Animation(anim) => {
                             Some(Box::new(anim.frames.iter_mut().filter_map(|f| match f {
                                 Frame::Empty => None,
-                                Frame::Contents { graphic_source, .. } => Some(graphic_source),
+                                Frame::Contents { graphic_source, .. } => {
+                                    if !graphic_source.region.is_empty() {
+                                        Some(graphic_source)
+                                    } else {
+                                        None
+                                    }
+                                }
                             })))
                         }
                         Graphic::Empty => None,
