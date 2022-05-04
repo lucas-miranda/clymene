@@ -605,11 +605,7 @@ impl Processor for CacheImporterProcessor {
                                     panic!("Cache file io error: {}", e);
                                 }
                                 _ => {
-                                    errorln!("Cache file data error: {}", serde_json_error);
-
-                                    // TODO  maybe add a config option to panic when this situation
-                                    //       happens, just to help tracing future problems
-
+                                    errorln!("Cache file data error: {:#}", serde_json_error);
                                     infoln!("A new one will be used instead");
                                     infoln!(block, "Creating a new one");
                                 }
