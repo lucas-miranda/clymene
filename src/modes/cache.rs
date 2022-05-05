@@ -56,12 +56,11 @@ impl Mode for CacheMode {
                 "N".red(),
             );
 
-            io::stdout().flush()
-                .map_err(eyre::Error::from)
-                .unwrap();
+            io::stdout().flush().map_err(eyre::Error::from).unwrap();
 
             let mut input = String::new();
-            io::stdin().read_line(&mut input)
+            io::stdin()
+                .read_line(&mut input)
                 .map_err(eyre::Error::from)
                 .unwrap();
 
@@ -99,12 +98,11 @@ impl Mode for CacheMode {
                 "N".red(),
             );
 
-            io::stdout().flush()
-                .map_err(eyre::Error::from)
-                .unwrap();
+            io::stdout().flush().map_err(eyre::Error::from).unwrap();
 
             let mut input = String::new();
-            io::stdin().read_line(&mut input)
+            io::stdin()
+                .read_line(&mut input)
                 .map_err(eyre::Error::from)
                 .unwrap();
 

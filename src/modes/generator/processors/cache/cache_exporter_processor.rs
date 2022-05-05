@@ -17,8 +17,8 @@ use crate::{
     util::Timer,
 };
 
-use eyre::WrapErr;
 use super::Cache;
+use eyre::WrapErr;
 
 pub struct CacheExporterProcessor {
     verbose: bool,
@@ -220,10 +220,12 @@ impl Processor for CacheExporterProcessor {
             Err(e) => {
                 match e.downcast_ref::<io::Error>().unwrap().kind() {
                     io::ErrorKind::NotFound => (),
-                    _ => Err(e).wrap_err(format!(
-                        "Can't backup cache file at '{}'",
-                        cache_pathbuf.display()
-                    )).unwrap()
+                    _ => Err(e)
+                        .wrap_err(format!(
+                            "Can't backup cache file at '{}'",
+                            cache_pathbuf.display()
+                        ))
+                        .unwrap(),
                 }
 
                 None

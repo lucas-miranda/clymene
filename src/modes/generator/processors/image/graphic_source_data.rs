@@ -15,10 +15,7 @@ pub struct GraphicSourceData {
 }
 
 impl GraphicSourceData {
-    pub fn try_from_path(
-        path: &Path,
-        frames_data: &[FrameData],
-    ) -> eyre::Result<Self> {
+    pub fn try_from_path(path: &Path, frames_data: &[FrameData]) -> eyre::Result<Self> {
         let metadata = path.metadata().map_err(GraphicSourceDataError::from)?;
 
         if !metadata.is_file() {
@@ -27,7 +24,11 @@ impl GraphicSourceData {
 
         let frame_index = match try_retrieve_frame_index(path) {
             Some(index) => index,
-            None => return Err(eyre::Error::from(GraphicSourceDataError::FrameIndexNotFound)),
+            None => {
+                return Err(eyre::Error::from(
+                    GraphicSourceDataError::FrameIndexNotFound,
+                ))
+            }
         };
 
         let (source_region, atlas_region) = get_regions(frame_index, frames_data);

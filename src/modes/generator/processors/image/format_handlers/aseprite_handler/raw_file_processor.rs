@@ -8,10 +8,7 @@ use crate::{
         Graphic, GraphicSource, Image,
     },
     math::Rectangle,
-    modes::generator::processors::{
-        image::format_handlers::FormatProcessor,
-        ConfigStatus,
-    },
+    modes::generator::processors::{image::format_handlers::FormatProcessor, ConfigStatus},
     settings::Config,
 };
 
@@ -45,8 +42,8 @@ impl FormatProcessor for RawFileProcessor {
                 },
             ),
             _ => {
-                let mut animation = Animation::new(source_file_path.to_owned())
-                    .map_err(eyre::Report::from)?;
+                let mut animation =
+                    Animation::new(source_file_path.to_owned()).map_err(eyre::Report::from)?;
 
                 // frames
                 for frame_index in 0..frame_count {

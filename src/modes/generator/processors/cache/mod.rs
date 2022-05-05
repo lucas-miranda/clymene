@@ -80,7 +80,9 @@ impl Cache {
 
                 Ok(c)
             }
-            Err(serde_json_error) => Err(eyre::Error::from(LoadError::Deserialize(serde_json_error))),
+            Err(serde_json_error) => {
+                Err(eyre::Error::from(LoadError::Deserialize(serde_json_error)))
+            }
         }
     }
 
@@ -92,9 +94,9 @@ impl Cache {
         match OpenOptions::new().read(true).open(&filepath) {
             Ok(file) => Self::load(&file, images_path, atlas_output_path),
             Err(e) => match e.kind() {
-                io::ErrorKind::NotFound => {
-                    Err(eyre::Error::from(LoadError::FileNotFound(filepath.as_ref().to_owned())))
-                }
+                io::ErrorKind::NotFound => Err(eyre::Error::from(LoadError::FileNotFound(
+                    filepath.as_ref().to_owned(),
+                ))),
                 _ => Err(eyre::Error::from(e)),
             },
         }

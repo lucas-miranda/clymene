@@ -76,19 +76,22 @@ impl Config {
                     let c = Config::default();
                     c.save_to_path(&path).unwrap();
                     c
-                },
+                }
                 _ => Err(e)
-                    .map_err(|e| e.wrap_err(format!(
-                        "When loading from file at '{}'",
-                        filepath.as_ref().display()
-                    )))
+                    .map_err(|e| {
+                        e.wrap_err(format!(
+                            "When loading from file at '{}'",
+                            filepath.as_ref().display()
+                        ))
+                    })
                     .unwrap(),
-            }
+            },
         }
     }
 
     pub fn save(&self, file: &File) -> eyre::Result<()> {
-        let toml_data = toml::to_string(&self).map_err(|e| eyre::Error::from(SaveError::Serialize(e)))?;
+        let toml_data =
+            toml::to_string(&self).map_err(|e| eyre::Error::from(SaveError::Serialize(e)))?;
 
         let mut buffer = BufWriter::new(file);
         buffer.write_all(toml_data.as_bytes()).unwrap();

@@ -3,7 +3,7 @@ use std::{
     ffi::OsString,
     fs, io,
     path::{Path, PathBuf},
-    sync::mpsc::{Receiver, RecvError},
+    sync::mpsc::Receiver,
 };
 
 use colored::Colorize;
@@ -202,7 +202,9 @@ impl Processing {
         // receive lasting processed data
 
         while self.total_processed_files < file_count {
-            self.receive(&receiver, output, &options.display_kind).unwrap();
+            self.receive(&receiver, output, &options.display_kind)
+                .unwrap();
+
             self.total_processed_files += 1;
         }
 

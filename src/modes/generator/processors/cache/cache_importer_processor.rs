@@ -393,11 +393,7 @@ impl CacheImporterProcessor {
         }
     }
 
-    fn ensure_exists_subdir(
-        &self,
-        cache_pathbuf: &Path,
-        dir_name: &str,
-    ) -> eyre::Result<PathBuf> {
+    fn ensure_exists_subdir(&self, cache_pathbuf: &Path, dir_name: &str) -> eyre::Result<PathBuf> {
         let pathbuf = cache_pathbuf.join(dir_name);
 
         match pathbuf.metadata() {
@@ -405,7 +401,9 @@ impl CacheImporterProcessor {
                 if metadata.is_dir() {
                     Ok(())
                 } else {
-                    Err(eyre::Error::from(super::Error::DirectoryExpected(pathbuf.clone())))
+                    Err(eyre::Error::from(super::Error::DirectoryExpected(
+                        pathbuf.clone(),
+                    )))
                 }
             }
             Err(e) => match e.kind() {

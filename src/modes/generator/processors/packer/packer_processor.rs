@@ -110,7 +110,8 @@ impl<P: Packer> PackerProcessor<P> {
             }
         }
 
-        image_buffer.save_with_format(output_path, image::ImageFormat::Png)
+        image_buffer
+            .save_with_format(output_path, image::ImageFormat::Png)
             .map_err(eyre::Error::from)
     }
 
