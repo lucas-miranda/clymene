@@ -53,6 +53,9 @@ until_atlas_size = 0
 # display image related verbose messages
 verbose = false
 
+# threads to use when processing (0 = all available)
+jobs = 0
+
 # where to get source images
 input_path = "source"
 
