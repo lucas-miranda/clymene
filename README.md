@@ -1,57 +1,54 @@
-# clymene
+# 🗺️ clymene
 
-The main target is to aid game devs at atlas packing and processing. It doesn't just outputs a packed image, but also a data set about it's sources, which they can be either static images or animations (containing it's frames and tracks data extracted from source).
+An atlas image and data generation tool.
+
+The main target is to aid game devs at atlas packing and data processing. It doesn't just outputs a packed image, but also a data set about it's sources, which can be either static images or animations.
 
 ## Design Goals
 
-* **Fast as possible**: minimize atlas generation time whenever we can.
-* **Additive execution**: re-execution should include new or modified sources only, avoid reprocessing unnecessary ones.
-* **Project-like configuration**: be able to specify everything from a project config file.
-* **Console based**: graphical interfaces only slows down the main goal.
+* **Fast as possible**: minimize atlas generation time whenever is possible.
+* **Additive execution**: re-execution should be smart enough to only process the differences.
+* **Configurable**: be able to specify everything from a project config file.
+* **Command-line based**: serve as a command-line tool and nothing else.
 
 ## Features
 
-* Input files formats
-    * [X] aseprite, ase
-    * [ ] png (with data descriptor)
-    * [ ] *others relevant formats*
+* Input file formats
+    * [X] [.aseprite, .ase](https://www.aseprite.org)
+* Output formats
+    * [X] .png + [.json](./docs/atlas-data-format/json-format.md)
 * Multithreaded sources processing
-* Config project-like file
-    * [ ] Reads config file from input directory (mixed with system-wide one)
-* Output file formats
-    * Combined
-        * [ ] binary (image + data)
-    * Splitted
-        * Image
-            * [X] png
-            * [ ] *others relevant formats*
-        * Data
-            * [X] json
-            * [ ] *others relevant formats*
-* Output stats
-    * [X] Space usage
-    * [ ] Density
+* Cached data to speed up next executions
+* Configuration `.toml` file (cli options always overrides it, more info at `--help`)
 
 ## Building
 
-    git clone https://github.com/lucas-miranda/clymene
-    cd clymene
-    cargo build --release
+```bash
+git clone https://github.com/lucas-miranda/clymene
+cd clymene
+cargo build --release
+```
 
 ## Usage
 
-1. Take [config.toml file](/config.toml)
-2. Put it aside clymene executable (after building it)
-3. Open *config.toml* file and change:
-    - `image.input_path` directory to retrieve image sources
-4. Optionally, you can modify:
-    - `output.path` directory where clymene should outputs
-    - `output.name` to give a custom output filename
-    - `packer.atlas_size` atlas target size (width and height),
-5. Run clymene!
+1. [Build](#Building) or [grab latest release](https://github.com/lucas-miranda/clymene/releases)
+2. Get config file, by **one** of following methods:
+    1. Run clymene, it'll generate a default config
+    2. Take [config.toml file](./config.toml) and put it aside clymene executable
+4. Open `config.toml` and change:
+    - `image.input_path`: directory to retrieve image sources
+5. Additionally, you can modify:
+    - `output.path`: directory where clymene should outputs
+    - `output.name`: to give a custom output filename
+    - `packer.atlas_size`: atlas target size (width and height),
+6. Run clymene!
 
-Every option is commented out at [config file](/config.toml), check it out for more settings.
+More options are commented out at [config file](./config.toml), check it out for more settings.
+
+## Documentation
+
+See [docs/](./docs/) to more in-depth details about formats and other things.
 
 ## License
 
-Clymene is under [MIT License](/LICENSE).
+Clymene is under [MIT License](./LICENSE).
