@@ -1,7 +1,7 @@
 # 🗺️ clymene
 
 <p align="center">
-  <img width="600" src="https://raw.githubusercontent.com/lucas-miranda/clymene/main/images/usage.svg?token=GHSAT0AAAAAABSAYTFFAO2C5KQQVLNYZ3EUYT5JEYQ">
+  <img width="600" src="https://raw.githubusercontent.com/lucas-miranda/clymene/main/images/usage.svg?token=GHSAT0AAAAAABSAYTFFJAEIFILL77MZAZDQYT5JMNA">
 </p>
 
 An atlas image and data generation tool.
