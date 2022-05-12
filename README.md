@@ -1,7 +1,7 @@
 # 🗺️ clymene
 
 <p align="center">
-  <a href="https://asciinema.org/a/493872" target="_blank"><img width="600" src="https://raw.githubusercontent.com/lucas-miranda/clymene/main/images/usage.svg?token=GHSAT0AAAAAABSAYTFEEDMS5JGBD2IISTWUYT5KCYQ" /></a>
+  <a href="https://asciinema.org/a/493885" target="_blank"><img width="600" src="https://raw.githubusercontent.com/lucas-miranda/clymene/main/images/usage.svg?token=GHSAT0AAAAAABSAYTFF3CEXRTPTM5J4S4CMYT5KSXA" /></a>
 </p>
 
 An atlas image and data generation tool.
