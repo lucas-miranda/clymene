@@ -1,5 +1,9 @@
 # 🗺️ clymene
 
+<p align="center">
+  <img width="600" src="https://raw.githubusercontent.com/lucas-miranda/clymene/main/images/usage.svg?token=GHSAT0AAAAAABSAYTFFAO2C5KQQVLNYZ3EUYT5JEYQ">
+</p>
+
 An atlas image and data generation tool.
 
 The main target is to aid game devs at atlas packing and data processing. It doesn't just outputs a packed image, but also a data set about it's sources, which can be either static images or animations.
