@@ -34,9 +34,9 @@ jobs:
       - name: Archive
         id: archive
         run: |
-          archive_filename="clymene-linux.tar.gz"
-          cd target/release
-          tar cfz $archive_filename clymene
+          archive_filename="clymene/"
+          mkdir clymene
+          mv target/release/clymene $archive_filename
           echo "::set-output name=filename::$archive_filename"
 
       - name: Upload Artifacts
@@ -77,9 +77,9 @@ jobs:
         id: archive
         shell: bash
         run: |
-          archive_filename="clymene-windows.zip"
-          cd target/release
-          powershell Compress-Archive clymene.exe $archive_filename
+          archive_filename="clymene/"
+          mkdir clymene
+          mv target/release/clymene $archive_filename
           echo "::set-output name=filename::$archive_filename"
 
       - name: Upload Artifacts
@@ -120,9 +120,9 @@ jobs:
       - name: Archive
         id: archive
         run: |
-          archive_filename="clymene-macos.tar.gz"
-          cd target/release
-          tar cfz $archive_filename clymene
+          archive_filename="clymene/"
+          mkdir clymene
+          mv target/release/clymene $archive_filename
           echo "::set-output name=filename::$archive_filename"
 
       - name: Upload Artifacts
