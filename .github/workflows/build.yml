@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: clymene-linux
-          path: target/release/${{ steps.archive.outputs.filename }}
+          path: ${{ steps.archive.outputs.filename }}
           retention-days: 1
           if-no-files-found: error
 
@@ -86,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: clymene-windows
-          path: target/release/${{ steps.archive.outputs.filename }}
+          path: ${{ steps.archive.outputs.filename }}
           retention-days: 1
           if-no-files-found: error
 
@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: clymene-macos
-          path: target/release/${{ steps.archive.outputs.filename }}
+          path: ${{ steps.archive.outputs.filename }}
           retention-days: 1
           if-no-files-found: error
 
