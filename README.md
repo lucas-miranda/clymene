@@ -35,7 +35,7 @@ cargo build --release
 
 ## Usage
 
-1. [Build](#Building) or [grab latest release](https://github.com/lucas-miranda/clymene/releases)
+1. [Build](#Building) or [grab latest release](https://github.com/lucas-miranda/clymene/releases/latest)
 2. Get config file, by **one** of following methods:
     1. Run clymene, it'll generate a default config
     2. Take [config.toml file](./config.toml) and put it aside clymene executable
