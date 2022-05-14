@@ -34,8 +34,8 @@ jobs:
       - name: Archive
         id: archive
         run: |
-          archive_filename="clymene/"
-          mkdir clymene
+          archive_filename="clymene"
+          mkdir $archive_filename
           mv target/release/clymene $archive_filename
           echo "::set-output name=filename::$archive_filename"
 
@@ -51,7 +51,7 @@ jobs:
         id: values
         run: |
           path=clymene-linux/${{ steps.archive.outputs.filename }}
-          echo "::set-output name=archive_filepath::$path"
+          echo "::set-output name=archive_filepath::clymene-linux"
 
   windows:
     runs-on: windows-latest
@@ -77,8 +77,8 @@ jobs:
         id: archive
         shell: bash
         run: |
-          archive_filename="clymene/"
-          mkdir clymene
+          archive_filename="clymene"
+          mkdir $archive_filename
           mv target/release/clymene $archive_filename
           echo "::set-output name=filename::$archive_filename"
 
@@ -95,7 +95,7 @@ jobs:
         shell: bash
         run: |
           path=clymene-windows/${{ steps.archive.outputs.filename }}
-          echo "::set-output name=archive_filepath::$path"
+          echo "::set-output name=archive_filepath::clymene-windows"
 
   macos:
     runs-on: macos-latest
@@ -120,8 +120,8 @@ jobs:
       - name: Archive
         id: archive
         run: |
-          archive_filename="clymene/"
-          mkdir clymene
+          archive_filename="clymene"
+          mkdir $archive_filename
           mv target/release/clymene $archive_filename
           echo "::set-output name=filename::$archive_filename"
 
@@ -137,4 +137,4 @@ jobs:
         id: values
         run: |
           path=clymene-macos/${{ steps.archive.outputs.filename }}
-          echo "::set-output name=archive_filepath::$path"
+          echo "::set-output name=archive_filepath::clymene-macos"

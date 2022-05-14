@@ -41,12 +41,34 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v2
 
+      - name: Archive
+        id: archive
+        run: |
+          linux_name=${{ needs.build.outputs.linux-artifact-filepath }}
+          windows_name=${{ needs.build.outputs.windows-artifact-filepath }}
+          macos_name=${{ needs.build.outputs.macos-artifact-filepath }}
+
+          # linux
+          mv $linux_name clymene/
+          zip -r $linux_name.zip clymene/
+          rm -rf clymene/
+
+          # windows
+          mv $windows_name clymene/
+          zip -r $windows_name.zip clymene/
+          rm -rf clymene/
+
+          # macos
+          mv $macos_name clymene/
+          zip -r $macos_name.zip clymene/
+          rm -rf clymene/
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           artifactErrorsFailBuild: true
-          artifacts: "${{ needs.build.outputs.linux-artifact-filepath }},${{ needs.build.outputs.windows-artifact-filepath }},${{ needs.build.outputs.macos-artifact-filepath }}"
+          artifacts: "${{ needs.build.outputs.linux-artifact-filepath }}.zip,${{ needs.build.outputs.windows-artifact-filepath }}.zip,${{ needs.build.outputs.macos-artifact-filepath }}.zip"
           bodyFile: GITHUB_CHANGELOG.md
           #draft: true
           replacesArtifacts: true
