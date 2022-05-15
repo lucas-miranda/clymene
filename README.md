@@ -20,7 +20,7 @@ The main target is to aid game devs at atlas packing and data processing. It doe
 * Input file formats
     * [X] [.aseprite, .ase](https://www.aseprite.org)
 * Output formats
-    * [X] .png + [.json](./docs/atlas-data-format/json-format.md)
+    * [X] .png + [.json](./docs/atlas%20data%20format/json%20format.md)
 * Multithreaded sources processing
 * Cached data to speed up next executions
 * Configuration `.toml` file (cli options always overrides it, more info at `--help`)
